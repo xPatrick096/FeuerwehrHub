@@ -42,7 +42,13 @@ export const api = {
   setup:         (body) => request('POST', '/auth/setup', body),
 
   // Bestellungen
-  getOrders:    (params) => request('GET',    `/orders?${new URLSearchParams(Object.fromEntries(Object.entries(params || {}).filter(([k, v]) => v != null && v !== ''))}`),
+  getOrders: (params) => {
+    const p = new URLSearchParams();
+    for (const [k, v] of Object.entries(params || {})) {
+      if (v != null && v !== '') p.append(k, v);
+    }
+    return request('GET', `/orders?${p}`);
+  },
   getOrder:     (id)     => request('GET',    `/orders/${id}`),
   createOrder:  (body)   => request('POST',   '/orders', body),
   updateOrder:  (id, b)  => request('PUT',    `/orders/${id}`, b),
