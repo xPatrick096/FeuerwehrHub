@@ -1,0 +1,52 @@
+@use 'variables' as *;
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  font-family: $font-family;
+  font-size: $font-size-md;
+  color: $grau-dunkel;
+  background: #EBEBEB;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: $rot;
+  text-decoration: none;
+  &:hover { text-decoration: underline; }
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+ul, ol {
+  list-style: none;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid $grau-rand;
+  margin: $space-md 0;
+}
+
+// Scrollbar
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track { background: $grau-hell; }
+::-webkit-scrollbar-thumb {
+  background: $grau-rand;
+  border-radius: $radius-pill;
+  &:hover { background: $grau-mittel; }
+}

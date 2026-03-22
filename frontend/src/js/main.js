@@ -1,0 +1,21 @@
+import { initRouter, registerRoute } from './router.js';
+import { renderLogin } from './pages/login.js';
+import { renderSetup } from './pages/setup.js';
+import { renderOrders } from './pages/orders.js';
+import { renderNewOrder } from './pages/new-order.js';
+import { renderArticles } from './pages/articles.js';
+import { renderSettings } from './pages/settings.js';
+
+// Routen registrieren
+registerRoute('#/login',     renderLogin);
+registerRoute('#/setup',     renderSetup);
+registerRoute('#/orders',    renderOrders);
+registerRoute('#/new-order', renderNewOrder);
+registerRoute('#/articles',  renderArticles);
+registerRoute('#/settings',  renderSettings);
+
+// Fallback
+registerRoute('*', renderLogin);
+
+// App starten
+initRouter();

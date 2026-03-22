@@ -1,0 +1,175 @@
+@use 'variables' as *;
+
+// ── App-Shell ────────────────────────────────────────────────────────────────
+#app {
+  height: 100%;
+}
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+// ── Header ────────────────────────────────────────────────────────────────────
+.header {
+  height: $header-height;
+  background: $rot;
+  color: $weiss;
+  display: flex;
+  align-items: center;
+  padding: 0 $space-lg;
+  gap: $space-md;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  flex-shrink: 0;
+  z-index: 100;
+
+  &__emblem {
+    width: 40px;
+    height: 40px;
+    background: $weiss;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+
+  &__title {
+    h1 {
+      font-size: $font-size-lg;
+      font-weight: 700;
+    }
+    p {
+      font-size: $font-size-sm;
+      opacity: 0.85;
+    }
+  }
+
+  &__right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: $space-md;
+    font-size: $font-size-sm;
+    opacity: 0.9;
+  }
+
+  &__user {
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+  }
+
+  &__logout {
+    background: rgba(255,255,255,0.15);
+    border: none;
+    color: $weiss;
+    padding: $space-xs $space-md;
+    border-radius: $radius-sm;
+    cursor: pointer;
+    font-size: $font-size-sm;
+    transition: background $transition-fast;
+
+    &:hover {
+      background: rgba(255,255,255,0.25);
+    }
+  }
+}
+
+// ── Body Layout ───────────────────────────────────────────────────────────────
+.body-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+// ── Sidebar ───────────────────────────────────────────────────────────────────
+.sidebar {
+  width: $sidebar-width;
+  background: $grau-dunkel;
+  flex-shrink: 0;
+  overflow-y: auto;
+  padding: $space-md 0;
+
+  &__nav {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+    padding: 11px $space-lg;
+    color: rgba(255,255,255,0.65);
+    cursor: pointer;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    font-size: $font-size-md;
+    transition: all $transition-fast;
+    border-left: 3px solid transparent;
+
+    &:hover {
+      color: $weiss;
+      background: rgba(255,255,255,0.06);
+    }
+
+    &.active {
+      color: $weiss;
+      background: rgba(255,255,255,0.08);
+      border-left-color: $rot;
+    }
+
+    &__icon {
+      font-size: 16px;
+      width: 20px;
+      text-align: center;
+    }
+  }
+
+  &__divider {
+    height: 1px;
+    background: rgba(255,255,255,0.08);
+    margin: $space-sm $space-md;
+  }
+}
+
+// ── Main Content ──────────────────────────────────────────────────────────────
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: $space-lg;
+}
+
+.page {
+  max-width: $content-max-width;
+  margin: 0 auto;
+  display: none;
+
+  &.active {
+    display: block;
+  }
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $space-lg;
+
+  h2 {
+    font-size: $font-size-xl;
+    font-weight: 700;
+    color: $grau-dunkel;
+  }
+
+  p {
+    font-size: $font-size-sm;
+    color: $grau;
+    margin-top: 2px;
+  }
+}

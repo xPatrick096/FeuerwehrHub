@@ -1,0 +1,19 @@
+# Environment
+.env
+.env.local
+
+# Rust
+backend/target/
+backend/**/*.rs.bk
+Cargo.lock
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Docker
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

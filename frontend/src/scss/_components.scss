@@ -1,0 +1,368 @@
+@use 'variables' as *;
+
+// ── Card ──────────────────────────────────────────────────────────────────────
+.card {
+  background: $weiss;
+  border-radius: $radius-md;
+  box-shadow: $schatten-md;
+  margin-bottom: $space-lg;
+  overflow: hidden;
+
+  &__header {
+    background: $grau-dunkel;
+    color: $weiss;
+    padding: 12px $space-lg;
+    font-size: $font-size-md;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__body {
+    padding: $space-lg;
+  }
+
+  &--rot &__header { background: $rot; }
+}
+
+// ── Buttons ───────────────────────────────────────────────────────────────────
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: $space-sm;
+  padding: 9px 18px;
+  border: none;
+  border-radius: $radius-sm;
+  cursor: pointer;
+  font-size: $font-size-sm;
+  font-weight: 600;
+  transition: all $transition-fast;
+  white-space: nowrap;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &--primary    { background: $rot;          color: $weiss;        &:hover:not(:disabled) { background: $rot-dunkel; } }
+  &--secondary  { background: $grau-dunkel;  color: $weiss;        &:hover:not(:disabled) { background: #444; } }
+  &--success    { background: $gruen;        color: $weiss;        &:hover:not(:disabled) { background: #219A52; } }
+  &--warning    { background: $orange;       color: $weiss;        &:hover:not(:disabled) { background: #CA6F1E; } }
+  &--outline    { background: transparent;   color: $grau;  border: 1px solid $grau-rand; &:hover:not(:disabled) { background: $grau-hell; } }
+  &--danger     { background: transparent;   color: $rot;   border: 1px solid $rot;       &:hover:not(:disabled) { background: $rot-hell; } }
+
+  &--sm { padding: 5px 10px; font-size: $font-size-xs; }
+  &--lg { padding: 12px 24px; font-size: $font-size-md; }
+  &--full { width: 100%; justify-content: center; }
+}
+
+.btn-group {
+  display: flex;
+  gap: $space-sm;
+  flex-wrap: wrap;
+}
+
+// ── Form ──────────────────────────────────────────────────────────────────────
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: $space-md;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+
+  &--full { grid-column: 1 / -1; }
+
+  label {
+    font-size: $font-size-xs;
+    font-weight: 600;
+    color: $grau;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+
+  input, select, textarea {
+    padding: 8px 12px;
+    border: 1px solid $grau-rand;
+    border-radius: $radius-sm;
+    color: $grau-dunkel;
+    background: $weiss;
+    transition: border-color $transition-fast;
+
+    &:focus {
+      outline: none;
+      border-color: $rot;
+      box-shadow: 0 0 0 2px rgba($rot, 0.12);
+    }
+
+    &::placeholder { color: $grau-mittel; }
+  }
+
+  textarea { resize: vertical; min-height: 80px; }
+}
+
+// ── Table ─────────────────────────────────────────────────────────────────────
+.table-wrapper {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th {
+  background: $grau-hell;
+  padding: 10px 12px;
+  text-align: left;
+  font-size: $font-size-xs;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: $grau;
+  border-bottom: 2px solid $grau-rand;
+  white-space: nowrap;
+}
+
+td {
+  padding: 10px 12px;
+  border-bottom: 1px solid $grau-rand;
+  vertical-align: middle;
+
+  &:last-child { white-space: nowrap; }
+}
+
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #FAFAFA; }
+
+.table-empty {
+  text-align: center;
+  padding: 48px;
+  color: $grau;
+  font-style: italic;
+}
+
+// ── Badges ────────────────────────────────────────────────────────────────────
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: $radius-pill;
+  font-size: $font-size-xs;
+  font-weight: 600;
+
+  &--offen        { background: $rot-hell;    color: #C0392B; }
+  &--teillieferung { background: $orange-hell; color: #CA6F1E; }
+  &--vollstaendig  { background: $gruen-hell;  color: #1E8449; }
+  &--storniert     { background: $grau-hell;   color: $grau; }
+}
+
+// ── Stats-Karten ─────────────────────────────────────────────────────────────
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: $space-md;
+  margin-bottom: $space-lg;
+}
+
+.stat-card {
+  background: $weiss;
+  border-radius: $radius-md;
+  padding: $space-md;
+  box-shadow: $schatten-md;
+  text-align: center;
+
+  &__number {
+    font-size: $font-size-2xl;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  &__label {
+    font-size: $font-size-xs;
+    color: $grau;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+
+  &--offen        .stat-card__number { color: #C0392B; }
+  &--teillieferung .stat-card__number { color: #CA6F1E; }
+  &--vollstaendig  .stat-card__number { color: #1E8449; }
+  &--gesamt       .stat-card__number { color: $grau-dunkel; }
+}
+
+// ── Filter-Bar ────────────────────────────────────────────────────────────────
+.filter-bar {
+  display: flex;
+  gap: $space-sm;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: $space-md;
+
+  input, select {
+    padding: 7px 12px;
+    border: 1px solid $grau-rand;
+    border-radius: $radius-sm;
+    font-size: $font-size-sm;
+    color: $grau-dunkel;
+    background: $weiss;
+
+    &:focus {
+      outline: none;
+      border-color: $rot;
+    }
+  }
+}
+
+// ── Modal ─────────────────────────────────────────────────────────────────────
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+
+  &.active { display: flex; }
+}
+
+.modal {
+  background: $weiss;
+  border-radius: $radius-md;
+  box-shadow: $schatten-lg;
+  width: 90%;
+  max-width: 540px;
+  max-height: 90vh;
+  overflow-y: auto;
+
+  &__header {
+    background: $grau-dunkel;
+    color: $weiss;
+    padding: 14px $space-lg;
+    font-size: $font-size-md;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__close {
+    background: none;
+    border: none;
+    color: $weiss;
+    font-size: 20px;
+    cursor: pointer;
+    opacity: 0.7;
+    line-height: 1;
+    &:hover { opacity: 1; }
+  }
+
+  &__body {
+    padding: $space-lg;
+  }
+
+  &__footer {
+    padding: $space-md $space-lg;
+    border-top: 1px solid $grau-rand;
+    display: flex;
+    justify-content: flex-end;
+    gap: $space-sm;
+  }
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+#toast-container {
+  position: fixed;
+  bottom: $space-lg;
+  right: $space-lg;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: $space-sm;
+}
+
+.toast {
+  background: $grau-dunkel;
+  color: $weiss;
+  padding: 10px $space-md;
+  border-radius: $radius-sm;
+  box-shadow: $schatten-lg;
+  font-size: $font-size-sm;
+  animation: toast-in 0.2s ease;
+  border-left: 4px solid $gruen;
+
+  &--error  { border-left-color: $rot; }
+  &--warning { border-left-color: $orange; }
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+// ── Auth-Seite ────────────────────────────────────────────────────────────────
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #EBEBEB;
+
+  .auth-card {
+    background: $weiss;
+    border-radius: $radius-lg;
+    box-shadow: $schatten-lg;
+    width: 100%;
+    max-width: 400px;
+    overflow: hidden;
+  }
+
+  .auth-header {
+    background: $rot;
+    color: $weiss;
+    padding: $space-xl $space-lg;
+    text-align: center;
+
+    .auth-emblem {
+      width: 64px;
+      height: 64px;
+      background: $weiss;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      margin: 0 auto $space-md;
+    }
+
+    h1 { font-size: $font-size-xl; font-weight: 700; }
+    p  { font-size: $font-size-sm; opacity: 0.85; margin-top: 4px; }
+  }
+
+  .auth-body {
+    padding: $space-xl $space-lg;
+
+    .form-group { margin-bottom: $space-md; }
+  }
+
+  .auth-totp-hint {
+    text-align: center;
+    font-size: $font-size-sm;
+    color: $grau;
+    margin-bottom: $space-md;
+
+    strong { color: $grau-dunkel; display: block; margin-bottom: $space-xs; }
+  }
+
+  .totp-code-input {
+    text-align: center;
+    font-size: 24px;
+    letter-spacing: 8px;
+    font-weight: 700;
+  }
+}

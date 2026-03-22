@@ -1,0 +1,337 @@
+use axum::{extract::State, Extension, Json};
+use bcrypt::{hash, verify, DEFAULT_COST};
+use chrono::{Duration, Utc};
+use jsonwebtoken::{encode, EncodingKey, Header};
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+
+use crate::{
+    auth::{middleware::Claims, totp},
+    errors::{AppError, AppResult},
+    AppState,
+};
+
+// ── Login ────────────────────────────────────────────────────────────────────
+
+#[derive(Deserialize)]
+pub struct LoginRequest {
+    pub username: String,
+    pub password: String,
+}
+
+#[derive(Serialize)]
+pub struct LoginResponse {
+    pub token: String,
+    pub requires_totp: bool,
+    pub totp_setup_required: bool,
+}
+
+pub async fn login(
+    State(state): State<AppState>,
+    Json(body): Json<LoginRequest>,
+) -> AppResult<Json<LoginResponse>> {
+    let user = sqlx::query!(
+        "SELECT id, username, password_hash, totp_secret, totp_enabled, is_admin
+         FROM users WHERE username = $1",
+        body.username
+    )
+    .fetch_optional(&state.db)
+    .await?
+    .ok_or(AppError::Unauthorized)?;
+
+    if !verify(&body.password, &user.password_hash)
+        .map_err(|e| AppError::Internal(e.into()))?
+    {
+        return Err(AppError::Unauthorized);
+    }
+
+    // Wenn TOTP noch nicht eingerichtet → Setup-Token ausgeben
+    if !user.totp_enabled {
+        let token = make_jwt(&state, user.id, &user.username, user.is_admin, false)?;
+        return Ok(Json(LoginResponse {
+            token,
+            requires_totp: false,
+            totp_setup_required: true,
+        }));
+    }
+
+    // TOTP aktiv → Partial-Token, Frontend muss Code nachliefern
+    let token = make_jwt(&state, user.id, &user.username, user.is_admin, false)?;
+    Ok(Json(LoginResponse {
+        token,
+        requires_totp: true,
+        totp_setup_required: false,
+    }))
+}
+
+// ── TOTP verifizieren ────────────────────────────────────────────────────────
+
+#[derive(Deserialize)]
+pub struct VerifyTotpRequest {
+    pub code: String,
+}
+
+#[derive(Serialize)]
+pub struct TokenResponse {
+    pub token: String,
+}
+
+pub async fn verify_totp(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Json(body): Json<VerifyTotpRequest>,
+) -> AppResult<Json<TokenResponse>> {
+    let user = sqlx::query!(
+        "SELECT totp_secret FROM users WHERE id = $1",
+        claims.sub
+    )
+    .fetch_optional(&state.db)
+    .await?
+    .ok_or(AppError::Unauthorized)?;
+
+    let secret = user.totp_secret.ok_or(AppError::BadRequest(
+        "Kein TOTP-Secret vorhanden".into(),
+    ))?;
+
+    let valid = totp::verify_code(&secret, &body.code)
+        .map_err(|e| AppError::Internal(e))?;
+
+    if !valid {
+        return Err(AppError::InvalidTotp);
+    }
+
+    let token = make_jwt(&state, claims.sub, &claims.username, claims.is_admin, true)?;
+    Ok(Json(TokenResponse { token }))
+}
+
+// ── TOTP Setup ───────────────────────────────────────────────────────────────
+
+#[derive(Serialize)]
+pub struct TotpSetupResponse {
+    pub secret: String,
+    pub uri: String,
+}
+
+pub async fn setup_totp(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+) -> AppResult<Json<TotpSetupResponse>> {
+    let secret = totp::generate_secret();
+    let ff_name = state.config.ff_name.clone();
+
+    let uri = totp::generate_qr_uri(&secret, &claims.username, &ff_name)
+        .map_err(|e| AppError::Internal(e))?;
+
+    // Secret temporär speichern (noch nicht aktiviert)
+    sqlx::query!(
+        "UPDATE users SET totp_secret = $1 WHERE id = $2",
+        secret,
+        claims.sub
+    )
+    .execute(&state.db)
+    .await?;
+
+    Ok(Json(TotpSetupResponse { secret, uri }))
+}
+
+#[derive(Deserialize)]
+pub struct ConfirmTotpRequest {
+    pub code: String,
+}
+
+pub async fn confirm_totp(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Json(body): Json<ConfirmTotpRequest>,
+) -> AppResult<Json<TokenResponse>> {
+    let user = sqlx::query!(
+        "SELECT totp_secret FROM users WHERE id = $1",
+        claims.sub
+    )
+    .fetch_optional(&state.db)
+    .await?
+    .ok_or(AppError::Unauthorized)?;
+
+    let secret = user.totp_secret.ok_or(AppError::BadRequest(
+        "Kein TOTP-Secret vorhanden. Bitte zuerst /setup-totp aufrufen.".into(),
+    ))?;
+
+    let valid = totp::verify_code(&secret, &body.code)
+        .map_err(|e| AppError::Internal(e))?;
+
+    if !valid {
+        return Err(AppError::InvalidTotp);
+    }
+
+    sqlx::query!(
+        "UPDATE users SET totp_enabled = TRUE WHERE id = $1",
+        claims.sub
+    )
+    .execute(&state.db)
+    .await?;
+
+    let token = make_jwt(&state, claims.sub, &claims.username, claims.is_admin, true)?;
+    Ok(Json(TokenResponse { token }))
+}
+
+// ── Eigenes Profil ───────────────────────────────────────────────────────────
+
+#[derive(Serialize)]
+pub struct MeResponse {
+    pub id: Uuid,
+    pub username: String,
+    pub is_admin: bool,
+    pub totp_enabled: bool,
+}
+
+pub async fn me(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+) -> AppResult<Json<MeResponse>> {
+    let user = sqlx::query!(
+        "SELECT id, username, is_admin, totp_enabled FROM users WHERE id = $1",
+        claims.sub
+    )
+    .fetch_optional(&state.db)
+    .await?
+    .ok_or(AppError::NotFound)?;
+
+    Ok(Json(MeResponse {
+        id: user.id,
+        username: user.username,
+        is_admin: user.is_admin,
+        totp_enabled: user.totp_enabled,
+    }))
+}
+
+// ── Setup (erster Admin-Account) ─────────────────────────────────────────────
+
+#[derive(Deserialize)]
+pub struct SetupRequest {
+    pub username: String,
+    pub password: String,
+    pub ff_name: String,
+}
+
+pub async fn initial_setup(
+    State(state): State<AppState>,
+    Json(body): Json<SetupRequest>,
+) -> AppResult<Json<serde_json::Value>> {
+    // Nur ausführbar wenn noch kein User existiert
+    let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM users")
+        .fetch_one(&state.db)
+        .await?;
+
+    if count > 0 {
+        return Err(AppError::Forbidden);
+    }
+
+    if body.password.len() < 8 {
+        return Err(AppError::BadRequest(
+            "Passwort muss mindestens 8 Zeichen haben".into(),
+        ));
+    }
+
+    let password_hash = hash(&body.password, DEFAULT_COST)
+        .map_err(|e| AppError::Internal(e.into()))?;
+
+    sqlx::query!(
+        "INSERT INTO users (username, password_hash, is_admin) VALUES ($1, $2, TRUE)",
+        body.username,
+        password_hash
+    )
+    .execute(&state.db)
+    .await?;
+
+    sqlx::query!(
+        "UPDATE settings SET value = $1 WHERE key = 'ff_name'",
+        body.ff_name
+    )
+    .execute(&state.db)
+    .await?;
+
+    sqlx::query!(
+        "UPDATE settings SET value = 'true' WHERE key = 'setup_complete'"
+    )
+    .execute(&state.db)
+    .await?;
+
+    Ok(Json(serde_json::json!({ "message": "Setup abgeschlossen" })))
+}
+
+// ── Passwort ändern ──────────────────────────────────────────────────────────
+
+#[derive(Deserialize)]
+pub struct ChangePasswordRequest {
+    pub current_password: String,
+    pub new_password: String,
+}
+
+pub async fn change_password(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Json(body): Json<ChangePasswordRequest>,
+) -> AppResult<Json<serde_json::Value>> {
+    let user = sqlx::query!(
+        "SELECT password_hash FROM users WHERE id = $1",
+        claims.sub
+    )
+    .fetch_optional(&state.db)
+    .await?
+    .ok_or(AppError::NotFound)?;
+
+    if !verify(&body.current_password, &user.password_hash)
+        .map_err(|e| AppError::Internal(e.into()))?
+    {
+        return Err(AppError::Unauthorized);
+    }
+
+    if body.new_password.len() < 8 {
+        return Err(AppError::BadRequest(
+            "Neues Passwort muss mindestens 8 Zeichen haben".into(),
+        ));
+    }
+
+    let new_hash = hash(&body.new_password, DEFAULT_COST)
+        .map_err(|e| AppError::Internal(e.into()))?;
+
+    sqlx::query!(
+        "UPDATE users SET password_hash = $1 WHERE id = $2",
+        new_hash,
+        claims.sub
+    )
+    .execute(&state.db)
+    .await?;
+
+    Ok(Json(serde_json::json!({ "message": "Passwort geändert" })))
+}
+
+// ── Hilfsfunktion JWT ────────────────────────────────────────────────────────
+
+fn make_jwt(
+    state: &AppState,
+    user_id: Uuid,
+    username: &str,
+    is_admin: bool,
+    totp_verified: bool,
+) -> AppResult<String> {
+    let exp = Utc::now()
+        .checked_add_signed(Duration::hours(state.config.jwt_expiry_hours))
+        .unwrap()
+        .timestamp() as usize;
+
+    let claims = Claims {
+        sub: user_id,
+        username: username.to_string(),
+        is_admin,
+        totp_verified,
+        exp,
+    };
+
+    encode(
+        &Header::default(),
+        &claims,
+        &EncodingKey::from_secret(state.config.jwt_secret.as_bytes()),
+    )
+    .map_err(|e| AppError::Internal(e.into()))
+}

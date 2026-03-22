@@ -1,0 +1,57 @@
+// ── Farben ───────────────────────────────────────────────────────────────────
+$rot:           #CC1414;
+$rot-dunkel:    #A00E0E;
+$rot-hell:      #FDECEA;
+
+$grau-dunkel:   #2C2C2C;
+$grau:          #666666;
+$grau-mittel:   #999999;
+$grau-hell:     #F5F5F5;
+$grau-rand:     #DDDDDD;
+
+$gruen:         #27AE60;
+$gruen-hell:    #E9F7EF;
+$orange:        #E67E22;
+$orange-hell:   #FEF3E2;
+$blau:          #2980B9;
+$blau-hell:     #EBF5FB;
+
+$weiss:         #FFFFFF;
+$schwarz:       #000000;
+
+// ── Typografie ───────────────────────────────────────────────────────────────
+$font-family:   'Segoe UI', Arial, sans-serif;
+$font-size-xs:  11px;
+$font-size-sm:  12px;
+$font-size-md:  14px;
+$font-size-lg:  16px;
+$font-size-xl:  20px;
+$font-size-2xl: 28px;
+
+// ── Abstände ─────────────────────────────────────────────────────────────────
+$space-xs:  4px;
+$space-sm:  8px;
+$space-md:  16px;
+$space-lg:  24px;
+$space-xl:  32px;
+$space-2xl: 48px;
+
+// ── Schatten ─────────────────────────────────────────────────────────────────
+$schatten-sm:  0 1px 4px rgba(0,0,0,0.08);
+$schatten-md:  0 2px 8px rgba(0,0,0,0.12);
+$schatten-lg:  0 4px 16px rgba(0,0,0,0.16);
+
+// ── Border-Radius ─────────────────────────────────────────────────────────────
+$radius-sm:  4px;
+$radius-md:  8px;
+$radius-lg:  12px;
+$radius-pill: 999px;
+
+// ── Layout ────────────────────────────────────────────────────────────────────
+$sidebar-width:    220px;
+$header-height:    60px;
+$content-max-width: 1200px;
+
+// ── Transitions ───────────────────────────────────────────────────────────────
+$transition-fast:  0.15s ease;
+$transition-md:    0.25s ease;
