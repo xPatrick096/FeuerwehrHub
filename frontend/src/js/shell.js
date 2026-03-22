@@ -27,13 +27,13 @@ export function renderShell(activePage) {
       <div class="body-layout">
         <nav class="sidebar">
           <div class="sidebar__nav">
+            <div class="sidebar__module">🏪 Lager</div>
             <button class="sidebar__item${activePage === 'orders' ? ' active' : ''}" data-page="orders">
               <span class="sidebar__item__icon">📋</span> Bestellübersicht
             </button>
             <button class="sidebar__item${activePage === 'new-order' ? ' active' : ''}" data-page="new-order">
               <span class="sidebar__item__icon">➕</span> Neue Bestellung
             </button>
-            <div class="sidebar__divider"></div>
             <button class="sidebar__item${activePage === 'articles' ? ' active' : ''}" data-page="articles">
               <span class="sidebar__item__icon">📦</span> Artikelstamm
             </button>
@@ -42,7 +42,6 @@ export function renderShell(activePage) {
               <span class="sidebar__item__icon">⚙️</span> Einstellungen
             </button>
             ${currentUser?.role === 'admin' || currentUser?.role === 'superuser' ? `
-            <div class="sidebar__divider"></div>
             <button class="sidebar__item${activePage === 'admin' ? ' active' : ''}" data-page="admin">
               <span class="sidebar__item__icon">🛡️</span> Admin Panel
             </button>` : ''}

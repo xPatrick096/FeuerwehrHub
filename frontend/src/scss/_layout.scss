@@ -136,6 +136,26 @@
     background: rgba(255,255,255,0.08);
     margin: $space-sm $space-md;
   }
+
+  &__module {
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+    padding: 10px $space-lg 4px;
+    color: rgba(255,255,255,0.35);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    user-select: none;
+
+    &::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: rgba(255,255,255,0.08);
+    }
+  }
 }
 
 // ── Main Content ──────────────────────────────────────────────────────────────
