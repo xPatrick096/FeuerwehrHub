@@ -184,6 +184,7 @@ struct UserProfileRow {
     role: String,
     totp_enabled: bool,
     display_name: Option<String>,
+    permissions: Vec<String>,
 }
 
 #[derive(Serialize)]
@@ -194,6 +195,7 @@ pub struct MeResponse {
     pub role: String,
     pub totp_enabled: bool,
     pub display_name: Option<String>,
+    pub permissions: Vec<String>,
 }
 
 pub async fn me(
@@ -201,7 +203,7 @@ pub async fn me(
     Extension(claims): Extension<Claims>,
 ) -> AppResult<Json<MeResponse>> {
     let user = sqlx::query_as::<_, UserProfileRow>(
-        "SELECT id, username, is_admin, role, totp_enabled, display_name FROM users WHERE id = $1"
+        "SELECT id, username, is_admin, role, totp_enabled, display_name, permissions FROM users WHERE id = $1"
     )
     .bind(claims.sub)
     .fetch_optional(&state.db)
@@ -215,6 +217,7 @@ pub async fn me(
         role: user.role,
         totp_enabled: user.totp_enabled,
         display_name: user.display_name,
+        permissions: user.permissions,
     }))
 }
 

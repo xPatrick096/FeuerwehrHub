@@ -18,13 +18,14 @@ use crate::{
 
 // ── Structs ───────────────────────────────────────────────────────────────────
 
-#[derive(Serialize)]
+#[derive(Serialize, sqlx::FromRow)]
 pub struct UserEntry {
     pub id: Uuid,
     pub username: String,
     pub role: String,
     pub is_admin: bool,
     pub totp_enabled: bool,
+    pub permissions: Vec<String>,
     pub created_at: DateTime<Utc>,
 }
 
@@ -45,6 +46,11 @@ pub struct ResetPasswordBody {
     pub new_password: String,
 }
 
+#[derive(Deserialize)]
+pub struct UpdatePermissionsBody {
+    pub permissions: Vec<String>,
+}
+
 // ── Handler: Alle User auflisten ─────────────────────────────────────────────
 
 pub async fn list_users(
@@ -55,23 +61,12 @@ pub async fn list_users(
         return Err(AppError::Forbidden);
     }
 
-    let rows = sqlx::query!(
-        "SELECT id, username, role, is_admin, totp_enabled, created_at FROM users ORDER BY created_at ASC"
+    let users = sqlx::query_as::<_, UserEntry>(
+        "SELECT id, username, role, is_admin, totp_enabled, permissions, created_at
+         FROM users ORDER BY created_at ASC"
     )
     .fetch_all(&state.db)
     .await?;
-
-    let users = rows
-        .into_iter()
-        .map(|r| UserEntry {
-            id: r.id,
-            username: r.username,
-            role: r.role,
-            is_admin: r.is_admin,
-            totp_enabled: r.totp_enabled,
-            created_at: r.created_at,
-        })
-        .collect();
 
     Ok(Json(users))
 }
@@ -114,15 +109,15 @@ pub async fn create_user(
 
     let is_admin = body.role == "admin";
 
-    let row = sqlx::query!(
+    let row = sqlx::query_as::<_, UserEntry>(
         "INSERT INTO users (username, password_hash, is_admin, role)
          VALUES ($1, $2, $3, $4)
-         RETURNING id, username, role, is_admin, totp_enabled, created_at",
-        body.username.trim(),
-        password_hash,
-        is_admin,
-        body.role,
+         RETURNING id, username, role, is_admin, totp_enabled, permissions, created_at"
     )
+    .bind(body.username.trim())
+    .bind(password_hash)
+    .bind(is_admin)
+    .bind(&body.role)
     .fetch_one(&state.db)
     .await
     .map_err(|e| {
@@ -133,14 +128,7 @@ pub async fn create_user(
         }
     })?;
 
-    Ok(Json(UserEntry {
-        id: row.id,
-        username: row.username,
-        role: row.role,
-        is_admin: row.is_admin,
-        totp_enabled: row.totp_enabled,
-        created_at: row.created_at,
-    }))
+    Ok(Json(row))
 }
 
 // ── Handler: Rolle ändern ─────────────────────────────────────────────────────
@@ -172,25 +160,18 @@ pub async fn update_role(
 
     let is_admin = body.role == "admin";
 
-    let row = sqlx::query!(
+    let row = sqlx::query_as::<_, UserEntry>(
         "UPDATE users SET role = $1, is_admin = $2 WHERE id = $3
-         RETURNING id, username, role, is_admin, totp_enabled, created_at",
-        body.role,
-        is_admin,
-        id
+         RETURNING id, username, role, is_admin, totp_enabled, permissions, created_at"
     )
+    .bind(&body.role)
+    .bind(is_admin)
+    .bind(id)
     .fetch_optional(&state.db)
     .await?
     .ok_or(AppError::NotFound)?;
 
-    Ok(Json(UserEntry {
-        id: row.id,
-        username: row.username,
-        role: row.role,
-        is_admin: row.is_admin,
-        totp_enabled: row.totp_enabled,
-        created_at: row.created_at,
-    }))
+    Ok(Json(row))
 }
 
 // ── Handler: Passwort zurücksetzen ────────────────────────────────────────────
@@ -276,6 +257,47 @@ pub async fn delete_user(
     Ok(Json(serde_json::json!({ "message": "Benutzer gelöscht" })))
 }
 
+// ── Handler: Berechtigungen setzen ───────────────────────────────────────────
+
+pub async fn update_permissions(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+    Json(body): Json<UpdatePermissionsBody>,
+) -> AppResult<Json<serde_json::Value>> {
+    if !claims.is_admin_or_above() {
+        return Err(AppError::Forbidden);
+    }
+
+    // Admins/Superuser brauchen keine expliziten Permissions
+    let target = sqlx::query_as::<_, (String,)>("SELECT role FROM users WHERE id = $1")
+        .bind(id)
+        .fetch_optional(&state.db)
+        .await?
+        .ok_or(AppError::NotFound)?;
+
+    if target.0 == "admin" || target.0 == "superuser" {
+        return Err(AppError::BadRequest(
+            "Admins und Superuser haben immer Zugriff auf alle Module".into(),
+        ));
+    }
+
+    // Nur bekannte Module erlauben
+    let known: &[&str] = &["lager"];
+    let permissions: Vec<String> = body.permissions
+        .into_iter()
+        .filter(|p| known.contains(&p.as_str()))
+        .collect();
+
+    sqlx::query("UPDATE users SET permissions = $1 WHERE id = $2")
+        .bind(&permissions)
+        .bind(id)
+        .execute(&state.db)
+        .await?;
+
+    Ok(Json(serde_json::json!({ "permissions": permissions })))
+}
+
 // ── Router ────────────────────────────────────────────────────────────────────
 
 pub fn router(state: AppState) -> Router<AppState> {
@@ -283,6 +305,7 @@ pub fn router(state: AppState) -> Router<AppState> {
         .route("/users", get(list_users).post(create_user))
         .route("/users/:id/role", put(update_role))
         .route("/users/:id/reset-password", post(reset_password))
+        .route("/users/:id/permissions", put(update_permissions))
         .route("/users/:id", delete(delete_user))
         .route_layer(middleware::from_fn_with_state(state, require_auth))
 }

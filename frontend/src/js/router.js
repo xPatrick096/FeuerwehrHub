@@ -1,8 +1,12 @@
+import { api } from './api.js';
+
 const routes = {};
+const routePermissions = {};
 let currentPage = null;
 
-export function registerRoute(hash, fn) {
+export function registerRoute(hash, fn, requiredPermission) {
   routes[hash] = fn;
+  if (requiredPermission) routePermissions[hash] = requiredPermission;
 }
 
 export function navigate(hash) {
@@ -10,7 +14,7 @@ export function navigate(hash) {
 }
 
 export function initRouter() {
-  function handle() {
+  async function handle() {
     const hash = window.location.hash || '#/login';
 
     // Auth-Guard
@@ -22,6 +26,17 @@ export function initRouter() {
 
     const handler = routes[hash] || routes['*'];
     if (handler) {
+      const requiredPerm = routePermissions[hash];
+      if (requiredPerm) {
+        const user = await api.me().catch(() => null);
+        const isAdmin = user?.role === 'admin' || user?.role === 'superuser';
+        const hasPerm = isAdmin || (user?.permissions || []).includes(requiredPerm);
+        if (!hasPerm) {
+          window.location.hash = '#/';
+          return;
+        }
+      }
+
       if (currentPage) {
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.sidebar__item').forEach(b => b.classList.remove('active'));

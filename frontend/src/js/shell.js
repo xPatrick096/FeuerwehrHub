@@ -8,6 +8,14 @@ export function setShellInfo(name, user) {
   currentUser = user;
 }
 
+function canAccess(user, module) {
+  if (!user) return false;
+  if (user.role === 'admin' || user.role === 'superuser') return true;
+  return (user.permissions || []).includes(module);
+}
+
+export { canAccess };
+
 export function renderShell(activePage) {
   const app = document.getElementById('app');
 
@@ -27,6 +35,7 @@ export function renderShell(activePage) {
       <div class="body-layout">
         <nav class="sidebar">
           <div class="sidebar__nav">
+            ${canAccess(currentUser, 'lager') ? `
             <div class="sidebar__module">🏪 Lager</div>
             <button class="sidebar__item${activePage === 'orders' ? ' active' : ''}" data-page="orders">
               <span class="sidebar__item__icon">📋</span> Bestellübersicht
@@ -37,7 +46,8 @@ export function renderShell(activePage) {
             <button class="sidebar__item${activePage === 'articles' ? ' active' : ''}" data-page="articles">
               <span class="sidebar__item__icon">📦</span> Artikelstamm
             </button>
-            <div class="sidebar__divider"></div>
+            <div class="sidebar__divider"></div>` : ''}
+
             <button class="sidebar__item${activePage === 'settings' ? ' active' : ''}" data-page="settings">
               <span class="sidebar__item__icon">⚙️</span> Einstellungen
             </button>

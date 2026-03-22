@@ -8,6 +8,10 @@ const ROLE_LABELS = {
   user:      '👤 Benutzer',
 };
 
+const MODULE_LABELS = {
+  lager: '🏪 Lager',
+};
+
 export async function renderAdmin() {
   const [settings, me] = await Promise.all([api.getSettings(), api.me()]);
   setShellInfo(settings?.ff_name, me);
@@ -297,6 +301,7 @@ async function loadUsers(me) {
           <tr>
             <th>Benutzername</th>
             <th>Rolle</th>
+            <th>Module</th>
             <th>2FA</th>
             <th>Erstellt</th>
             <th>Aktionen</th>
@@ -306,8 +311,23 @@ async function loadUsers(me) {
           ${users.map(u => {
             const isSelf = u.id === me?.id;
             const isSuperuser = u.role === 'superuser';
+            const isAdmin = u.role === 'admin';
             const canEdit = me?.role === 'superuser' && !isSuperuser;
             const canReset = (me?.role === 'superuser' || (me?.role === 'admin' && u.role === 'user'));
+            const canSetPerms = !isSuperuser && !isAdmin;
+
+            const moduleCell = (isSuperuser || isAdmin)
+              ? '<span style="font-size:11px;color:#888">alle (Rolle)</span>'
+              : Object.entries(MODULE_LABELS).map(([key, label]) => `
+                  <label style="display:inline-flex;align-items:center;gap:4px;margin-right:8px;font-size:12px;cursor:${canSetPerms ? 'pointer' : 'default'}">
+                    <input type="checkbox"
+                      class="perm-checkbox"
+                      data-user-id="${u.id}"
+                      data-perm="${key}"
+                      ${(u.permissions || []).includes(key) ? 'checked' : ''}
+                      ${!canSetPerms ? 'disabled' : ''} />
+                    ${label}
+                  </label>`).join('');
 
             return `
               <tr>
@@ -318,6 +338,7 @@ async function loadUsers(me) {
                 <td>
                   <span class="badge badge--${u.role}">${ROLE_LABELS[u.role] || u.role}</span>
                 </td>
+                <td>${moduleCell}</td>
                 <td style="text-align:center">
                   ${u.totp_enabled ? '✅' : '—'}
                 </td>
@@ -349,6 +370,23 @@ async function loadUsers(me) {
         </tbody>
       </table>
     `;
+
+    // Berechtigungs-Checkboxen: direkt bei Änderung speichern
+    wrap.querySelectorAll('.perm-checkbox').forEach(cb => {
+      cb.addEventListener('change', async () => {
+        const userId = cb.dataset.userId;
+        // Alle Checkboxen dieses Users einsammeln
+        const allCbs = wrap.querySelectorAll(`.perm-checkbox[data-user-id="${userId}"]`);
+        const perms = [...allCbs].filter(c => c.checked).map(c => c.dataset.perm);
+        try {
+          await api.updatePermissions(userId, perms);
+          toast('Berechtigungen gespeichert');
+        } catch (e) {
+          toast(e.message, 'error');
+          cb.checked = !cb.checked; // rückgängig
+        }
+      });
+    });
   } catch (e) {
     wrap.innerHTML = `<p style="color:red;font-size:13px">Fehler: ${e.message}</p>`;
   }

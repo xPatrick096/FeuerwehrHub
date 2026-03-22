@@ -10,9 +10,9 @@ import { renderAdmin } from './pages/admin.js';
 // Routen registrieren
 registerRoute('#/login',     renderLogin);
 registerRoute('#/setup',     renderSetup);
-registerRoute('#/orders',    renderOrders);
-registerRoute('#/new-order', renderNewOrder);
-registerRoute('#/articles',  renderArticles);
+registerRoute('#/orders',    renderOrders,    'lager');
+registerRoute('#/new-order', renderNewOrder,  'lager');
+registerRoute('#/articles',  renderArticles,  'lager');
 registerRoute('#/settings',  renderSettings);
 registerRoute('#/admin',     renderAdmin);
 

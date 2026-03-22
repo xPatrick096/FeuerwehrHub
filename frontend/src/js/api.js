@@ -88,7 +88,8 @@ export const api = {
   // Admin
   getUsers:       ()          => request('GET',    '/admin/users'),
   createUser:     (body)      => request('POST',   '/admin/users', body),
-  updateRole:     (id, body)  => request('PUT',    `/admin/users/${id}/role`, body),
+  updateRole:        (id, body) => request('PUT', `/admin/users/${id}/role`, body),
+  updatePermissions: (id, perms) => request('PUT', `/admin/users/${id}/permissions`, { permissions: perms }),
   resetPassword:  (id, body)  => request('POST',   `/admin/users/${id}/reset-password`, body),
   deleteUser:     (id)        => request('DELETE', `/admin/users/${id}`),
 };
