@@ -35,6 +35,7 @@ export async function renderAdmin() {
 
     <div class="tab-bar">
       <button class="tab-btn tab-btn--active" data-tab="users">Benutzer</button>
+      <button class="tab-btn" data-tab="roles">Rollen</button>
       <button class="tab-btn" data-tab="config">Konfiguration</button>
     </div>
 
@@ -47,6 +48,16 @@ export async function renderAdmin() {
         <div class="card__body" id="users-table-wrap">
           <p>Lade...</p>
         </div>
+      </div>
+    </div>
+
+    <div id="tab-roles" class="tab-panel" style="display:none">
+      <div class="card">
+        <div class="card__header" style="display:flex;justify-content:space-between;align-items:center">
+          <span>Rollen</span>
+          <button class="btn btn--primary btn--sm" id="btn-new-role">+ Rolle anlegen</button>
+        </div>
+        <div class="card__body" id="roles-table-wrap"><p>Lade...</p></div>
       </div>
     </div>
 
@@ -126,6 +137,31 @@ export async function renderAdmin() {
       </div>
     </div>
 
+    <!-- Modal: Rolle anlegen/bearbeiten -->
+    <div id="modal-role" class="modal" style="display:none">
+      <div class="modal__backdrop"></div>
+      <div class="modal__box">
+        <div class="modal__header">
+          <h3 id="modal-role-title">Rolle anlegen</h3>
+          <button class="modal__close" id="btn-close-role-modal">✕</button>
+        </div>
+        <div class="modal__body">
+          <div class="form-group">
+            <label>Rollenname</label>
+            <input type="text" id="role-name" placeholder="z.B. Lagerverwalter" autocomplete="off" />
+          </div>
+          <div class="form-group">
+            <label>Module</label>
+            <div id="role-perm-checks" style="display:flex;flex-direction:column;gap:8px;margin-top:4px"></div>
+          </div>
+        </div>
+        <div class="modal__footer">
+          <button class="btn btn--primary" id="btn-submit-role">Speichern</button>
+          <button class="btn btn--outline" id="btn-cancel-role">Abbrechen</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Modal: PW Reset -->
     <div id="modal-reset-pw" class="modal" style="display:none">
       <div class="modal__backdrop"></div>
@@ -196,8 +232,12 @@ export async function renderAdmin() {
     } catch (e) { toast(e.message, 'error'); }
   });
 
-  // Benutzer laden
-  await loadUsers(me);
+  // Benutzer + Rollen laden
+  const roles = await api.getRoles().catch(() => []);
+  await loadUsers(me, roles);
+
+  // Rollen-Tab
+  await loadRoles(me);
 
   // Modal: Neuer Benutzer
   let resetTarget = null;
@@ -227,7 +267,8 @@ export async function renderAdmin() {
       await api.createUser({ username, password, role });
       toast(`Benutzer "${username}" angelegt`);
       closeNewUser();
-      await loadUsers(me);
+      const roles = await api.getRoles().catch(() => []);
+      await loadUsers(me, roles);
     } catch (e) { toast(e.message, 'error'); }
   });
 
@@ -267,8 +308,9 @@ export async function renderAdmin() {
       const newRole = currentRole === 'admin' ? 'user' : 'admin';
       try {
         await api.updateRole(id, { role: newRole });
-        toast(`Rolle auf "${ROLE_LABELS[newRole]}" geändert`);
-        await loadUsers(me);
+        toast(`Systemrolle auf "${ROLE_LABELS[newRole]}" geändert`);
+        const roles = await api.getRoles().catch(() => []);
+        await loadUsers(me, roles);
       } catch (e) { toast(e.message, 'error'); }
     }
 
@@ -277,13 +319,141 @@ export async function renderAdmin() {
       try {
         await api.deleteUser(id);
         toast(`Benutzer "${username}" gelöscht`);
-        await loadUsers(me);
+        const roles = await api.getRoles().catch(() => []);
+        await loadUsers(me, roles);
       } catch (e) { toast(e.message, 'error'); }
+    }
+  });
+
+  // Rolle-Dropdown Änderungen (delegiert)
+  document.getElementById('users-table-wrap').addEventListener('change', async (e) => {
+    if (!e.target.matches('.user-role-select')) return;
+    const userId = e.target.dataset.userId;
+    const roleId = e.target.value || null;
+    try {
+      await api.assignRole(userId, roleId);
+      toast('Rolle zugewiesen');
+    } catch (err) {
+      toast(err.message, 'error');
     }
   });
 }
 
-async function loadUsers(me) {
+async function loadRoles(me) {
+  const wrap = document.getElementById('roles-table-wrap');
+  if (!wrap) return;
+
+  let editTarget = null;
+
+  const render = async () => {
+    const roles = await api.getRoles().catch(() => []);
+
+    if (!roles.length) {
+      wrap.innerHTML = '<p style="color:#666;font-size:13px">Noch keine Rollen angelegt.</p>';
+    } else {
+      wrap.innerHTML = `
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Rollenname</th>
+              <th>Module</th>
+              <th>Aktionen</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${roles.map(r => `
+              <tr>
+                <td><strong>${esc(r.name)}</strong></td>
+                <td>${r.permissions.length ? r.permissions.map(p => MODULE_LABELS[p] || p).join(', ') : '<span style="color:#aaa">keine</span>'}</td>
+                <td>
+                  <div class="btn-group">
+                    <button class="btn btn--outline btn--sm" data-action="edit-role"
+                      data-id="${r.id}" data-name="${esc(r.name)}"
+                      data-perms="${esc(JSON.stringify(r.permissions))}">Bearbeiten</button>
+                    <button class="btn btn--danger btn--sm" data-action="delete-role"
+                      data-id="${r.id}" data-name="${esc(r.name)}">Löschen</button>
+                  </div>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    wrap.querySelectorAll('[data-action="edit-role"]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        editTarget = btn.dataset.id;
+        const perms = JSON.parse(btn.dataset.perms || '[]');
+        document.getElementById('modal-role-title').textContent = 'Rolle bearbeiten';
+        document.getElementById('role-name').value = btn.dataset.name;
+        buildPermCheckboxes(perms);
+        document.getElementById('modal-role').style.display = 'flex';
+      });
+    });
+
+    wrap.querySelectorAll('[data-action="delete-role"]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm(`Rolle "${btn.dataset.name}" wirklich löschen?`)) return;
+        try {
+          await api.deleteRole(btn.dataset.id);
+          toast('Rolle gelöscht');
+          render();
+        } catch (e) { toast(e.message, 'error'); }
+      });
+    });
+  };
+
+  await render();
+
+  const buildPermCheckboxes = (selected = []) => {
+    document.getElementById('role-perm-checks').innerHTML =
+      Object.entries(MODULE_LABELS).map(([key, label]) => `
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" value="${key}" ${selected.includes(key) ? 'checked' : ''} />
+          ${label}
+        </label>
+      `).join('');
+  };
+
+  const closeModal = () => {
+    editTarget = null;
+    document.getElementById('modal-role').style.display = 'none';
+    document.getElementById('role-name').value = '';
+  };
+
+  document.getElementById('btn-new-role').addEventListener('click', () => {
+    editTarget = null;
+    document.getElementById('modal-role-title').textContent = 'Rolle anlegen';
+    document.getElementById('role-name').value = '';
+    buildPermCheckboxes();
+    document.getElementById('modal-role').style.display = 'flex';
+  });
+
+  document.getElementById('btn-close-role-modal').addEventListener('click', closeModal);
+  document.getElementById('btn-cancel-role').addEventListener('click', closeModal);
+
+  document.getElementById('btn-submit-role').addEventListener('click', async () => {
+    const name = document.getElementById('role-name').value.trim();
+    if (!name) { toast('Rollenname eingeben', 'error'); return; }
+    const permissions = [...document.querySelectorAll('#role-perm-checks input:checked')]
+      .map(cb => cb.value);
+
+    try {
+      if (editTarget) {
+        await api.updateRole(editTarget, { name, permissions });
+        toast('Rolle gespeichert');
+      } else {
+        await api.createRole({ name, permissions });
+        toast(`Rolle "${name}" angelegt`);
+      }
+      closeModal();
+      render();
+    } catch (e) { toast(e.message, 'error'); }
+  });
+}
+
+async function loadUsers(me, roles = []) {
   const wrap = document.getElementById('users-table-wrap');
   if (!wrap) return;
 
@@ -295,13 +465,17 @@ async function loadUsers(me) {
       return;
     }
 
+    const roleOptions = roles.map(r =>
+      `<option value="${r.id}">${esc(r.name)}</option>`
+    ).join('');
+
     wrap.innerHTML = `
       <table class="table">
         <thead>
           <tr>
             <th>Benutzername</th>
-            <th>Rolle</th>
-            <th>Module</th>
+            <th>Systemrolle</th>
+            <th>Zugewiesene Rolle</th>
             <th>2FA</th>
             <th>Erstellt</th>
             <th>Aktionen</th>
@@ -311,23 +485,18 @@ async function loadUsers(me) {
           ${users.map(u => {
             const isSelf = u.id === me?.id;
             const isSuperuser = u.role === 'superuser';
-            const isAdmin = u.role === 'admin';
             const canEdit = me?.role === 'superuser' && !isSuperuser;
             const canReset = (me?.role === 'superuser' || (me?.role === 'admin' && u.role === 'user'));
-            const canSetPerms = !isSuperuser && !isAdmin;
+            const isPrivileged = u.role === 'admin' || u.role === 'superuser';
 
-            const moduleCell = (isSuperuser || isAdmin)
-              ? '<span style="font-size:11px;color:#888">alle (Rolle)</span>'
-              : Object.entries(MODULE_LABELS).map(([key, label]) => `
-                  <label style="display:inline-flex;align-items:center;gap:4px;margin-right:8px;font-size:12px;cursor:${canSetPerms ? 'pointer' : 'default'}">
-                    <input type="checkbox"
-                      class="perm-checkbox"
-                      data-user-id="${u.id}"
-                      data-perm="${key}"
-                      ${(u.permissions || []).includes(key) ? 'checked' : ''}
-                      ${!canSetPerms ? 'disabled' : ''} />
-                    ${label}
-                  </label>`).join('');
+            const roleDropdown = isPrivileged
+              ? `<span style="font-size:11px;color:#888">alle (Systemrolle)</span>`
+              : `<select class="user-role-select" data-user-id="${u.id}" style="font-size:13px">
+                   <option value="">— keine Rolle —</option>
+                   ${roles.map(r =>
+                     `<option value="${r.id}" ${u.role_id === r.id ? 'selected' : ''}>${esc(r.name)}</option>`
+                   ).join('')}
+                 </select>`;
 
             return `
               <tr>
@@ -338,10 +507,8 @@ async function loadUsers(me) {
                 <td>
                   <span class="badge badge--${u.role}">${ROLE_LABELS[u.role] || u.role}</span>
                 </td>
-                <td>${moduleCell}</td>
-                <td style="text-align:center">
-                  ${u.totp_enabled ? '✅' : '—'}
-                </td>
+                <td>${roleDropdown}</td>
+                <td style="text-align:center">${u.totp_enabled ? '✅' : '—'}</td>
                 <td style="font-size:12px;color:#666">
                   ${new Date(u.created_at).toLocaleDateString('de-DE')}
                 </td>
@@ -370,23 +537,6 @@ async function loadUsers(me) {
         </tbody>
       </table>
     `;
-
-    // Berechtigungs-Checkboxen: direkt bei Änderung speichern
-    wrap.querySelectorAll('.perm-checkbox').forEach(cb => {
-      cb.addEventListener('change', async () => {
-        const userId = cb.dataset.userId;
-        // Alle Checkboxen dieses Users einsammeln
-        const allCbs = wrap.querySelectorAll(`.perm-checkbox[data-user-id="${userId}"]`);
-        const perms = [...allCbs].filter(c => c.checked).map(c => c.dataset.perm);
-        try {
-          await api.updatePermissions(userId, perms);
-          toast('Berechtigungen gespeichert');
-        } catch (e) {
-          toast(e.message, 'error');
-          cb.checked = !cb.checked; // rückgängig
-        }
-      });
-    });
   } catch (e) {
     wrap.innerHTML = `<p style="color:red;font-size:13px">Fehler: ${e.message}</p>`;
   }

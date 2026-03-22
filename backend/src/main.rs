@@ -50,6 +50,7 @@ async fn main() -> anyhow::Result<()> {
     let app = Router::new()
         .nest("/api/auth", routes::auth::router(state.clone()))
         .nest("/api/admin", routes::admin::router(state.clone()))
+        .nest("/api/roles", routes::roles::router(state.clone()))
         .nest("/api/orders", routes::orders::router(state.clone()))
         .nest("/api/articles", routes::articles::router(state.clone()))
         .nest("/api/settings", routes::settings::router(state.clone()))

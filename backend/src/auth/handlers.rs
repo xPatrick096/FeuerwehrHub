@@ -185,6 +185,9 @@ struct UserProfileRow {
     totp_enabled: bool,
     display_name: Option<String>,
     permissions: Vec<String>,
+    role_permissions: Option<Vec<String>>,
+    assigned_role_id: Option<Uuid>,
+    assigned_role_name: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -196,6 +199,8 @@ pub struct MeResponse {
     pub totp_enabled: bool,
     pub display_name: Option<String>,
     pub permissions: Vec<String>,
+    pub assigned_role_id: Option<Uuid>,
+    pub assigned_role_name: Option<String>,
 }
 
 pub async fn me(
@@ -203,12 +208,25 @@ pub async fn me(
     Extension(claims): Extension<Claims>,
 ) -> AppResult<Json<MeResponse>> {
     let user = sqlx::query_as::<_, UserProfileRow>(
-        "SELECT id, username, is_admin, role, totp_enabled, display_name, permissions FROM users WHERE id = $1"
+        "SELECT u.id, u.username, u.is_admin, u.role, u.totp_enabled, u.display_name,
+                u.permissions, r.permissions as role_permissions,
+                u.role_id as assigned_role_id, r.name as assigned_role_name
+         FROM users u
+         LEFT JOIN roles r ON r.id = u.role_id
+         WHERE u.id = $1"
     )
     .bind(claims.sub)
     .fetch_optional(&state.db)
     .await?
     .ok_or(AppError::NotFound)?;
+
+    // Effektive Permissions = Rolle + individuelle (dedupliziert)
+    let mut perms = user.role_permissions.unwrap_or_default();
+    for p in &user.permissions {
+        if !perms.contains(p) {
+            perms.push(p.clone());
+        }
+    }
 
     Ok(Json(MeResponse {
         id: user.id,
@@ -217,7 +235,9 @@ pub async fn me(
         role: user.role,
         totp_enabled: user.totp_enabled,
         display_name: user.display_name,
-        permissions: user.permissions,
+        permissions: perms,
+        assigned_role_id: user.assigned_role_id,
+        assigned_role_name: user.assigned_role_name,
     }))
 }
 

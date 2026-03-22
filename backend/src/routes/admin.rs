@@ -26,6 +26,8 @@ pub struct UserEntry {
     pub is_admin: bool,
     pub totp_enabled: bool,
     pub permissions: Vec<String>,
+    pub role_id: Option<Uuid>,
+    pub assigned_role_name: Option<String>,
     pub created_at: DateTime<Utc>,
 }
 
@@ -51,6 +53,11 @@ pub struct UpdatePermissionsBody {
     pub permissions: Vec<String>,
 }
 
+#[derive(Deserialize)]
+pub struct AssignRoleBody {
+    pub role_id: Option<Uuid>,
+}
+
 // ── Handler: Alle User auflisten ─────────────────────────────────────────────
 
 pub async fn list_users(
@@ -62,8 +69,11 @@ pub async fn list_users(
     }
 
     let users = sqlx::query_as::<_, UserEntry>(
-        "SELECT id, username, role, is_admin, totp_enabled, permissions, created_at
-         FROM users ORDER BY created_at ASC"
+        "SELECT u.id, u.username, u.role, u.is_admin, u.totp_enabled,
+                u.permissions, u.role_id, r.name as assigned_role_name, u.created_at
+         FROM users u
+         LEFT JOIN roles r ON r.id = u.role_id
+         ORDER BY u.created_at ASC"
     )
     .fetch_all(&state.db)
     .await?;
@@ -109,10 +119,9 @@ pub async fn create_user(
 
     let is_admin = body.role == "admin";
 
-    let row = sqlx::query_as::<_, UserEntry>(
+    let new_id: Uuid = sqlx::query_scalar(
         "INSERT INTO users (username, password_hash, is_admin, role)
-         VALUES ($1, $2, $3, $4)
-         RETURNING id, username, role, is_admin, totp_enabled, permissions, created_at"
+         VALUES ($1, $2, $3, $4) RETURNING id"
     )
     .bind(body.username.trim())
     .bind(password_hash)
@@ -127,6 +136,15 @@ pub async fn create_user(
             AppError::Database(e)
         }
     })?;
+
+    let row = sqlx::query_as::<_, UserEntry>(
+        "SELECT u.id, u.username, u.role, u.is_admin, u.totp_enabled,
+                u.permissions, u.role_id, r.name as assigned_role_name, u.created_at
+         FROM users u LEFT JOIN roles r ON r.id = u.role_id WHERE u.id = $1"
+    )
+    .bind(new_id)
+    .fetch_one(&state.db)
+    .await?;
 
     Ok(Json(row))
 }
@@ -160,9 +178,8 @@ pub async fn update_role(
 
     let is_admin = body.role == "admin";
 
-    let row = sqlx::query_as::<_, UserEntry>(
-        "UPDATE users SET role = $1, is_admin = $2 WHERE id = $3
-         RETURNING id, username, role, is_admin, totp_enabled, permissions, created_at"
+    let updated = sqlx::query_scalar::<_, Uuid>(
+        "UPDATE users SET role = $1, is_admin = $2 WHERE id = $3 RETURNING id"
     )
     .bind(&body.role)
     .bind(is_admin)
@@ -170,6 +187,15 @@ pub async fn update_role(
     .fetch_optional(&state.db)
     .await?
     .ok_or(AppError::NotFound)?;
+
+    let row = sqlx::query_as::<_, UserEntry>(
+        "SELECT u.id, u.username, u.role, u.is_admin, u.totp_enabled,
+                u.permissions, u.role_id, r.name as assigned_role_name, u.created_at
+         FROM users u LEFT JOIN roles r ON r.id = u.role_id WHERE u.id = $1"
+    )
+    .bind(updated)
+    .fetch_one(&state.db)
+    .await?;
 
     Ok(Json(row))
 }
@@ -257,6 +283,31 @@ pub async fn delete_user(
     Ok(Json(serde_json::json!({ "message": "Benutzer gelöscht" })))
 }
 
+// ── Handler: Rolle zuweisen ───────────────────────────────────────────────────
+
+pub async fn assign_role(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+    Json(body): Json<AssignRoleBody>,
+) -> AppResult<Json<serde_json::Value>> {
+    if !claims.is_admin_or_above() {
+        return Err(AppError::Forbidden);
+    }
+
+    let result = sqlx::query("UPDATE users SET role_id = $1 WHERE id = $2")
+        .bind(body.role_id)
+        .bind(id)
+        .execute(&state.db)
+        .await?;
+
+    if result.rows_affected() == 0 {
+        return Err(AppError::NotFound);
+    }
+
+    Ok(Json(serde_json::json!({ "message": "Rolle zugewiesen" })))
+}
+
 // ── Handler: Berechtigungen setzen ───────────────────────────────────────────
 
 pub async fn update_permissions(
@@ -306,6 +357,7 @@ pub fn router(state: AppState) -> Router<AppState> {
         .route("/users/:id/role", put(update_role))
         .route("/users/:id/reset-password", post(reset_password))
         .route("/users/:id/permissions", put(update_permissions))
+        .route("/users/:id/assign-role", put(assign_role))
         .route("/users/:id", delete(delete_user))
         .route_layer(middleware::from_fn_with_state(state, require_auth))
 }
