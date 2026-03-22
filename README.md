@@ -8,11 +8,11 @@
 
 | Modul | Beschreibung | Status |
 |---|---|---|
-| FF-Druckerverwaltung | Beschaffung & Verwaltung von Druckern und Verbrauchsmaterialien | 🚧 In Entwicklung |
+| FeuerwehrHub | Beschaffung & Verwaltung von Druckern und Verbrauchsmaterialien | 🚧 In Entwicklung |
 
 ---
 
-## FF-Druckerverwaltung
+## FeuerwehrHub
 
 Webbasierte Anwendung zur Verwaltung von Druckern, Bestellungen und Beschaffungsaufträgen für Freiwillige Feuerwehren.
 
@@ -62,7 +62,7 @@ Erstelle eine `.env`-Datei im Projektroot (Vorlage: `.env.example`):
 # Datenbank
 DB_HOST=your-db-host
 DB_PORT=5432
-DB_NAME=feuerwehr_drucker
+DB_NAME=feuerwehrhub
 DB_USER=your-db-user
 DB_PASSWORD=your-db-password
 
