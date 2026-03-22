@@ -51,25 +51,12 @@ export async function renderOrders() {
 
     <!-- Modal: Lieferung -->
     <div class="modal-overlay" id="delivery-modal">
-      <div class="modal">
+      <div class="modal" style="max-width:640px">
         <div class="modal__header">
           Lieferung eintragen
           <button class="modal__close" id="close-delivery-modal">✕</button>
         </div>
-        <div class="modal__body">
-          <div class="form-group">
-            <label>Gelieferte Menge</label>
-            <input type="number" id="delivery-qty" min="0.01" step="0.01" placeholder="0" />
-          </div>
-          <div class="form-group">
-            <label>Lieferdatum</label>
-            <input type="date" id="delivery-date" />
-          </div>
-          <div class="form-group">
-            <label>Anmerkung</label>
-            <textarea id="delivery-notes" placeholder="Optional..."></textarea>
-          </div>
-        </div>
+        <div class="modal__body" id="delivery-modal-body"></div>
         <div class="modal__footer">
           <button class="btn btn--outline" id="close-delivery-modal2">Abbrechen</button>
           <button class="btn btn--success" id="btn-save-delivery">Lieferung speichern</button>
@@ -205,8 +192,12 @@ export async function renderOrders() {
 
     if (action === 'delivery') {
       currentOrderId = id;
-      document.getElementById('delivery-date').value = today();
-      document.getElementById('delivery-modal').classList.add('active');
+      try {
+        const order = await api.getOrder(id);
+        showDeliveryModal(order);
+      } catch (e) {
+        toast('Fehler beim Laden: ' + e.message, 'error');
+      }
     }
 
     if (action === 'pdf') {
@@ -288,6 +279,100 @@ export async function renderOrders() {
     document.getElementById('detail-modal').classList.add('active');
   }
 
+  function showDeliveryModal(order) {
+    const positions = (order.positions || []).filter(p => p.gegenstand);
+
+    let posRows = '';
+    if (positions.length > 0) {
+      posRows = positions.map((p, i) => `
+        <tr>
+          <td style="padding:6px 8px 6px 0">
+            <strong>${esc(p.gegenstand)}</strong>
+            ${p.menge || p.einheit ? `<br><small style="color:#888">${esc(p.menge || '')} ${esc(p.einheit || '')}</small>` : ''}
+          </td>
+          <td style="padding:6px 8px">
+            <select class="delivery-status-select" data-index="${i}" style="width:130px">
+              <option value="">— nicht eingetragen —</option>
+              <option value="vollstaendig">Vollständig erhalten</option>
+              <option value="teilweise">Teilweise erhalten</option>
+              <option value="ausstehend">Ausstehend</option>
+            </select>
+          </td>
+          <td style="padding:6px 0">
+            <input type="number" class="delivery-qty-input" data-index="${i}"
+              data-position="${esc(p.gegenstand)}"
+              data-ordered="${p.menge || ''}"
+              min="0.01" step="0.01" placeholder="Menge"
+              style="width:90px;display:none" />
+          </td>
+        </tr>
+      `).join('');
+    } else {
+      // Fallback: kein Positions-Array (alte Bestellung)
+      posRows = `
+        <tr>
+          <td style="padding:6px 8px 6px 0"><strong>${esc(order.article_name)}</strong></td>
+          <td style="padding:6px 8px">
+            <select class="delivery-status-select" data-index="0" style="width:130px">
+              <option value="">— nicht eingetragen —</option>
+              <option value="vollstaendig">Vollständig erhalten</option>
+              <option value="teilweise">Teilweise erhalten</option>
+              <option value="ausstehend">Ausstehend</option>
+            </select>
+          </td>
+          <td style="padding:6px 0">
+            <input type="number" class="delivery-qty-input" data-index="0"
+              data-position="${esc(order.article_name)}"
+              min="0.01" step="0.01" placeholder="Menge"
+              style="width:90px;display:none" />
+          </td>
+        </tr>
+      `;
+    }
+
+    document.getElementById('delivery-modal-body').innerHTML = `
+      <div class="form-group" style="margin-bottom:16px">
+        <label>Lieferdatum</label>
+        <input type="date" id="delivery-date" value="${today()}" style="max-width:180px" />
+      </div>
+      <table style="width:100%;margin-bottom:16px">
+        <thead>
+          <tr>
+            <th style="padding:4px 8px 4px 0;color:#888;font-weight:600;font-size:0.85em">Position</th>
+            <th style="padding:4px 8px;color:#888;font-weight:600;font-size:0.85em">Status</th>
+            <th style="padding:4px 0;color:#888;font-weight:600;font-size:0.85em">Menge erhalten</th>
+          </tr>
+        </thead>
+        <tbody>${posRows}</tbody>
+      </table>
+      <div class="form-group">
+        <label>Anmerkung (optional)</label>
+        <textarea id="delivery-notes" placeholder="z.B. Lieferschein-Nr., Hinweise..."></textarea>
+      </div>
+    `;
+
+    // Dropdown → Mengenfeld ein-/ausblenden
+    document.querySelectorAll('.delivery-status-select').forEach(sel => {
+      sel.addEventListener('change', () => {
+        const idx = sel.dataset.index;
+        const qtyInput = document.querySelector(`.delivery-qty-input[data-index="${idx}"]`);
+        if (sel.value === 'teilweise') {
+          qtyInput.style.display = 'inline-block';
+          qtyInput.focus();
+        } else if (sel.value === 'vollstaendig') {
+          qtyInput.style.display = 'inline-block';
+          const ordered = parseFloat(qtyInput.dataset.ordered);
+          if (ordered > 0) qtyInput.value = ordered;
+        } else {
+          qtyInput.style.display = 'none';
+          qtyInput.value = '';
+        }
+      });
+    });
+
+    document.getElementById('delivery-modal').classList.add('active');
+  }
+
   document.getElementById('close-detail-modal').addEventListener('click', () => {
     document.getElementById('detail-modal').classList.remove('active');
   });
@@ -303,18 +388,40 @@ export async function renderOrders() {
   }
 
   document.getElementById('btn-save-delivery').addEventListener('click', async () => {
-    const qty = parseFloat(document.getElementById('delivery-qty').value);
     const date = document.getElementById('delivery-date').value;
     const notes = document.getElementById('delivery-notes').value;
 
-    if (!qty || qty <= 0) { toast('Menge eingeben', 'error'); return; }
+    const statusSelects = document.querySelectorAll('.delivery-status-select');
+    const entries = [];
+
+    for (const sel of statusSelects) {
+      if (!sel.value || sel.value === 'ausstehend') continue;
+      const idx = sel.dataset.index;
+      const qtyInput = document.querySelector(`.delivery-qty-input[data-index="${idx}"]`);
+      const qty = parseFloat(qtyInput?.value);
+      const positionName = qtyInput?.dataset.position || '';
+
+      if (!qty || qty <= 0) {
+        toast(`Menge für "${positionName}" eingeben`, 'error');
+        return;
+      }
+      entries.push({ qty, positionName });
+    }
+
+    if (entries.length === 0) {
+      toast('Mindestens eine Position als erhalten markieren', 'error');
+      return;
+    }
 
     try {
-      await api.addDelivery(currentOrderId, {
-        quantity_delivered: qty,
-        delivery_date: date || undefined,
-        notes: notes || undefined,
-      });
+      for (const entry of entries) {
+        await api.addDelivery(currentOrderId, {
+          quantity_delivered: entry.qty,
+          delivery_date: date || undefined,
+          notes: notes || undefined,
+          position_name: entry.positionName || undefined,
+        });
+      }
       toast('Lieferung eingetragen');
       closeDeliveryModal();
       load();

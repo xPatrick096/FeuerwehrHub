@@ -64,13 +64,14 @@ pub struct OrderWithDeliveries {
     pub deliveries: Vec<Delivery>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, FromRow)]
 pub struct Delivery {
     pub id:                 Uuid,
     pub order_id:           Uuid,
     pub quantity_delivered: f64,
     pub delivery_date:      NaiveDate,
     pub notes:              Option<String>,
+    pub position_name:      Option<String>,
     pub received_by_name:   Option<String>,
     pub created_at:         DateTime<Utc>,
 }
@@ -161,6 +162,7 @@ pub struct DeliveryBody {
     pub quantity_delivered: f64,
     pub delivery_date:      Option<NaiveDate>,
     pub notes:              Option<String>,
+    pub position_name:      Option<String>,
 }
 
 // ── Hilfsfunktionen ───────────────────────────────────────────────────────────
@@ -235,28 +237,16 @@ pub async fn get_order(
         .await?
         .ok_or(AppError::NotFound)?;
 
-    let deliveries = sqlx::query!(
-        r#"SELECT id, order_id, quantity_delivered::float8 as "quantity_delivered!",
-                  delivery_date, notes, received_by_name, created_at
-           FROM deliveries WHERE order_id = $1 ORDER BY delivery_date DESC"#,
-        id
+    let deliveries = sqlx::query_as::<_, Delivery>(
+        "SELECT id, order_id, quantity_delivered::float8 as quantity_delivered,
+                delivery_date, notes, position_name, received_by_name, created_at
+         FROM deliveries WHERE order_id = $1 ORDER BY delivery_date DESC, created_at DESC"
     )
+    .bind(id)
     .fetch_all(&state.db)
     .await?;
 
     let order = Order::from(row);
-    let deliveries = deliveries
-        .into_iter()
-        .map(|d| Delivery {
-            id:                 d.id,
-            order_id:           d.order_id,
-            quantity_delivered: d.quantity_delivered,
-            delivery_date:      d.delivery_date,
-            notes:              d.notes,
-            received_by_name:   d.received_by_name,
-            created_at:         d.created_at,
-        })
-        .collect();
 
     Ok(Json(OrderWithDeliveries { order, deliveries }))
 }
@@ -375,37 +365,38 @@ pub async fn add_delivery(
         return Err(AppError::BadRequest("Liefermenge muss größer als 0 sein".into()));
     }
 
-    let order = sqlx::query!(
-        r#"SELECT quantity::float8 as "quantity!" FROM orders WHERE id = $1"#,
-        id
+    let order = sqlx::query_as::<_, (f64,)>(
+        "SELECT quantity::float8 FROM orders WHERE id = $1"
     )
+    .bind(id)
     .fetch_optional(&state.db)
     .await?
     .ok_or(AppError::NotFound)?;
 
     let delivery_date = body.delivery_date.unwrap_or_else(|| chrono::Local::now().date_naive());
 
-    sqlx::query!(
-        "INSERT INTO deliveries (order_id, quantity_delivered, delivery_date, notes, received_by_id, received_by_name)
-         VALUES ($1, $2, $3, $4, $5, $6)",
-        id,
-        body.quantity_delivered,
-        delivery_date,
-        body.notes,
-        claims.sub,
-        claims.username
+    sqlx::query(
+        "INSERT INTO deliveries (order_id, quantity_delivered, delivery_date, notes, position_name, received_by_id, received_by_name)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)"
     )
+    .bind(id)
+    .bind(body.quantity_delivered)
+    .bind(delivery_date)
+    .bind(body.notes)
+    .bind(body.position_name)
+    .bind(claims.sub)
+    .bind(&claims.username)
     .execute(&state.db)
     .await?;
 
-    let total_delivered: f64 = sqlx::query_scalar!(
-        r#"SELECT COALESCE(SUM(quantity_delivered), 0)::float8 as "total!" FROM deliveries WHERE order_id = $1"#,
-        id
+    let total_delivered: f64 = sqlx::query_scalar(
+        "SELECT COALESCE(SUM(quantity_delivered), 0)::float8 FROM deliveries WHERE order_id = $1"
     )
+    .bind(id)
     .fetch_one(&state.db)
     .await?;
 
-    let new_status = if total_delivered >= order.quantity {
+    let new_status = if total_delivered >= order.0 {
         "vollstaendig"
     } else {
         "teillieferung"
