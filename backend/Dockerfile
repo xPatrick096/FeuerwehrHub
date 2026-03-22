@@ -2,9 +2,7 @@ FROM rust:latest AS builder
 
 WORKDIR /app
 
-# DATABASE_URL für sqlx compile-time checks
-ARG DATABASE_URL
-ENV DATABASE_URL=$DATABASE_URL
+ENV SQLX_OFFLINE=true
 
 # Abhängigkeiten cachen
 COPY Cargo.toml ./

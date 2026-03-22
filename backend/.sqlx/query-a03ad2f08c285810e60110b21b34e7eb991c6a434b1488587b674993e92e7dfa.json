@@ -1,0 +1,58 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, order_id, quantity_delivered::float8 as \"quantity_delivered!\",\n                  delivery_date, notes, received_by_name, created_at\n           FROM deliveries WHERE order_id = $1 ORDER BY delivery_date DESC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "order_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "quantity_delivered!",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 3,
+        "name": "delivery_date",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 4,
+        "name": "notes",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "received_by_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "a03ad2f08c285810e60110b21b34e7eb991c6a434b1488587b674993e92e7dfa"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE settings SET value = 'true' WHERE key = 'setup_complete'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "a47808ccf331893e3c0f39610f2e064bd5583276cceb205838b98914ef193bba"
+}

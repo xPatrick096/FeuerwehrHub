@@ -1,0 +1,38 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n            COUNT(*) FILTER (WHERE status = 'offen') as \"offen!\",\n            COUNT(*) FILTER (WHERE status = 'teillieferung') as \"teillieferung!\",\n            COUNT(*) FILTER (WHERE status = 'vollstaendig') as \"vollstaendig!\",\n            COUNT(*) as \"gesamt!\"\n           FROM orders",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "offen!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "teillieferung!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "vollstaendig!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "gesamt!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "100f265cc5bc9511ef46c900ddc76586961e466c42182732f056037848a6ba46"
+}

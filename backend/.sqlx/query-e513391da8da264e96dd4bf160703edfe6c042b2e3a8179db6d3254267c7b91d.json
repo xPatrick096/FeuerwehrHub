@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO deliveries (order_id, quantity_delivered, delivery_date, notes, received_by_id, received_by_name)\n         VALUES ($1, $2, $3, $4, $5, $6)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Float8",
+        "Date",
+        "Text",
+        "Uuid",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e513391da8da264e96dd4bf160703edfe6c042b2e3a8179db6d3254267c7b91d"
+}

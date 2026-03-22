@@ -1,0 +1,143 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE orders SET\n               article_id=$1, article_name=$2, quantity=$3, unit=$4,\n               supplier=$5, order_date=$6, notes=$7,\n               telefon=$8, lieferanschrift=$9, begruendung=$10,\n               haendler_1=$11, haendler_2=$12, haendler_3=$13\n           WHERE id = $14\n           RETURNING id, article_id, article_name, quantity::float8 as \"quantity!\",\n                     unit, status::text as \"status!\", supplier, order_date,\n                     notes, ordered_by_id, ordered_by_name,\n                     telefon, lieferanschrift, begruendung,\n                     haendler_1, haendler_2, haendler_3,\n                     created_at, updated_at",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "article_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "article_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "quantity!",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 4,
+        "name": "unit",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "status!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "supplier",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "order_date",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 8,
+        "name": "notes",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "ordered_by_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 10,
+        "name": "ordered_by_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 11,
+        "name": "telefon",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 12,
+        "name": "lieferanschrift",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 13,
+        "name": "begruendung",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 14,
+        "name": "haendler_1",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 15,
+        "name": "haendler_2",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 16,
+        "name": "haendler_3",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 17,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 18,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Float8",
+        "Varchar",
+        "Varchar",
+        "Date",
+        "Text",
+        "Varchar",
+        "Text",
+        "Text",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      false,
+      false,
+      null,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "4c54e2cd47f565951005b5ab6093d83ebf5ac63b5bb308a7f089d1a4c87cc392"
+}

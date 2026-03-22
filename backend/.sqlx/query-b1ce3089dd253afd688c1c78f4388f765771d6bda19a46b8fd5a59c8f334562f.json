@@ -1,0 +1,54 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE users SET role = $1, is_admin = $2 WHERE id = $3\n         RETURNING id, username, role, is_admin, totp_enabled, created_at",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "username",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "role",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "is_admin",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 4,
+        "name": "totp_enabled",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 5,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Bool",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "b1ce3089dd253afd688c1c78f4388f765771d6bda19a46b8fd5a59c8f334562f"
+}

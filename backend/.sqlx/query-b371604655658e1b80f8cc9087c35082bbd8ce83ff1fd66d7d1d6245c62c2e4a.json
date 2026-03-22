@@ -1,0 +1,131 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, article_id, article_name, quantity::float8 as \"quantity!\",\n                  unit, status::text as \"status!\", supplier, order_date,\n                  notes, ordered_by_id, ordered_by_name,\n                  telefon, lieferanschrift, begruendung,\n                  haendler_1, haendler_2, haendler_3,\n                  created_at, updated_at\n           FROM orders\n           WHERE ($1::text IS NULL OR status::text = $1)\n             AND ($2::text IS NULL OR article_name ILIKE '%' || $2 || '%')\n           ORDER BY order_date DESC, created_at DESC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "article_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "article_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "quantity!",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 4,
+        "name": "unit",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "status!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "supplier",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "order_date",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 8,
+        "name": "notes",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "ordered_by_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 10,
+        "name": "ordered_by_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 11,
+        "name": "telefon",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 12,
+        "name": "lieferanschrift",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 13,
+        "name": "begruendung",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 14,
+        "name": "haendler_1",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 15,
+        "name": "haendler_2",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 16,
+        "name": "haendler_3",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 17,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 18,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      false,
+      false,
+      null,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "b371604655658e1b80f8cc9087c35082bbd8ce83ff1fd66d7d1d6245c62c2e4a"
+}
