@@ -4,7 +4,7 @@ CREATE TABLE orders (
     id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     article_id      UUID REFERENCES articles(id) ON DELETE SET NULL,
     article_name    VARCHAR(256) NOT NULL,  -- Snapshot bei Bestellung
-    quantity        NUMERIC(10,2) NOT NULL,
+    quantity        DOUBLE PRECISION NOT NULL,
     unit            VARCHAR(32) NOT NULL,
     status          order_status NOT NULL DEFAULT 'offen',
     supplier        VARCHAR(256),
@@ -23,7 +23,7 @@ CREATE TRIGGER orders_updated_at
 CREATE TABLE deliveries (
     id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     order_id            UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-    quantity_delivered  NUMERIC(10,2) NOT NULL,
+    quantity_delivered  DOUBLE PRECISION NOT NULL,
     delivery_date       DATE NOT NULL DEFAULT CURRENT_DATE,
     notes               TEXT,
     received_by_id      UUID REFERENCES users(id) ON DELETE SET NULL,

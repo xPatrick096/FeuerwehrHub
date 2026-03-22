@@ -60,4 +60,11 @@ export const api = {
   // Einstellungen
   getSettings:    ()     => request('GET', '/settings'),
   updateSettings: (body) => request('PUT', '/settings', body),
+
+  // Admin
+  getUsers:       ()          => request('GET',    '/admin/users'),
+  createUser:     (body)      => request('POST',   '/admin/users', body),
+  updateRole:     (id, body)  => request('PUT',    `/admin/users/${id}/role`, body),
+  resetPassword:  (id, body)  => request('POST',   `/admin/users/${id}/reset-password`, body),
+  deleteUser:     (id)        => request('DELETE', `/admin/users/${id}`),
 };

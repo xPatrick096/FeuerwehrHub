@@ -11,7 +11,7 @@ export function renderSetup() {
         <div class="auth-header">
           <div class="auth-emblem">🚒</div>
           <h1>Ersteinrichtung</h1>
-          <p>FF Druckerverwaltung</p>
+          <p>FeuerwehrHub</p>
         </div>
         <div class="auth-body">
           <p style="font-size:13px;color:#666;margin-bottom:20px">

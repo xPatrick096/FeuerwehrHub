@@ -33,7 +33,10 @@ pub async fn get_settings(State(state): State<AppState>) -> AppResult<Json<Setti
         .fetch_all(&state.db)
         .await?;
 
-    let map: HashMap<String, String> = rows.into_iter().map(|r| (r.key, r.value)).collect();
+    let map: HashMap<String, String> = rows
+        .into_iter()
+        .map(|r| (r.key, r.value))
+        .collect();
 
     Ok(Json(Settings {
         ff_name: map.get("ff_name").cloned().unwrap_or_default(),

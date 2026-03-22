@@ -2,14 +2,14 @@ use axum::{
     extract::{Path, State},
     middleware,
     routing::{delete, get, post, put},
-    Extension, Json, Router,
+    Json, Router,
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
-    auth::middleware::{require_auth, Claims},
+    auth::middleware::require_auth,
     errors::{AppError, AppResult},
     AppState,
 };

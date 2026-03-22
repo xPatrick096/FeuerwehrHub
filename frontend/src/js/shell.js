@@ -1,6 +1,6 @@
 import { navigate } from './router.js';
 
-let ffName = 'FF Druckerverwaltung';
+let ffName = 'FeuerwehrHub';
 let currentUser = null;
 
 export function setShellInfo(name, user) {
@@ -17,7 +17,7 @@ export function renderShell(activePage) {
         <div class="header__emblem">🚒</div>
         <div class="header__title">
           <h1>${ffName}</h1>
-          <p>Druckerverwaltung</p>
+          <p>FeuerwehrHub</p>
         </div>
         <div class="header__right">
           <span class="header__user">👤 ${currentUser?.username || ''}</span>
@@ -41,6 +41,11 @@ export function renderShell(activePage) {
             <button class="sidebar__item${activePage === 'settings' ? ' active' : ''}" data-page="settings">
               <span class="sidebar__item__icon">⚙️</span> Einstellungen
             </button>
+            ${currentUser?.role === 'admin' || currentUser?.role === 'superuser' ? `
+            <div class="sidebar__divider"></div>
+            <button class="sidebar__item${activePage === 'admin' ? ' active' : ''}" data-page="admin">
+              <span class="sidebar__item__icon">🛡️</span> Admin Panel
+            </button>` : ''}
           </div>
         </nav>
         <main class="main-content" id="main-content">

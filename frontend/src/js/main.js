@@ -5,6 +5,7 @@ import { renderOrders } from './pages/orders.js';
 import { renderNewOrder } from './pages/new-order.js';
 import { renderArticles } from './pages/articles.js';
 import { renderSettings } from './pages/settings.js';
+import { renderAdmin } from './pages/admin.js';
 
 // Routen registrieren
 registerRoute('#/login',     renderLogin);
@@ -13,6 +14,7 @@ registerRoute('#/orders',    renderOrders);
 registerRoute('#/new-order', renderNewOrder);
 registerRoute('#/articles',  renderArticles);
 registerRoute('#/settings',  renderSettings);
+registerRoute('#/admin',     renderAdmin);
 
 // Fallback
 registerRoute('*', renderLogin);

@@ -1,12 +1,16 @@
-FROM rust:1.78-slim AS builder
+FROM rust:latest AS builder
 
 WORKDIR /app
+
+# DATABASE_URL für sqlx compile-time checks
+ARG DATABASE_URL
+ENV DATABASE_URL=$DATABASE_URL
 
 # Abhängigkeiten cachen
 COPY Cargo.toml ./
 RUN mkdir src && echo "fn main() {}" > src/main.rs
 RUN cargo build --release
-RUN rm -f target/release/deps/ff_druckerverwaltung*
+RUN rm -f target/release/deps/feuerwehrhub*
 
 # Quellcode kopieren und bauen
 COPY src ./src
@@ -22,8 +26,8 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-COPY --from=builder /app/target/release/ff-druckerverwaltung .
+COPY --from=builder /app/target/release/feuerwehrhub .
 
 EXPOSE 3000
 
-CMD ["./ff-druckerverwaltung"]
+CMD ["./feuerwehrhub"]

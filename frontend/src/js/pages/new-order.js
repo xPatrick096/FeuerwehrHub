@@ -18,8 +18,9 @@ export async function renderNewOrder() {
         <p>Beschaffungsauftrag erfassen</p>
       </div>
     </div>
+
     <div class="card">
-      <div class="card__header card--rot">Bestelldaten</div>
+      <div class="card__header">Bestelldaten</div>
       <div class="card__body">
         <div class="form-grid">
           <div class="form-group form-group--full">
@@ -56,11 +57,48 @@ export async function renderNewOrder() {
             <textarea id="order-notes" placeholder="Optional..."></textarea>
           </div>
         </div>
-        <div class="btn-group" style="margin-top:20px">
-          <button class="btn btn--primary" id="btn-save-order">✅ Bestellung speichern</button>
-          <button class="btn btn--outline" id="btn-cancel">Abbrechen</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card__header">Beschaffungsauftrag (PDF)</div>
+      <div class="card__body">
+        <p style="font-size:13px;color:#666;margin-bottom:16px">
+          Diese Felder werden im offiziellen Beschaffungsauftrag der Stadt Leipzig verwendet.
+        </p>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Telefon Bedarfsmelder(in)</label>
+            <input type="text" id="pdf-telefon" placeholder="z.B. 0341 / 12345" />
+          </div>
+          <div class="form-group">
+            <label>Lieferanschrift</label>
+            <input type="text" id="pdf-lieferanschrift" placeholder="z.B. Feuerwehr Böhlitz-Ehrenberg" />
+          </div>
+          <div class="form-group form-group--full">
+            <label>Begründung der Notwendigkeit</label>
+            <textarea id="pdf-begruendung" rows="4"
+              placeholder="Warum wird die Beschaffung benötigt?"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Händler / Anbieter 1</label>
+            <input type="text" id="pdf-haendler1" placeholder="z.B. Amazon Business" />
+          </div>
+          <div class="form-group">
+            <label>Händler / Anbieter 2</label>
+            <input type="text" id="pdf-haendler2" placeholder="Optional" />
+          </div>
+          <div class="form-group">
+            <label>Händler / Anbieter 3</label>
+            <input type="text" id="pdf-haendler3" placeholder="Optional" />
+          </div>
         </div>
       </div>
+    </div>
+
+    <div class="btn-group" style="margin-top:8px">
+      <button class="btn btn--primary" id="btn-save-order">Bestellung speichern</button>
+      <button class="btn btn--outline" id="btn-cancel">Abbrechen</button>
     </div>
   `;
 
@@ -78,13 +116,19 @@ export async function renderNewOrder() {
 
   document.getElementById('btn-save-order').addEventListener('click', async () => {
     const articleSelect = document.getElementById('article-select');
-    const articleId = articleSelect.value || null;
+    const articleId   = articleSelect.value || null;
     const articleName = document.getElementById('article-name').value.trim();
-    const qty = parseFloat(document.getElementById('order-qty').value);
-    const unit = document.getElementById('order-unit').value;
-    const supplier = document.getElementById('order-supplier').value.trim();
-    const orderDate = document.getElementById('order-date').value;
-    const notes = document.getElementById('order-notes').value.trim();
+    const qty         = parseFloat(document.getElementById('order-qty').value);
+    const unit        = document.getElementById('order-unit').value;
+    const supplier    = document.getElementById('order-supplier').value.trim();
+    const orderDate   = document.getElementById('order-date').value;
+    const notes       = document.getElementById('order-notes').value.trim();
+    const telefon     = document.getElementById('pdf-telefon').value.trim();
+    const lieferanschrift = document.getElementById('pdf-lieferanschrift').value.trim();
+    const begruendung = document.getElementById('pdf-begruendung').value.trim();
+    const haendler_1  = document.getElementById('pdf-haendler1').value.trim();
+    const haendler_2  = document.getElementById('pdf-haendler2').value.trim();
+    const haendler_3  = document.getElementById('pdf-haendler3').value.trim();
 
     if (!articleName) { toast('Artikelbezeichnung eingeben', 'error'); return; }
     if (!qty || qty <= 0) { toast('Menge eingeben', 'error'); return; }
@@ -95,9 +139,15 @@ export async function renderNewOrder() {
         article_name: articleName,
         quantity: qty,
         unit,
-        supplier: supplier || undefined,
-        order_date: orderDate || undefined,
-        notes: notes || undefined,
+        supplier:         supplier     || undefined,
+        order_date:       orderDate    || undefined,
+        notes:            notes        || undefined,
+        telefon:          telefon      || undefined,
+        lieferanschrift:  lieferanschrift || undefined,
+        begruendung:      begruendung  || undefined,
+        haendler_1:       haendler_1   || undefined,
+        haendler_2:       haendler_2   || undefined,
+        haendler_3:       haendler_3   || undefined,
       });
       toast('Bestellung gespeichert!');
       navigate('#/orders');

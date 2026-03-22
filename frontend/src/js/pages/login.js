@@ -10,7 +10,7 @@ export function renderLogin() {
       <div class="auth-card">
         <div class="auth-header">
           <div class="auth-emblem">🚒</div>
-          <h1>FF Druckerverwaltung</h1>
+          <h1>FeuerwehrHub</h1>
           <p>Freiwillige Feuerwehr</p>
         </div>
         <div class="auth-body" id="auth-step-login">
@@ -52,9 +52,7 @@ async function doLogin() {
 
     localStorage.setItem('ff_token', res.token);
 
-    if (res.totp_setup_required) {
-      renderTotpSetup();
-    } else if (res.requires_totp) {
+    if (res.requires_totp) {
       renderTotpVerify();
     } else {
       navigate('#/orders');

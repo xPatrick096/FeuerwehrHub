@@ -4,7 +4,7 @@ mod errors;
 mod routes;
 
 use axum::{
-    http::{HeaderValue, Method},
+    http::Method,
     Router,
 };
 use sqlx::PgPool;
@@ -32,7 +32,7 @@ async fn main() -> anyhow::Result<()> {
         .init();
 
     let config = Config::from_env()?;
-    tracing::info!("Starte FF-Druckerverwaltung für: {}", config.ff_name);
+    tracing::info!("Starte FeuerwehrHub für: {}", config.ff_name);
 
     let pool = PgPool::connect(&config.database_url()).await?;
     tracing::info!("Datenbankverbindung hergestellt");
@@ -49,6 +49,7 @@ async fn main() -> anyhow::Result<()> {
 
     let app = Router::new()
         .nest("/api/auth", routes::auth::router(state.clone()))
+        .nest("/api/admin", routes::admin::router(state.clone()))
         .nest("/api/orders", routes::orders::router(state.clone()))
         .nest("/api/articles", routes::articles::router(state.clone()))
         .nest("/api/settings", routes::settings::router(state.clone()))

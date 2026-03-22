@@ -1,6 +1,7 @@
 import { api } from '../api.js';
 import { toast } from '../toast.js';
 import { renderShell, setShellInfo } from '../shell.js';
+import { generateBeschaffungsauftrag } from '../pdf-generator.js';
 
 export async function renderOrders() {
   const [settings, user] = await Promise.all([api.getSettings(), api.me()]);
@@ -129,6 +130,7 @@ export async function renderOrders() {
             ${o.status !== 'vollstaendig' && o.status !== 'storniert'
               ? `<button class="btn btn--success btn--sm" data-action="delivery" data-id="${o.id}">📦 Lieferung</button>`
               : ''}
+            <button class="btn btn--outline btn--sm" data-action="pdf" data-id="${o.id}">📄 PDF</button>
             <button class="btn btn--danger btn--sm" data-action="delete" data-id="${o.id}">🗑</button>
           </div>
         </td>
@@ -156,6 +158,15 @@ export async function renderOrders() {
       currentOrderId = id;
       document.getElementById('delivery-date').value = today();
       document.getElementById('delivery-modal').classList.add('active');
+    }
+
+    if (action === 'pdf') {
+      try {
+        const order = await api.getOrder(id);
+        await generateBeschaffungsauftrag(order);
+      } catch (e) {
+        toast('PDF-Generierung fehlgeschlagen: ' + e.message, 'error');
+      }
     }
 
     if (action === 'delete') {

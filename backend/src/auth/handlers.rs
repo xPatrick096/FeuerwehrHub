@@ -31,7 +31,7 @@ pub async fn login(
     Json(body): Json<LoginRequest>,
 ) -> AppResult<Json<LoginResponse>> {
     let user = sqlx::query!(
-        "SELECT id, username, password_hash, totp_secret, totp_enabled, is_admin
+        "SELECT id, username, password_hash, totp_secret, totp_enabled, is_admin, role
          FROM users WHERE username = $1",
         body.username
     )
@@ -45,18 +45,18 @@ pub async fn login(
         return Err(AppError::Unauthorized);
     }
 
-    // Wenn TOTP noch nicht eingerichtet → Setup-Token ausgeben
+    // TOTP nicht aktiv → direkt vollen Token ausgeben
     if !user.totp_enabled {
-        let token = make_jwt(&state, user.id, &user.username, user.is_admin, false)?;
+        let token = make_jwt(&state, user.id, &user.username, user.is_admin, &user.role, true)?;
         return Ok(Json(LoginResponse {
             token,
             requires_totp: false,
-            totp_setup_required: true,
+            totp_setup_required: false,
         }));
     }
 
     // TOTP aktiv → Partial-Token, Frontend muss Code nachliefern
-    let token = make_jwt(&state, user.id, &user.username, user.is_admin, false)?;
+    let token = make_jwt(&state, user.id, &user.username, user.is_admin, &user.role, false)?;
     Ok(Json(LoginResponse {
         token,
         requires_totp: true,
@@ -100,7 +100,7 @@ pub async fn verify_totp(
         return Err(AppError::InvalidTotp);
     }
 
-    let token = make_jwt(&state, claims.sub, &claims.username, claims.is_admin, true)?;
+    let token = make_jwt(&state, claims.sub, &claims.username, claims.is_admin, &claims.role, true)?;
     Ok(Json(TokenResponse { token }))
 }
 
@@ -170,7 +170,7 @@ pub async fn confirm_totp(
     .execute(&state.db)
     .await?;
 
-    let token = make_jwt(&state, claims.sub, &claims.username, claims.is_admin, true)?;
+    let token = make_jwt(&state, claims.sub, &claims.username, claims.is_admin, &claims.role, true)?;
     Ok(Json(TokenResponse { token }))
 }
 
@@ -181,6 +181,7 @@ pub struct MeResponse {
     pub id: Uuid,
     pub username: String,
     pub is_admin: bool,
+    pub role: String,
     pub totp_enabled: bool,
 }
 
@@ -189,7 +190,7 @@ pub async fn me(
     Extension(claims): Extension<Claims>,
 ) -> AppResult<Json<MeResponse>> {
     let user = sqlx::query!(
-        "SELECT id, username, is_admin, totp_enabled FROM users WHERE id = $1",
+        "SELECT id, username, is_admin, role, totp_enabled FROM users WHERE id = $1",
         claims.sub
     )
     .fetch_optional(&state.db)
@@ -200,6 +201,7 @@ pub async fn me(
         id: user.id,
         username: user.username,
         is_admin: user.is_admin,
+        role: user.role,
         totp_enabled: user.totp_enabled,
     }))
 }
@@ -236,7 +238,7 @@ pub async fn initial_setup(
         .map_err(|e| AppError::Internal(e.into()))?;
 
     sqlx::query!(
-        "INSERT INTO users (username, password_hash, is_admin) VALUES ($1, $2, TRUE)",
+        "INSERT INTO users (username, password_hash, is_admin, role) VALUES ($1, $2, TRUE, 'superuser')",
         body.username,
         password_hash
     )
@@ -313,6 +315,7 @@ fn make_jwt(
     user_id: Uuid,
     username: &str,
     is_admin: bool,
+    role: &str,
     totp_verified: bool,
 ) -> AppResult<String> {
     let exp = Utc::now()
@@ -324,6 +327,7 @@ fn make_jwt(
         sub: user_id,
         username: username.to_string(),
         is_admin,
+        role: role.to_string(),
         totp_verified,
         exp,
     };

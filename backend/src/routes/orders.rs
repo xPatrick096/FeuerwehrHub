@@ -27,6 +27,13 @@ pub struct Order {
     pub notes: Option<String>,
     pub ordered_by_id: Option<Uuid>,
     pub ordered_by_name: Option<String>,
+    // PDF-Felder
+    pub telefon: Option<String>,
+    pub lieferanschrift: Option<String>,
+    pub begruendung: Option<String>,
+    pub haendler_1: Option<String>,
+    pub haendler_2: Option<String>,
+    pub haendler_3: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -58,6 +65,13 @@ pub struct OrderBody {
     pub supplier: Option<String>,
     pub order_date: Option<NaiveDate>,
     pub notes: Option<String>,
+    // PDF-Felder
+    pub telefon: Option<String>,
+    pub lieferanschrift: Option<String>,
+    pub begruendung: Option<String>,
+    pub haendler_1: Option<String>,
+    pub haendler_2: Option<String>,
+    pub haendler_3: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -77,11 +91,13 @@ pub async fn list_orders(
     State(state): State<AppState>,
     Query(filter): Query<OrderFilter>,
 ) -> AppResult<Json<Vec<Order>>> {
-    // Dynamisches SQL über sqlx ist etwas ausführlicher; wir nutzen einfaches Matching
     let rows = sqlx::query!(
         r#"SELECT id, article_id, article_name, quantity::float8 as "quantity!",
                   unit, status::text as "status!", supplier, order_date,
-                  notes, ordered_by_id, ordered_by_name, created_at, updated_at
+                  notes, ordered_by_id, ordered_by_name,
+                  telefon, lieferanschrift, begruendung,
+                  haendler_1, haendler_2, haendler_3,
+                  created_at, updated_at
            FROM orders
            WHERE ($1::text IS NULL OR status::text = $1)
              AND ($2::text IS NULL OR article_name ILIKE '%' || $2 || '%')
@@ -106,6 +122,12 @@ pub async fn list_orders(
             notes: r.notes,
             ordered_by_id: r.ordered_by_id,
             ordered_by_name: r.ordered_by_name,
+            telefon: r.telefon,
+            lieferanschrift: r.lieferanschrift,
+            begruendung: r.begruendung,
+            haendler_1: r.haendler_1,
+            haendler_2: r.haendler_2,
+            haendler_3: r.haendler_3,
             created_at: r.created_at,
             updated_at: r.updated_at,
         })
@@ -121,7 +143,10 @@ pub async fn get_order(
     let row = sqlx::query!(
         r#"SELECT id, article_id, article_name, quantity::float8 as "quantity!",
                   unit, status::text as "status!", supplier, order_date,
-                  notes, ordered_by_id, ordered_by_name, created_at, updated_at
+                  notes, ordered_by_id, ordered_by_name,
+                  telefon, lieferanschrift, begruendung,
+                  haendler_1, haendler_2, haendler_3,
+                  created_at, updated_at
            FROM orders WHERE id = $1"#,
         id
     )
@@ -150,6 +175,12 @@ pub async fn get_order(
         notes: row.notes,
         ordered_by_id: row.ordered_by_id,
         ordered_by_name: row.ordered_by_name,
+        telefon: row.telefon,
+        lieferanschrift: row.lieferanschrift,
+        begruendung: row.begruendung,
+        haendler_1: row.haendler_1,
+        haendler_2: row.haendler_2,
+        haendler_3: row.haendler_3,
         created_at: row.created_at,
         updated_at: row.updated_at,
     };
@@ -186,11 +217,16 @@ pub async fn create_order(
 
     let row = sqlx::query!(
         r#"INSERT INTO orders
-               (article_id, article_name, quantity, unit, supplier, order_date, notes, ordered_by_id, ordered_by_name)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+               (article_id, article_name, quantity, unit, supplier, order_date, notes,
+                ordered_by_id, ordered_by_name,
+                telefon, lieferanschrift, begruendung, haendler_1, haendler_2, haendler_3)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
            RETURNING id, article_id, article_name, quantity::float8 as "quantity!",
                      unit, status::text as "status!", supplier, order_date,
-                     notes, ordered_by_id, ordered_by_name, created_at, updated_at"#,
+                     notes, ordered_by_id, ordered_by_name,
+                     telefon, lieferanschrift, begruendung,
+                     haendler_1, haendler_2, haendler_3,
+                     created_at, updated_at"#,
         body.article_id,
         body.article_name.trim(),
         body.quantity,
@@ -199,7 +235,13 @@ pub async fn create_order(
         order_date,
         body.notes,
         claims.sub,
-        claims.username
+        claims.username,
+        body.telefon,
+        body.lieferanschrift,
+        body.begruendung,
+        body.haendler_1,
+        body.haendler_2,
+        body.haendler_3,
     )
     .fetch_one(&state.db)
     .await?;
@@ -216,6 +258,12 @@ pub async fn create_order(
         notes: row.notes,
         ordered_by_id: row.ordered_by_id,
         ordered_by_name: row.ordered_by_name,
+        telefon: row.telefon,
+        lieferanschrift: row.lieferanschrift,
+        begruendung: row.begruendung,
+        haendler_1: row.haendler_1,
+        haendler_2: row.haendler_2,
+        haendler_3: row.haendler_3,
         created_at: row.created_at,
         updated_at: row.updated_at,
     }))
@@ -235,11 +283,16 @@ pub async fn update_order(
     let row = sqlx::query!(
         r#"UPDATE orders SET
                article_id=$1, article_name=$2, quantity=$3, unit=$4,
-               supplier=$5, order_date=$6, notes=$7
-           WHERE id = $8
+               supplier=$5, order_date=$6, notes=$7,
+               telefon=$8, lieferanschrift=$9, begruendung=$10,
+               haendler_1=$11, haendler_2=$12, haendler_3=$13
+           WHERE id = $14
            RETURNING id, article_id, article_name, quantity::float8 as "quantity!",
                      unit, status::text as "status!", supplier, order_date,
-                     notes, ordered_by_id, ordered_by_name, created_at, updated_at"#,
+                     notes, ordered_by_id, ordered_by_name,
+                     telefon, lieferanschrift, begruendung,
+                     haendler_1, haendler_2, haendler_3,
+                     created_at, updated_at"#,
         body.article_id,
         body.article_name.trim(),
         body.quantity,
@@ -247,6 +300,12 @@ pub async fn update_order(
         body.supplier,
         order_date,
         body.notes,
+        body.telefon,
+        body.lieferanschrift,
+        body.begruendung,
+        body.haendler_1,
+        body.haendler_2,
+        body.haendler_3,
         id
     )
     .fetch_optional(&state.db)
@@ -265,6 +324,12 @@ pub async fn update_order(
         notes: row.notes,
         ordered_by_id: row.ordered_by_id,
         ordered_by_name: row.ordered_by_name,
+        telefon: row.telefon,
+        lieferanschrift: row.lieferanschrift,
+        begruendung: row.begruendung,
+        haendler_1: row.haendler_1,
+        haendler_2: row.haendler_2,
+        haendler_3: row.haendler_3,
         created_at: row.created_at,
         updated_at: row.updated_at,
     }))
@@ -295,7 +360,6 @@ pub async fn add_delivery(
         return Err(AppError::BadRequest("Liefermenge muss größer als 0 sein".into()));
     }
 
-    // Bestellung holen
     let order = sqlx::query!(
         r#"SELECT quantity::float8 as "quantity!" FROM orders WHERE id = $1"#,
         id
@@ -319,7 +383,6 @@ pub async fn add_delivery(
     .execute(&state.db)
     .await?;
 
-    // Gesamtgelieferte Menge berechnen & Status aktualisieren
     let total_delivered: f64 = sqlx::query_scalar!(
         r#"SELECT COALESCE(SUM(quantity_delivered), 0)::float8 as "total!" FROM deliveries WHERE order_id = $1"#,
         id
@@ -333,11 +396,11 @@ pub async fn add_delivery(
         "teillieferung"
     };
 
-    sqlx::query!(
+    sqlx::query(
         "UPDATE orders SET status = $1::order_status WHERE id = $2",
-        new_status,
-        id
     )
+    .bind(new_status)
+    .bind(id)
     .execute(&state.db)
     .await?;
 

@@ -154,11 +154,44 @@ tr:hover td { background: #FAFAFA; }
   font-size: $font-size-xs;
   font-weight: 600;
 
+  // Status-Badges (Bestellungen)
   &--offen        { background: $rot-hell;    color: #C0392B; }
   &--teillieferung { background: $orange-hell; color: #CA6F1E; }
   &--vollstaendig  { background: $gruen-hell;  color: #1E8449; }
   &--storniert     { background: $grau-hell;   color: $grau; }
+
+  // Rollen-Badges
+  &--superuser { background: #FEF3C7; color: #92400E; }
+  &--admin     { background: #EDE9FE; color: #5B21B6; }
+  &--user      { background: $grau-hell; color: $grau; }
 }
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+.tab-bar {
+  display: flex;
+  gap: 4px;
+  margin-bottom: $space-lg;
+  border-bottom: 2px solid $grau-rand;
+  padding-bottom: 0;
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  padding: 10px 20px;
+  font-size: $font-size-sm;
+  font-weight: 600;
+  color: $grau;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  transition: all $transition-fast;
+
+  &:hover { color: $grau-dunkel; }
+  &--active { color: $rot; border-bottom-color: $rot; }
+}
+
+.tab-panel { display: block; }
 
 // ── Stats-Karten ─────────────────────────────────────────────────────────────
 .stats-row {
@@ -218,7 +251,35 @@ tr:hover td { background: #FAFAFA; }
   }
 }
 
-// ── Modal ─────────────────────────────────────────────────────────────────────
+// ── Modal (Admin-Variante mit Backdrop-Div) ───────────────────────────────────
+.modal {
+  &[style*="display: flex"], &[style*="display:flex"] {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+  }
+
+  &__box {
+    position: relative;
+    z-index: 1;
+    background: $weiss;
+    border-radius: $radius-md;
+    box-shadow: $schatten-lg;
+    width: 90%;
+    max-width: 480px;
+    overflow: hidden;
+  }
+}
+
+// ── Modal (Legacy-Variante mit modal-overlay) ─────────────────────────────────
 .modal-overlay {
   display: none;
   position: fixed;

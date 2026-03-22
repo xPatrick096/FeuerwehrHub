@@ -8,6 +8,8 @@ export async function renderSettings() {
   renderShell('settings');
 
   const content = document.getElementById('page-content');
+  const totp_enabled = user?.totp_enabled || false;
+
   content.innerHTML = `
     <div class="page-header">
       <div>
@@ -61,6 +63,37 @@ export async function renderSettings() {
         </div>
       </div>
     </div>
+
+    <div class="card">
+      <div class="card__header">2-Faktor-Authentifizierung</div>
+      <div class="card__body">
+        <p style="font-size:13px;color:#666;margin-bottom:16px">
+          ${totp_enabled
+            ? '✅ 2FA ist aktiviert. Dein Account ist mit einem Authenticator gesichert.'
+            : '⚠️ 2FA ist <strong>nicht aktiv</strong>. Du kannst es optional aktivieren.'}
+        </p>
+        ${!totp_enabled ? `
+          <div id="totp-setup-area">
+            <button class="btn btn--secondary" id="btn-setup-totp">2FA einrichten</button>
+          </div>
+          <div id="totp-qr-area" style="display:none;margin-top:16px">
+            <p style="font-size:13px;color:#666;margin-bottom:12px">
+              Scanne diesen Link mit deiner Authenticator-App (2FAS, Google Authenticator, Authy, ...):
+            </p>
+            <div id="totp-uri" style="word-break:break-all;font-size:11px;background:#f5f5f5;padding:10px;border-radius:4px;margin-bottom:12px"></div>
+            <div class="form-group" style="max-width:200px">
+              <label>Code bestätigen</label>
+              <input type="text" id="totp-code" maxlength="6" inputmode="numeric"
+                     placeholder="000000" style="text-align:center;font-size:20px;letter-spacing:6px;font-weight:700" />
+            </div>
+            <div class="btn-group" style="margin-top:12px">
+              <button class="btn btn--primary" id="btn-confirm-totp">2FA aktivieren</button>
+              <button class="btn btn--outline" id="btn-cancel-totp">Abbrechen</button>
+            </div>
+          </div>
+        ` : ''}
+      </div>
+    </div>
   `;
 
   document.getElementById('btn-save-settings').addEventListener('click', async () => {
@@ -75,6 +108,37 @@ export async function renderSettings() {
       toast(e.message, 'error');
     }
   });
+
+  // 2FA Setup (nur wenn nicht aktiv)
+  if (!totp_enabled) {
+    document.getElementById('btn-setup-totp').addEventListener('click', async () => {
+      try {
+        const res = await api.setupTotp();
+        if (!res) return;
+        document.getElementById('totp-setup-area').style.display = 'none';
+        document.getElementById('totp-qr-area').style.display = 'block';
+        document.getElementById('totp-uri').textContent = res.uri;
+        document.getElementById('totp-code').focus();
+      } catch (e) { toast(e.message, 'error'); }
+    });
+
+    document.getElementById('btn-cancel-totp').addEventListener('click', () => {
+      document.getElementById('totp-setup-area').style.display = 'block';
+      document.getElementById('totp-qr-area').style.display = 'none';
+    });
+
+    document.getElementById('btn-confirm-totp').addEventListener('click', async () => {
+      const code = document.getElementById('totp-code').value.trim();
+      if (code.length !== 6) { toast('6-stelligen Code eingeben', 'error'); return; }
+      try {
+        const res = await api.confirmTotp({ code });
+        if (!res) return;
+        localStorage.setItem('ff_token', res.token);
+        toast('2FA erfolgreich aktiviert!');
+        renderSettings(); // Seite neu laden
+      } catch (e) { toast(e.message || 'Ungültiger Code', 'error'); }
+    });
+  }
 
   document.getElementById('btn-change-pw').addEventListener('click', async () => {
     const current = document.getElementById('pw-current').value;
