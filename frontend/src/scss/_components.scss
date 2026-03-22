@@ -507,6 +507,7 @@ tr:hover td { background: #FAFAFA; }
   &:last-child { border-right: none; }
   &--menge { width: 80px; }
   &--einheit { width: 140px; }
+  &--gesamt { width: 90px; }
   &--gegenstand { flex: 1; }
 }
 
@@ -523,6 +524,7 @@ tr:hover td { background: #FAFAFA; }
   &:last-child { border-right: none; }
   &--menge { width: 80px; }
   &--einheit { width: 140px; }
+  &--gesamt { width: 90px; }
   &--gegenstand { flex: 1; }
 
   input, select {

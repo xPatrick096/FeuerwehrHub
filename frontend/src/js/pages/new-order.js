@@ -3,6 +3,8 @@ import { toast } from '../toast.js';
 import { navigate } from '../router.js';
 import { renderShell, setShellInfo } from '../shell.js';
 
+const NUM_POSITIONS = 6;
+
 export async function renderNewOrder() {
   const [settings, user, articles, units] = await Promise.all([
     api.getSettings(), api.me(), api.getArticles(), api.getUnits(),
@@ -11,6 +13,31 @@ export async function renderNewOrder() {
   renderShell('new-order');
 
   const content = document.getElementById('page-content');
+
+  // Einheit-Optionen für alle Zeilen
+  const unitOptions = units.map(u => `<option value="${esc(u.label)}">${esc(u.label)}</option>`).join('');
+
+  // 6 Positionszeilen bauen
+  const posRows = Array.from({ length: NUM_POSITIONS }, (_, i) => `
+    <div class="beschaffung-table-row" data-pos="${i}">
+      <div class="beschaffung-td beschaffung-td--menge">
+        <input type="number" id="pos-${i}-menge" min="0.01" step="0.01" placeholder="" />
+      </div>
+      <div class="beschaffung-td beschaffung-td--einheit">
+        <select id="pos-${i}-einheit">
+          <option value=""></option>
+          ${unitOptions}
+        </select>
+      </div>
+      <div class="beschaffung-td beschaffung-td--gesamt">
+        <input type="text" id="pos-${i}-gesamt" placeholder="" />
+      </div>
+      <div class="beschaffung-td beschaffung-td--gegenstand">
+        <input type="text" id="pos-${i}-gegenstand" placeholder="${i === 0 ? 'Artikelbezeichnung' : ''}" />
+      </div>
+    </div>
+  `).join('');
+
   content.innerHTML = `
     <div class="page-header">
       <div>
@@ -24,7 +51,7 @@ export async function renderNewOrder() {
 
         <!-- Artikel aus Stamm wählen (Hilfsfunktion) -->
         <div class="form-group beschaffung-article-select">
-          <label>Artikel aus Stamm wählen</label>
+          <label>Artikel aus Stamm wählen (befüllt Zeile 1)</label>
           <select id="article-select">
             <option value="">— Frei eingeben —</option>
             ${articles.map(a =>
@@ -61,27 +88,16 @@ export async function renderNewOrder() {
             </div>
           </div>
 
-          <!-- Tabelle: Menge | Einheit | Gegenstand / Leistung -->
+          <!-- Tabelle: Menge | Einheit | Gesamt | Gegenstand / Leistung -->
           <div class="beschaffung-table-header">
             <div class="beschaffung-th beschaffung-th--menge">Menge¹</div>
             <div class="beschaffung-th beschaffung-th--einheit">Einheit²</div>
+            <div class="beschaffung-th beschaffung-th--gesamt">Gesamt³</div>
             <div class="beschaffung-th beschaffung-th--gegenstand">Gegenstand / Leistung</div>
           </div>
-          <div class="beschaffung-table-row">
-            <div class="beschaffung-td beschaffung-td--menge">
-              <input type="number" id="field-menge" min="0.01" step="0.01" placeholder="1" />
-            </div>
-            <div class="beschaffung-td beschaffung-td--einheit">
-              <select id="field-einheit">
-                ${units.map(u => `<option value="${esc(u.label)}">${esc(u.label)}</option>`).join('')}
-              </select>
-            </div>
-            <div class="beschaffung-td beschaffung-td--gegenstand">
-              <input type="text" id="field-gegenstand" placeholder="Artikelbezeichnung" />
-            </div>
-          </div>
+          ${posRows}
           <div class="beschaffung-hint">
-            ¹ Anzahl / Mengenwert &nbsp;&nbsp; ² Einheit (z.B.: Stück / kg / l / cbm / Verpackungseinheit)
+            ¹ Anzahl / Mengenwert &nbsp;&nbsp; ² Einheit (z.B.: Stück / kg / l / cbm / Verpackungseinheit) &nbsp;&nbsp; ³ Gesamtanzahl (Menge × Stück je VE)
           </div>
 
           <!-- Begründung -->
@@ -133,19 +149,19 @@ export async function renderNewOrder() {
     </div>
   `;
 
-  // Artikel aus Stamm → Felder befüllen
+  // Artikel aus Stamm → Zeile 1 befüllen
   document.getElementById('article-select').addEventListener('change', (e) => {
     const opt = e.target.selectedOptions[0];
     if (opt?.dataset.name) {
-      document.getElementById('field-gegenstand').value = opt.dataset.name;
-      const unitSel = document.getElementById('field-einheit');
+      document.getElementById('pos-0-gegenstand').value = opt.dataset.name;
+      const unitSel = document.getElementById('pos-0-einheit');
       for (const o of unitSel.options) {
         if (o.value === opt.dataset.unit) { unitSel.value = o.value; break; }
       }
     }
   });
 
-  // Lieferanschrift-Placeholder aus Einstellungen
+  // Lieferanschrift aus Einstellungen
   if (settings?.ff_strasse && settings?.ff_ort) {
     document.getElementById('field-lieferanschrift').value =
       `${settings.ff_strasse}, ${settings.ff_ort}`;
@@ -153,37 +169,40 @@ export async function renderNewOrder() {
 
   // Speichern
   document.getElementById('btn-save-order').addEventListener('click', async () => {
-    const articleSelect = document.getElementById('article-select');
-    const articleId   = articleSelect.value || null;
-    const gegenstand  = document.getElementById('field-gegenstand').value.trim();
-    const menge       = parseFloat(document.getElementById('field-menge').value);
-    const einheit     = document.getElementById('field-einheit').value;
-    const datum       = document.getElementById('field-datum').value;
-    const telefon     = document.getElementById('field-telefon').value.trim();
-    const lieferanschrift = document.getElementById('field-lieferanschrift').value.trim();
-    const begruendung = document.getElementById('field-begruendung').value.trim();
-    const haendler_1  = document.getElementById('field-haendler1').value.trim();
-    const haendler_2  = document.getElementById('field-haendler2').value.trim();
-    const haendler_3  = document.getElementById('field-haendler3').value.trim();
-    const notes       = document.getElementById('field-notes').value.trim();
+    // Positionen sammeln
+    const positions = Array.from({ length: NUM_POSITIONS }, (_, i) => ({
+      menge:      document.getElementById(`pos-${i}-menge`).value.trim() || null,
+      einheit:    document.getElementById(`pos-${i}-einheit`).value || null,
+      gesamt:     document.getElementById(`pos-${i}-gesamt`).value.trim() || null,
+      gegenstand: document.getElementById(`pos-${i}-gegenstand`).value.trim() || null,
+    }));
 
-    if (!gegenstand) { toast('Gegenstand / Leistung eingeben', 'error'); return; }
-    if (!menge || menge <= 0) { toast('Menge eingeben', 'error'); return; }
+    const hasPosition = positions.some(p => p.gegenstand);
+    if (!hasPosition) {
+      toast('Mindestens eine Position (Gegenstand / Leistung) eingeben', 'error');
+      return;
+    }
+
+    const datum          = document.getElementById('field-datum').value;
+    const telefon        = document.getElementById('field-telefon').value.trim();
+    const lieferanschrift = document.getElementById('field-lieferanschrift').value.trim();
+    const begruendung    = document.getElementById('field-begruendung').value.trim();
+    const haendler_1     = document.getElementById('field-haendler1').value.trim();
+    const haendler_2     = document.getElementById('field-haendler2').value.trim();
+    const haendler_3     = document.getElementById('field-haendler3').value.trim();
+    const notes          = document.getElementById('field-notes').value.trim();
 
     try {
       await api.createOrder({
-        article_id:      articleId,
-        article_name:    gegenstand,
-        quantity:        menge,
-        unit:            einheit,
-        order_date:      datum     || undefined,
-        notes:           notes     || undefined,
-        telefon:         telefon   || undefined,
-        lieferanschrift: lieferanschrift || undefined,
-        begruendung:     begruendung    || undefined,
-        haendler_1:      haendler_1     || undefined,
-        haendler_2:      haendler_2     || undefined,
-        haendler_3:      haendler_3     || undefined,
+        positions,
+        order_date:      datum            || undefined,
+        notes:           notes            || undefined,
+        telefon:         telefon          || undefined,
+        lieferanschrift: lieferanschrift  || undefined,
+        begruendung:     begruendung      || undefined,
+        haendler_1:      haendler_1       || undefined,
+        haendler_2:      haendler_2       || undefined,
+        haendler_3:      haendler_3       || undefined,
       });
       toast('Beschaffungsauftrag gespeichert');
       navigate('#/orders');

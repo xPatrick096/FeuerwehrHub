@@ -6,6 +6,7 @@ use axum::{
 };
 use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
+use sqlx::FromRow;
 use uuid::Uuid;
 
 use crate::{
@@ -14,64 +15,139 @@ use crate::{
     AppState,
 };
 
+// ── Positionen ────────────────────────────────────────────────────────────────
+
+#[derive(Serialize, Deserialize, Clone, Default)]
+pub struct OrderPosition {
+    pub menge:      Option<String>,
+    pub einheit:    Option<String>,
+    pub gesamt:     Option<String>,
+    pub gegenstand: Option<String>,
+}
+
+impl OrderPosition {
+    fn is_empty(&self) -> bool {
+        self.gegenstand.as_ref().map(|g| g.trim().is_empty()).unwrap_or(true)
+    }
+}
+
+// ── API-Structs ───────────────────────────────────────────────────────────────
+
 #[derive(Serialize)]
 pub struct Order {
-    pub id: Uuid,
-    pub article_id: Option<Uuid>,
-    pub article_name: String,
-    pub quantity: f64,
-    pub unit: String,
-    pub status: String,
-    pub supplier: Option<String>,
-    pub order_date: NaiveDate,
-    pub notes: Option<String>,
-    pub ordered_by_id: Option<Uuid>,
-    pub ordered_by_name: Option<String>,
-    // PDF-Felder
-    pub telefon: Option<String>,
-    pub lieferanschrift: Option<String>,
-    pub begruendung: Option<String>,
-    pub haendler_1: Option<String>,
-    pub haendler_2: Option<String>,
-    pub haendler_3: Option<String>,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
+    pub id:               Uuid,
+    pub article_id:       Option<Uuid>,
+    pub article_name:     String,
+    pub quantity:         f64,
+    pub unit:             String,
+    pub status:           String,
+    pub supplier:         Option<String>,
+    pub order_date:       NaiveDate,
+    pub notes:            Option<String>,
+    pub ordered_by_id:    Option<Uuid>,
+    pub ordered_by_name:  Option<String>,
+    pub telefon:          Option<String>,
+    pub lieferanschrift:  Option<String>,
+    pub begruendung:      Option<String>,
+    pub haendler_1:       Option<String>,
+    pub haendler_2:       Option<String>,
+    pub haendler_3:       Option<String>,
+    pub positions:        Option<Vec<OrderPosition>>,
+    pub created_at:       DateTime<Utc>,
+    pub updated_at:       DateTime<Utc>,
 }
 
 #[derive(Serialize)]
 pub struct OrderWithDeliveries {
     #[serde(flatten)]
-    pub order: Order,
+    pub order:      Order,
     pub deliveries: Vec<Delivery>,
 }
 
 #[derive(Serialize)]
 pub struct Delivery {
-    pub id: Uuid,
-    pub order_id: Uuid,
+    pub id:                 Uuid,
+    pub order_id:           Uuid,
     pub quantity_delivered: f64,
-    pub delivery_date: NaiveDate,
-    pub notes: Option<String>,
-    pub received_by_name: Option<String>,
-    pub created_at: DateTime<Utc>,
+    pub delivery_date:      NaiveDate,
+    pub notes:              Option<String>,
+    pub received_by_name:   Option<String>,
+    pub created_at:         DateTime<Utc>,
 }
+
+// ── DB-Zeile (non-macro FromRow) ──────────────────────────────────────────────
+
+#[derive(FromRow)]
+struct OrderRow {
+    id:               Uuid,
+    article_id:       Option<Uuid>,
+    article_name:     String,
+    quantity:         f64,
+    unit:             String,
+    status:           String,
+    supplier:         Option<String>,
+    order_date:       NaiveDate,
+    notes:            Option<String>,
+    ordered_by_id:    Option<Uuid>,
+    ordered_by_name:  Option<String>,
+    telefon:          Option<String>,
+    lieferanschrift:  Option<String>,
+    begruendung:      Option<String>,
+    haendler_1:       Option<String>,
+    haendler_2:       Option<String>,
+    haendler_3:       Option<String>,
+    positions:        Option<serde_json::Value>,
+    created_at:       DateTime<Utc>,
+    updated_at:       DateTime<Utc>,
+}
+
+impl From<OrderRow> for Order {
+    fn from(r: OrderRow) -> Self {
+        let positions = r.positions
+            .and_then(|v| serde_json::from_value(v).ok());
+        Order {
+            id:              r.id,
+            article_id:      r.article_id,
+            article_name:    r.article_name,
+            quantity:        r.quantity,
+            unit:            r.unit,
+            status:          r.status,
+            supplier:        r.supplier,
+            order_date:      r.order_date,
+            notes:           r.notes,
+            ordered_by_id:   r.ordered_by_id,
+            ordered_by_name: r.ordered_by_name,
+            telefon:         r.telefon,
+            lieferanschrift: r.lieferanschrift,
+            begruendung:     r.begruendung,
+            haendler_1:      r.haendler_1,
+            haendler_2:      r.haendler_2,
+            haendler_3:      r.haendler_3,
+            positions,
+            created_at:      r.created_at,
+            updated_at:      r.updated_at,
+        }
+    }
+}
+
+// ── Request-Body ──────────────────────────────────────────────────────────────
 
 #[derive(Deserialize)]
 pub struct OrderBody {
-    pub article_id: Option<Uuid>,
-    pub article_name: String,
-    pub quantity: f64,
-    pub unit: String,
-    pub supplier: Option<String>,
-    pub order_date: Option<NaiveDate>,
-    pub notes: Option<String>,
-    // PDF-Felder
-    pub telefon: Option<String>,
+    pub article_id:      Option<Uuid>,
+    pub article_name:    Option<String>,
+    pub quantity:        Option<f64>,
+    pub unit:            Option<String>,
+    pub supplier:        Option<String>,
+    pub order_date:      Option<NaiveDate>,
+    pub notes:           Option<String>,
+    pub telefon:         Option<String>,
     pub lieferanschrift: Option<String>,
-    pub begruendung: Option<String>,
-    pub haendler_1: Option<String>,
-    pub haendler_2: Option<String>,
-    pub haendler_3: Option<String>,
+    pub begruendung:     Option<String>,
+    pub haendler_1:      Option<String>,
+    pub haendler_2:      Option<String>,
+    pub haendler_3:      Option<String>,
+    pub positions:       Option<Vec<OrderPosition>>,
 }
 
 #[derive(Deserialize)]
@@ -83,76 +159,81 @@ pub struct OrderFilter {
 #[derive(Deserialize)]
 pub struct DeliveryBody {
     pub quantity_delivered: f64,
-    pub delivery_date: Option<NaiveDate>,
-    pub notes: Option<String>,
+    pub delivery_date:      Option<NaiveDate>,
+    pub notes:              Option<String>,
 }
+
+// ── Hilfsfunktionen ───────────────────────────────────────────────────────────
+
+/// Leitet article_name / quantity / unit aus der ersten nicht-leeren Position ab.
+fn derive_article_fields(body: &OrderBody) -> Result<(String, f64, String), AppError> {
+    if let Some(positions) = &body.positions {
+        if let Some(first) = positions.iter().find(|p| !p.is_empty()) {
+            let name = first.gegenstand.clone().unwrap_or_default().trim().to_string();
+            let qty = first.menge.as_deref()
+                .and_then(|m| m.replace(',', ".").trim().parse::<f64>().ok())
+                .unwrap_or(1.0);
+            let unit = first.einheit.clone().unwrap_or_else(|| "Stück".into());
+            return Ok((name, qty, unit));
+        }
+        return Err(AppError::BadRequest("Mindestens eine Position muss ausgefüllt sein".into()));
+    }
+
+    // Legacy: direkte Felder
+    let name = body.article_name.as_deref().unwrap_or("").trim().to_string();
+    if name.is_empty() {
+        return Err(AppError::BadRequest("Artikelname darf nicht leer sein".into()));
+    }
+    let qty = body.quantity.unwrap_or(1.0);
+    if qty <= 0.0 {
+        return Err(AppError::BadRequest("Menge muss größer als 0 sein".into()));
+    }
+    let unit = body.unit.clone().unwrap_or_else(|| "Stück".into());
+    Ok((name, qty, unit))
+}
+
+const ORDER_COLUMNS: &str = r#"
+    id, article_id, article_name, quantity::float8 as quantity,
+    unit, status::text as status, supplier, order_date,
+    notes, ordered_by_id, ordered_by_name,
+    telefon, lieferanschrift, begruendung,
+    haendler_1, haendler_2, haendler_3,
+    positions, created_at, updated_at
+"#;
+
+// ── Handler ───────────────────────────────────────────────────────────────────
 
 pub async fn list_orders(
     State(state): State<AppState>,
     Query(filter): Query<OrderFilter>,
 ) -> AppResult<Json<Vec<Order>>> {
-    let rows = sqlx::query!(
-        r#"SELECT id, article_id, article_name, quantity::float8 as "quantity!",
-                  unit, status::text as "status!", supplier, order_date,
-                  notes, ordered_by_id, ordered_by_name,
-                  telefon, lieferanschrift, begruendung,
-                  haendler_1, haendler_2, haendler_3,
-                  created_at, updated_at
-           FROM orders
-           WHERE ($1::text IS NULL OR status::text = $1)
-             AND ($2::text IS NULL OR article_name ILIKE '%' || $2 || '%')
-           ORDER BY order_date DESC, created_at DESC"#,
-        filter.status,
-        filter.search
-    )
-    .fetch_all(&state.db)
-    .await?;
+    let sql = format!(
+        "SELECT {ORDER_COLUMNS} FROM orders
+         WHERE ($1::text IS NULL OR status::text = $1)
+           AND ($2::text IS NULL OR article_name ILIKE '%' || $2 || '%')
+         ORDER BY order_date DESC, created_at DESC"
+    );
 
-    let orders = rows
-        .into_iter()
-        .map(|r| Order {
-            id: r.id,
-            article_id: r.article_id,
-            article_name: r.article_name,
-            quantity: r.quantity,
-            unit: r.unit,
-            status: r.status,
-            supplier: r.supplier,
-            order_date: r.order_date,
-            notes: r.notes,
-            ordered_by_id: r.ordered_by_id,
-            ordered_by_name: r.ordered_by_name,
-            telefon: r.telefon,
-            lieferanschrift: r.lieferanschrift,
-            begruendung: r.begruendung,
-            haendler_1: r.haendler_1,
-            haendler_2: r.haendler_2,
-            haendler_3: r.haendler_3,
-            created_at: r.created_at,
-            updated_at: r.updated_at,
-        })
-        .collect();
+    let rows = sqlx::query_as::<_, OrderRow>(&sql)
+        .bind(filter.status)
+        .bind(filter.search)
+        .fetch_all(&state.db)
+        .await?;
 
-    Ok(Json(orders))
+    Ok(Json(rows.into_iter().map(Order::from).collect()))
 }
 
 pub async fn get_order(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> AppResult<Json<OrderWithDeliveries>> {
-    let row = sqlx::query!(
-        r#"SELECT id, article_id, article_name, quantity::float8 as "quantity!",
-                  unit, status::text as "status!", supplier, order_date,
-                  notes, ordered_by_id, ordered_by_name,
-                  telefon, lieferanschrift, begruendung,
-                  haendler_1, haendler_2, haendler_3,
-                  created_at, updated_at
-           FROM orders WHERE id = $1"#,
-        id
-    )
-    .fetch_optional(&state.db)
-    .await?
-    .ok_or(AppError::NotFound)?;
+    let sql = format!("SELECT {ORDER_COLUMNS} FROM orders WHERE id = $1");
+
+    let row = sqlx::query_as::<_, OrderRow>(&sql)
+        .bind(id)
+        .fetch_optional(&state.db)
+        .await?
+        .ok_or(AppError::NotFound)?;
 
     let deliveries = sqlx::query!(
         r#"SELECT id, order_id, quantity_delivered::float8 as "quantity_delivered!",
@@ -163,38 +244,17 @@ pub async fn get_order(
     .fetch_all(&state.db)
     .await?;
 
-    let order = Order {
-        id: row.id,
-        article_id: row.article_id,
-        article_name: row.article_name,
-        quantity: row.quantity,
-        unit: row.unit,
-        status: row.status,
-        supplier: row.supplier,
-        order_date: row.order_date,
-        notes: row.notes,
-        ordered_by_id: row.ordered_by_id,
-        ordered_by_name: row.ordered_by_name,
-        telefon: row.telefon,
-        lieferanschrift: row.lieferanschrift,
-        begruendung: row.begruendung,
-        haendler_1: row.haendler_1,
-        haendler_2: row.haendler_2,
-        haendler_3: row.haendler_3,
-        created_at: row.created_at,
-        updated_at: row.updated_at,
-    };
-
+    let order = Order::from(row);
     let deliveries = deliveries
         .into_iter()
         .map(|d| Delivery {
-            id: d.id,
-            order_id: d.order_id,
+            id:                 d.id,
+            order_id:           d.order_id,
             quantity_delivered: d.quantity_delivered,
-            delivery_date: d.delivery_date,
-            notes: d.notes,
-            received_by_name: d.received_by_name,
-            created_at: d.created_at,
+            delivery_date:      d.delivery_date,
+            notes:              d.notes,
+            received_by_name:   d.received_by_name,
+            created_at:         d.created_at,
         })
         .collect();
 
@@ -206,67 +266,43 @@ pub async fn create_order(
     Extension(claims): Extension<Claims>,
     Json(body): Json<OrderBody>,
 ) -> AppResult<Json<Order>> {
-    if body.article_name.trim().is_empty() {
-        return Err(AppError::BadRequest("Artikelname darf nicht leer sein".into()));
-    }
-    if body.quantity <= 0.0 {
-        return Err(AppError::BadRequest("Menge muss größer als 0 sein".into()));
-    }
-
+    let (article_name, quantity, unit) = derive_article_fields(&body)?;
     let order_date = body.order_date.unwrap_or_else(|| chrono::Local::now().date_naive());
+    let positions_json: Option<serde_json::Value> = body.positions.as_ref()
+        .map(|p| serde_json::to_value(p).ok())
+        .flatten();
 
-    let row = sqlx::query!(
-        r#"INSERT INTO orders
-               (article_id, article_name, quantity, unit, supplier, order_date, notes,
-                ordered_by_id, ordered_by_name,
-                telefon, lieferanschrift, begruendung, haendler_1, haendler_2, haendler_3)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-           RETURNING id, article_id, article_name, quantity::float8 as "quantity!",
-                     unit, status::text as "status!", supplier, order_date,
-                     notes, ordered_by_id, ordered_by_name,
-                     telefon, lieferanschrift, begruendung,
-                     haendler_1, haendler_2, haendler_3,
-                     created_at, updated_at"#,
-        body.article_id,
-        body.article_name.trim(),
-        body.quantity,
-        body.unit,
-        body.supplier,
-        order_date,
-        body.notes,
-        claims.sub,
-        claims.username,
-        body.telefon,
-        body.lieferanschrift,
-        body.begruendung,
-        body.haendler_1,
-        body.haendler_2,
-        body.haendler_3,
-    )
-    .fetch_one(&state.db)
-    .await?;
+    let returning = format!(
+        "INSERT INTO orders
+             (article_id, article_name, quantity, unit, supplier, order_date, notes,
+              ordered_by_id, ordered_by_name,
+              telefon, lieferanschrift, begruendung, haendler_1, haendler_2, haendler_3,
+              positions)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+         RETURNING {ORDER_COLUMNS}"
+    );
 
-    Ok(Json(Order {
-        id: row.id,
-        article_id: row.article_id,
-        article_name: row.article_name,
-        quantity: row.quantity,
-        unit: row.unit,
-        status: row.status,
-        supplier: row.supplier,
-        order_date: row.order_date,
-        notes: row.notes,
-        ordered_by_id: row.ordered_by_id,
-        ordered_by_name: row.ordered_by_name,
-        telefon: row.telefon,
-        lieferanschrift: row.lieferanschrift,
-        begruendung: row.begruendung,
-        haendler_1: row.haendler_1,
-        haendler_2: row.haendler_2,
-        haendler_3: row.haendler_3,
-        created_at: row.created_at,
-        updated_at: row.updated_at,
-    }))
+    let row = sqlx::query_as::<_, OrderRow>(&returning)
+        .bind(body.article_id)
+        .bind(&article_name)
+        .bind(quantity)
+        .bind(&unit)
+        .bind(body.supplier)
+        .bind(order_date)
+        .bind(body.notes)
+        .bind(claims.sub)
+        .bind(&claims.username)
+        .bind(body.telefon)
+        .bind(body.lieferanschrift)
+        .bind(body.begruendung)
+        .bind(body.haendler_1)
+        .bind(body.haendler_2)
+        .bind(body.haendler_3)
+        .bind(positions_json)
+        .fetch_one(&state.db)
+        .await?;
+
+    Ok(Json(Order::from(row)))
 }
 
 pub async fn update_order(
@@ -274,65 +310,44 @@ pub async fn update_order(
     Path(id): Path<Uuid>,
     Json(body): Json<OrderBody>,
 ) -> AppResult<Json<Order>> {
-    if body.article_name.trim().is_empty() {
-        return Err(AppError::BadRequest("Artikelname darf nicht leer sein".into()));
-    }
-
+    let (article_name, quantity, unit) = derive_article_fields(&body)?;
     let order_date = body.order_date.unwrap_or_else(|| chrono::Local::now().date_naive());
+    let positions_json: Option<serde_json::Value> = body.positions.as_ref()
+        .map(|p| serde_json::to_value(p).ok())
+        .flatten();
 
-    let row = sqlx::query!(
-        r#"UPDATE orders SET
-               article_id=$1, article_name=$2, quantity=$3, unit=$4,
-               supplier=$5, order_date=$6, notes=$7,
-               telefon=$8, lieferanschrift=$9, begruendung=$10,
-               haendler_1=$11, haendler_2=$12, haendler_3=$13
-           WHERE id = $14
-           RETURNING id, article_id, article_name, quantity::float8 as "quantity!",
-                     unit, status::text as "status!", supplier, order_date,
-                     notes, ordered_by_id, ordered_by_name,
-                     telefon, lieferanschrift, begruendung,
-                     haendler_1, haendler_2, haendler_3,
-                     created_at, updated_at"#,
-        body.article_id,
-        body.article_name.trim(),
-        body.quantity,
-        body.unit,
-        body.supplier,
-        order_date,
-        body.notes,
-        body.telefon,
-        body.lieferanschrift,
-        body.begruendung,
-        body.haendler_1,
-        body.haendler_2,
-        body.haendler_3,
-        id
-    )
-    .fetch_optional(&state.db)
-    .await?
-    .ok_or(AppError::NotFound)?;
+    let returning = format!(
+        "UPDATE orders SET
+             article_id=$1, article_name=$2, quantity=$3, unit=$4,
+             supplier=$5, order_date=$6, notes=$7,
+             telefon=$8, lieferanschrift=$9, begruendung=$10,
+             haendler_1=$11, haendler_2=$12, haendler_3=$13,
+             positions=$14
+         WHERE id = $15
+         RETURNING {ORDER_COLUMNS}"
+    );
 
-    Ok(Json(Order {
-        id: row.id,
-        article_id: row.article_id,
-        article_name: row.article_name,
-        quantity: row.quantity,
-        unit: row.unit,
-        status: row.status,
-        supplier: row.supplier,
-        order_date: row.order_date,
-        notes: row.notes,
-        ordered_by_id: row.ordered_by_id,
-        ordered_by_name: row.ordered_by_name,
-        telefon: row.telefon,
-        lieferanschrift: row.lieferanschrift,
-        begruendung: row.begruendung,
-        haendler_1: row.haendler_1,
-        haendler_2: row.haendler_2,
-        haendler_3: row.haendler_3,
-        created_at: row.created_at,
-        updated_at: row.updated_at,
-    }))
+    let row = sqlx::query_as::<_, OrderRow>(&returning)
+        .bind(body.article_id)
+        .bind(&article_name)
+        .bind(quantity)
+        .bind(&unit)
+        .bind(body.supplier)
+        .bind(order_date)
+        .bind(body.notes)
+        .bind(body.telefon)
+        .bind(body.lieferanschrift)
+        .bind(body.begruendung)
+        .bind(body.haendler_1)
+        .bind(body.haendler_2)
+        .bind(body.haendler_3)
+        .bind(positions_json)
+        .bind(id)
+        .fetch_optional(&state.db)
+        .await?
+        .ok_or(AppError::NotFound)?;
+
+    Ok(Json(Order::from(row)))
 }
 
 pub async fn delete_order(
@@ -396,13 +411,11 @@ pub async fn add_delivery(
         "teillieferung"
     };
 
-    sqlx::query(
-        "UPDATE orders SET status = $1::order_status WHERE id = $2",
-    )
-    .bind(new_status)
-    .bind(id)
-    .execute(&state.db)
-    .await?;
+    sqlx::query("UPDATE orders SET status = $1::order_status WHERE id = $2")
+        .bind(new_status)
+        .bind(id)
+        .execute(&state.db)
+        .await?;
 
     Ok(Json(serde_json::json!({ "message": "Lieferung eingetragen", "status": new_status })))
 }
