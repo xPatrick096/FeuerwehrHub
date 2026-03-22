@@ -44,6 +44,18 @@ export async function renderSettings() {
     <div class="card">
       <div class="card__header">Konto: ${esc(user?.username || '')}</div>
       <div class="card__body">
+        <div class="form-grid" style="margin-bottom:16px">
+          <div class="form-group form-group--full">
+            <label>Anzeigename (wird als Bedarfsmelder vorausgefüllt)</label>
+            <input type="text" id="set-display-name"
+              value="${esc(user?.display_name || '')}"
+              placeholder="${esc(user?.username || '')}" />
+          </div>
+        </div>
+        <div class="btn-group" style="margin-bottom:24px">
+          <button class="btn btn--primary" id="btn-save-profile">Anzeigename speichern</button>
+        </div>
+        <hr style="border:none;border-top:1px solid #e0e0e0;margin-bottom:20px" />
         <div class="form-grid">
           <div class="form-group">
             <label>Aktuelles Passwort</label>
@@ -104,6 +116,17 @@ export async function renderSettings() {
         ff_ort: document.getElementById('set-ff-ort').value.trim(),
       });
       toast('Einstellungen gespeichert');
+    } catch (e) {
+      toast(e.message, 'error');
+    }
+  });
+
+  document.getElementById('btn-save-profile').addEventListener('click', async () => {
+    try {
+      await api.updateProfile({
+        display_name: document.getElementById('set-display-name').value.trim() || null,
+      });
+      toast('Anzeigename gespeichert');
     } catch (e) {
       toast(e.message, 'error');
     }

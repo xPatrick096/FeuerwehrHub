@@ -176,6 +176,16 @@ pub async fn confirm_totp(
 
 // ── Eigenes Profil ───────────────────────────────────────────────────────────
 
+#[derive(sqlx::FromRow)]
+struct UserProfileRow {
+    id: Uuid,
+    username: String,
+    is_admin: bool,
+    role: String,
+    totp_enabled: bool,
+    display_name: Option<String>,
+}
+
 #[derive(Serialize)]
 pub struct MeResponse {
     pub id: Uuid,
@@ -183,16 +193,17 @@ pub struct MeResponse {
     pub is_admin: bool,
     pub role: String,
     pub totp_enabled: bool,
+    pub display_name: Option<String>,
 }
 
 pub async fn me(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
 ) -> AppResult<Json<MeResponse>> {
-    let user = sqlx::query!(
-        "SELECT id, username, is_admin, role, totp_enabled FROM users WHERE id = $1",
-        claims.sub
+    let user = sqlx::query_as::<_, UserProfileRow>(
+        "SELECT id, username, is_admin, role, totp_enabled, display_name FROM users WHERE id = $1"
     )
+    .bind(claims.sub)
     .fetch_optional(&state.db)
     .await?
     .ok_or(AppError::NotFound)?;
@@ -203,7 +214,36 @@ pub async fn me(
         is_admin: user.is_admin,
         role: user.role,
         totp_enabled: user.totp_enabled,
+        display_name: user.display_name,
     }))
+}
+
+// ── Profil aktualisieren ─────────────────────────────────────────────────────
+
+#[derive(Deserialize)]
+pub struct UpdateProfileBody {
+    pub display_name: Option<String>,
+}
+
+pub async fn update_profile(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Json(body): Json<UpdateProfileBody>,
+) -> AppResult<Json<serde_json::Value>> {
+    let display_name = body.display_name.map(|s| {
+        let s = s.trim().to_string();
+        if s.is_empty() { None } else { Some(s) }
+    }).flatten();
+
+    sqlx::query(
+        "UPDATE users SET display_name = $1 WHERE id = $2"
+    )
+    .bind(display_name)
+    .bind(claims.sub)
+    .execute(&state.db)
+    .await?;
+
+    Ok(Json(serde_json::json!({ "message": "Profil gespeichert" })))
 }
 
 // ── Setup (erster Admin-Account) ─────────────────────────────────────────────

@@ -1,13 +1,14 @@
 use axum::{
     middleware,
-    routing::{get, post},
+    routing::{get, post, put},
     Router,
 };
 
 use crate::{
     auth::{
         handlers::{
-            change_password, confirm_totp, initial_setup, login, me, setup_totp, verify_totp,
+            change_password, confirm_totp, initial_setup, login, me, setup_totp, update_profile,
+            verify_totp,
         },
         middleware::{require_auth, require_partial_auth},
     },
@@ -30,6 +31,7 @@ pub fn router(state: AppState) -> Router<AppState> {
     // Vollständig authentifizierte Routen
     let protected = Router::new()
         .route("/me", get(me))
+        .route("/profile", put(update_profile))
         .route("/change-password", post(change_password))
         .route_layer(middleware::from_fn_with_state(state, require_auth));
 

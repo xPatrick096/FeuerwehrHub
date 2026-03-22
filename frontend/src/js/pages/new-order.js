@@ -67,7 +67,7 @@ export async function renderNewOrder() {
             <div class="beschaffung-cell beschaffung-cell--bedarfsmelder">
               <div class="beschaffung-label">Bedarfsmelder(in)</div>
               <input type="text" id="field-bedarfsmelder"
-                value="${esc(user?.username || '')}" />
+                value="${esc(user?.display_name || user?.username || '')}" />
             </div>
             <div class="beschaffung-cell beschaffung-cell--telefon">
               <div class="beschaffung-label">Telefon</div>

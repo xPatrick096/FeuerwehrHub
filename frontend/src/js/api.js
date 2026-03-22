@@ -38,6 +38,7 @@ export const api = {
   setupTotp:     ()     => request('POST', '/auth/setup-totp'),
   confirmTotp:   (body) => request('POST', '/auth/confirm-totp', body),
   me:            ()     => request('GET',  '/auth/me'),
+  updateProfile: (body) => request('PUT',  '/auth/profile', body),
   changePassword:(body) => request('POST', '/auth/change-password', body),
   setup:         (body) => request('POST', '/auth/setup', body),
 

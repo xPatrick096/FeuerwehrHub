@@ -36,11 +36,9 @@ export async function renderOrders() {
           <table>
             <thead>
               <tr>
-                <th>Artikel</th>
-                <th>Menge</th>
-                <th>Lieferant</th>
+                <th>Positionen</th>
+                <th>Bedarfsmelder</th>
                 <th>Bestellt am</th>
-                <th>Bestellt von</th>
                 <th>Status</th>
                 <th>Aktionen</th>
               </tr>
@@ -75,6 +73,20 @@ export async function renderOrders() {
         <div class="modal__footer">
           <button class="btn btn--outline" id="close-delivery-modal2">Abbrechen</button>
           <button class="btn btn--success" id="btn-save-delivery">Lieferung speichern</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Details -->
+    <div class="modal-overlay" id="detail-modal">
+      <div class="modal" style="max-width:700px">
+        <div class="modal__header">
+          Bestelldetails
+          <button class="modal__close" id="close-detail-modal">✕</button>
+        </div>
+        <div class="modal__body" id="detail-modal-body"></div>
+        <div class="modal__footer">
+          <button class="btn btn--outline" id="close-detail-modal2">Schließen</button>
         </div>
       </div>
     </div>
@@ -113,29 +125,57 @@ export async function renderOrders() {
 
     const tbody = document.getElementById('orders-tbody');
     if (!orders || orders.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="7" class="table-empty">Keine Bestellungen gefunden</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5" class="table-empty">Keine Bestellungen gefunden</td></tr>`;
       return;
     }
 
-    tbody.innerHTML = orders.map(o => `
-      <tr>
-        <td><strong>${esc(o.article_name)}</strong></td>
-        <td>${o.quantity} ${esc(o.unit)}</td>
-        <td>${esc(o.supplier) || '—'}</td>
-        <td>${formatDate(o.order_date)}</td>
-        <td>${esc(o.ordered_by_name) || '—'}</td>
-        <td><span class="badge badge--${o.status}">${statusLabel(o.status)}</span></td>
-        <td>
-          <div class="btn-group">
-            ${o.status !== 'vollstaendig' && o.status !== 'storniert'
-              ? `<button class="btn btn--success btn--sm" data-action="delivery" data-id="${o.id}">📦 Lieferung</button>`
-              : ''}
-            <button class="btn btn--outline btn--sm" data-action="pdf" data-id="${o.id}">📄 PDF</button>
-            <button class="btn btn--danger btn--sm" data-action="delete" data-id="${o.id}">🗑</button>
-          </div>
-        </td>
-      </tr>
-    `).join('');
+    tbody.innerHTML = orders.map(o => {
+      const positions = (o.positions || []).filter(p => p.gegenstand);
+
+      let positionsHtml;
+      if (positions.length > 0) {
+        positionsHtml = `
+          <table style="border-collapse:collapse;width:100%;font-size:0.85em">
+            <thead>
+              <tr>
+                <th style="padding:2px 8px 2px 0;color:#888;font-weight:600;white-space:nowrap;border-bottom:1px solid #e0e0e0;width:60px">Menge</th>
+                <th style="padding:2px 8px 2px 0;color:#888;font-weight:600;white-space:nowrap;border-bottom:1px solid #e0e0e0;width:110px">Einheit</th>
+                <th style="padding:2px 8px 2px 0;color:#888;font-weight:600;white-space:nowrap;border-bottom:1px solid #e0e0e0">Gegenstand / Leistung</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${positions.map(p => `
+                <tr>
+                  <td style="padding:2px 8px 2px 0;vertical-align:top">${esc(p.menge) || ''}</td>
+                  <td style="padding:2px 8px 2px 0;vertical-align:top">${esc(p.einheit) || ''}</td>
+                  <td style="padding:2px 0;vertical-align:top"><strong>${esc(p.gegenstand)}</strong></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>`;
+      } else {
+        positionsHtml = `<span style="color:#888">${esc(o.article_name) || '—'}</span>`;
+      }
+
+      return `
+        <tr>
+          <td>${positionsHtml}</td>
+          <td>${esc(o.ordered_by_name) || '—'}</td>
+          <td>${formatDate(o.order_date)}</td>
+          <td><span class="badge badge--${o.status}">${statusLabel(o.status)}</span></td>
+          <td>
+            <div class="btn-group">
+              <button class="btn btn--secondary btn--sm" data-action="detail" data-id="${o.id}" title="Details">🔍</button>
+              ${o.status !== 'vollstaendig' && o.status !== 'storniert'
+                ? `<button class="btn btn--success btn--sm" data-action="delivery" data-id="${o.id}">📦</button>`
+                : ''}
+              <button class="btn btn--outline btn--sm" data-action="pdf" data-id="${o.id}">📄</button>
+              <button class="btn btn--danger btn--sm" data-action="delete" data-id="${o.id}">🗑</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
   }
 
   // Filter-Events
@@ -153,6 +193,15 @@ export async function renderOrders() {
 
     const id = btn.dataset.id;
     const action = btn.dataset.action;
+
+    if (action === 'detail') {
+      try {
+        const order = await api.getOrder(id);
+        showDetailModal(order);
+      } catch (e) {
+        toast('Fehler beim Laden: ' + e.message, 'error');
+      }
+    }
 
     if (action === 'delivery') {
       currentOrderId = id;
@@ -181,9 +230,74 @@ export async function renderOrders() {
     }
   });
 
-  document.getElementById('close-delivery-modal').addEventListener('click', closeModal);
-  document.getElementById('close-delivery-modal2').addEventListener('click', closeModal);
-  function closeModal() {
+  function showDetailModal(order) {
+    const positions = (order.positions || []).filter(p => p.gegenstand);
+    const haendler = [order.haendler_1, order.haendler_2, order.haendler_3].filter(Boolean);
+
+    document.getElementById('detail-modal-body').innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;margin-bottom:16px;font-size:0.9em">
+        <div><strong>Bedarfsmelder:</strong><br>${esc(order.ordered_by_name) || '—'}</div>
+        <div><strong>Telefon:</strong><br>${esc(order.telefon) || '—'}</div>
+        <div><strong>Datum:</strong><br>${formatDate(order.order_date)}</div>
+        <div><strong>Status:</strong><br><span class="badge badge--${order.status}">${statusLabel(order.status)}</span></div>
+        <div style="grid-column:1/-1"><strong>Lieferanschrift:</strong><br>${esc(order.lieferanschrift) || '—'}</div>
+      </div>
+
+      <table style="margin-bottom:12px">
+        <thead>
+          <tr>
+            <th style="width:80px">Menge</th>
+            <th style="width:140px">Einheit</th>
+            <th style="width:90px">Gesamt</th>
+            <th>Gegenstand / Leistung</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${positions.length > 0
+            ? positions.map(p => `
+                <tr>
+                  <td>${esc(p.menge) || '—'}</td>
+                  <td>${esc(p.einheit) || '—'}</td>
+                  <td>${esc(p.gesamt) || '—'}</td>
+                  <td>${esc(p.gegenstand)}</td>
+                </tr>
+              `).join('')
+            : `<tr><td colspan="4" class="table-empty">Keine Positionen</td></tr>`
+          }
+        </tbody>
+      </table>
+
+      ${order.begruendung ? `
+        <div style="margin-bottom:12px;font-size:0.9em">
+          <strong>Begründung:</strong><br>${esc(order.begruendung)}
+        </div>
+      ` : ''}
+
+      ${haendler.length > 0 ? `
+        <div style="margin-bottom:12px;font-size:0.9em">
+          <strong>Händler / Anbieter:</strong><br>${haendler.map(h => esc(h)).join('<br>')}
+        </div>
+      ` : ''}
+
+      ${order.notes ? `
+        <div style="font-size:0.9em;color:#666">
+          <strong>Interne Anmerkungen:</strong><br>${esc(order.notes)}
+        </div>
+      ` : ''}
+    `;
+    document.getElementById('detail-modal').classList.add('active');
+  }
+
+  document.getElementById('close-detail-modal').addEventListener('click', () => {
+    document.getElementById('detail-modal').classList.remove('active');
+  });
+  document.getElementById('close-detail-modal2').addEventListener('click', () => {
+    document.getElementById('detail-modal').classList.remove('active');
+  });
+
+  document.getElementById('close-delivery-modal').addEventListener('click', closeDeliveryModal);
+  document.getElementById('close-delivery-modal2').addEventListener('click', closeDeliveryModal);
+  function closeDeliveryModal() {
     document.getElementById('delivery-modal').classList.remove('active');
     currentOrderId = null;
   }
@@ -202,7 +316,7 @@ export async function renderOrders() {
         notes: notes || undefined,
       });
       toast('Lieferung eingetragen');
-      closeModal();
+      closeDeliveryModal();
       load();
     } catch (e) {
       toast(e.message, 'error');
@@ -213,7 +327,7 @@ export async function renderOrders() {
 }
 
 function esc(s) { return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function formatDate(d) { if (!d) return '—'; const [y,m,dd] = d.split('-'); return `${dd}.${m}.${y}`; }
+function formatDate(d) { if (!d) return '—'; const part = d.split('T')[0]; const [y,m,dd] = part.split('-'); return `${dd}.${m}.${y}`; }
 function today() { return new Date().toISOString().split('T')[0]; }
 function statusLabel(s) {
   return { offen: 'Offen', teillieferung: 'Teillieferung', vollstaendig: 'Vollständig', storniert: 'Storniert' }[s] || s;
