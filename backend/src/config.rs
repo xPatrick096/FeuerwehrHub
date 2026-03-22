@@ -12,6 +12,7 @@ pub struct Config {
     pub jwt_secret: String,
     pub jwt_expiry_hours: i64,
     pub ff_name: String,
+    pub data_dir: String,
 }
 
 impl Config {
@@ -37,6 +38,8 @@ impl Config {
                 .parse()?,
             ff_name: std::env::var("FF_NAME")
                 .unwrap_or_else(|_| "Freiwillige Feuerwehr".into()),
+            data_dir: std::env::var("DATA_DIR")
+                .unwrap_or_else(|_| "/data".into()),
         })
     }
 

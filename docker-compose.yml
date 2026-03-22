@@ -15,6 +15,9 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRY_HOURS: ${JWT_EXPIRY_HOURS:-8}
       FF_NAME: ${FF_NAME:-Freiwillige Feuerwehr}
+      DATA_DIR: /data
+    volumes:
+      - ff-data:/data
     ports:
       - "${APP_PORT:-3000}:3000"
     networks:
@@ -37,3 +40,6 @@ services:
 networks:
   ff-net:
     driver: bridge
+
+volumes:
+  ff-data:

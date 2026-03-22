@@ -1,15 +1,19 @@
 use axum::{
-    extract::State,
+    extract::{Multipart, State},
+    http::{header, StatusCode},
     middleware,
-    routing::get,
-    Json, Router,
+    response::{IntoResponse, Response},
+    routing::{get, post},
+    Extension, Json, Router,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::path::Path;
+use tokio::fs;
 
 use crate::{
-    auth::middleware::require_auth,
-    errors::AppResult,
+    auth::middleware::{require_auth, Claims},
+    errors::{AppError, AppResult},
     AppState,
 };
 
@@ -83,8 +87,67 @@ pub async fn update_settings(
     get_settings(State(state)).await
 }
 
+// ── PDF-Vorlage: öffentlich abrufbar ─────────────────────────────────────────
+pub async fn get_pdf(State(state): State<AppState>) -> Response {
+    let path = Path::new(&state.config.data_dir).join("beschaffungsauftrag.pdf");
+    match fs::read(&path).await {
+        Ok(bytes) => (
+            StatusCode::OK,
+            [(header::CONTENT_TYPE, "application/pdf")],
+            bytes,
+        )
+            .into_response(),
+        Err(_) => (
+            StatusCode::NOT_FOUND,
+            Json(serde_json::json!({"error": "Keine PDF-Vorlage hinterlegt. Bitte im Admin-Panel hochladen."})),
+        )
+            .into_response(),
+    }
+}
+
+// ── PDF-Vorlage hochladen (nur Admin/Superuser) ───────────────────────────────
+pub async fn upload_pdf(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    mut multipart: Multipart,
+) -> AppResult<Json<serde_json::Value>> {
+    if !claims.is_admin_or_above() {
+        return Err(AppError::Forbidden);
+    }
+
+    while let Some(field) = multipart
+        .next_field()
+        .await
+        .map_err(|e| AppError::BadRequest(e.to_string()))?
+    {
+        if field.name() == Some("file") {
+            let data = field
+                .bytes()
+                .await
+                .map_err(|e| AppError::BadRequest(e.to_string()))?;
+
+            let dir = Path::new(&state.config.data_dir);
+            fs::create_dir_all(dir)
+                .await
+                .map_err(|e| AppError::Internal(e.into()))?;
+            fs::write(dir.join("beschaffungsauftrag.pdf"), &data)
+                .await
+                .map_err(|e| AppError::Internal(e.into()))?;
+
+            return Ok(Json(serde_json::json!({"ok": true})));
+        }
+    }
+
+    Err(AppError::BadRequest("Keine PDF-Datei im Request gefunden".into()))
+}
+
 pub fn router(state: AppState) -> Router<AppState> {
-    Router::new()
+    let protected = Router::new()
         .route("/", get(get_settings).put(update_settings))
-        .route_layer(middleware::from_fn_with_state(state, require_auth))
+        .route("/pdf", post(upload_pdf))
+        .route_layer(middleware::from_fn_with_state(state.clone(), require_auth));
+
+    Router::new()
+        .route("/pdf", get(get_pdf))
+        .merge(protected)
 }

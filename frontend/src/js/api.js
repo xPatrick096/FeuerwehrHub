@@ -61,6 +61,22 @@ export const api = {
   getSettings:    ()     => request('GET', '/settings'),
   updateSettings: (body) => request('PUT', '/settings', body),
 
+  // PDF-Vorlage
+  uploadPdf: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const token = getToken();
+    return fetch(`${BASE}/settings/pdf`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    }).then(async res => {
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+      return data;
+    });
+  },
+
   // Admin
   getUsers:       ()          => request('GET',    '/admin/users'),
   createUser:     (body)      => request('POST',   '/admin/users', body),

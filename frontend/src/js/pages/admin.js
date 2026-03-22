@@ -69,6 +69,25 @@ export async function renderAdmin() {
           </div>
         </div>
       </div>
+
+      <div class="card" style="margin-top:0">
+        <div class="card__header">Beschaffungsauftrag PDF-Vorlage</div>
+        <div class="card__body">
+          <p style="font-size:13px;color:#666;margin-bottom:16px">
+            Lade das offizielle Formular deiner Feuerwehr / Stadt hoch.
+            Dieses PDF wird als Vorlage für alle Beschaffungsaufträge verwendet und mit den Bestelldaten befüllt.
+          </p>
+          <div id="pdf-upload-status" style="margin-bottom:12px;font-size:13px"></div>
+          <div class="form-group">
+            <label>PDF-Datei auswählen</label>
+            <input type="file" id="pdf-upload-input" accept=".pdf" />
+          </div>
+          <div class="btn-group" style="margin-top:12px">
+            <button class="btn btn--primary" id="btn-upload-pdf">PDF hochladen</button>
+            <a class="btn btn--outline" href="/api/settings/pdf" target="_blank" id="btn-view-pdf">Aktuelles PDF ansehen</a>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Modal: Neuer Benutzer -->
@@ -145,6 +164,31 @@ export async function renderAdmin() {
         ff_ort:     document.getElementById('cfg-ff-ort').value.trim(),
       });
       toast('Einstellungen gespeichert');
+    } catch (e) { toast(e.message, 'error'); }
+  });
+
+  // PDF-Status anzeigen
+  fetch('/api/settings/pdf', { method: 'HEAD' }).then(res => {
+    const statusEl = document.getElementById('pdf-upload-status');
+    if (!statusEl) return;
+    if (res.ok) {
+      statusEl.innerHTML = '<span style="color:#1E8449">✅ PDF-Vorlage ist hinterlegt</span>';
+    } else {
+      statusEl.innerHTML = '<span style="color:#C0392B">⚠️ Noch keine PDF-Vorlage hochgeladen</span>';
+    }
+  }).catch(() => {});
+
+  // PDF hochladen
+  document.getElementById('btn-upload-pdf').addEventListener('click', async () => {
+    const file = document.getElementById('pdf-upload-input').files[0];
+    if (!file) { toast('Keine Datei ausgewählt', 'error'); return; }
+    if (!file.name.toLowerCase().endsWith('.pdf')) { toast('Nur PDF-Dateien erlaubt', 'error'); return; }
+    try {
+      await api.uploadPdf(file);
+      toast('PDF-Vorlage erfolgreich hochgeladen');
+      document.getElementById('pdf-upload-input').value = '';
+      document.getElementById('pdf-upload-status').innerHTML =
+        '<span style="color:#1E8449">✅ PDF-Vorlage ist hinterlegt</span>';
     } catch (e) { toast(e.message, 'error'); }
   });
 

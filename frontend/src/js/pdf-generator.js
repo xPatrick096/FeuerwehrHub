@@ -6,7 +6,11 @@ import { PDFDocument, PDFName } from 'pdf-lib';
  */
 export async function generateBeschaffungsauftrag(order) {
   // PDF-Template laden
-  const pdfBytes = await fetch('/Beschaffungsauftrag.pdf').then(r => r.arrayBuffer());
+  const pdfResponse = await fetch('/api/settings/pdf');
+  if (!pdfResponse.ok) {
+    throw new Error('Keine PDF-Vorlage hinterlegt. Bitte im Admin-Panel → Konfiguration eine PDF-Datei hochladen.');
+  }
+  const pdfBytes = await pdfResponse.arrayBuffer();
   const pdfDoc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
   const form = pdfDoc.getForm();
 
