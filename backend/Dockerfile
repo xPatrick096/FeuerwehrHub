@@ -10,7 +10,8 @@ RUN mkdir src && echo "fn main() {}" > src/main.rs
 RUN cargo build --release
 RUN rm -f target/release/deps/feuerwehrhub*
 
-# Quellcode kopieren und bauen
+# Quellcode und sqlx-Cache kopieren und bauen
+COPY .sqlx ./.sqlx
 COPY src ./src
 RUN cargo build --release
 
