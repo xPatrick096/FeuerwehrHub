@@ -427,3 +427,121 @@ tr:hover td { background: #FAFAFA; }
     font-weight: 700;
   }
 }
+
+// ── Beschaffungsauftrag-Formular ─────────────────────────────────────────────
+.beschaffung-card {
+  .card__body { padding: 0; }
+}
+
+.beschaffung-article-select {
+  padding: $space-md $space-md $space-sm;
+  border-bottom: 1px solid $grau-rand;
+}
+
+.beschaffung-form {
+  padding: 0;
+}
+
+.beschaffung-row {
+  display: flex;
+  border-bottom: 1px solid $grau-rand;
+
+  &--haendler {
+    border-bottom: none;
+    border-top: 1px solid $grau-rand;
+
+    & + & { border-top: none; }
+  }
+}
+
+.beschaffung-cell {
+  flex: 1;
+  padding: 0;
+  border-right: 1px solid $grau-rand;
+
+  &:last-child { border-right: none; }
+
+  &--full { flex: 1 1 100%; border-right: none; }
+  &--bedarfsmelder { flex: 2; }
+  &--telefon { flex: 1; }
+  &--datum { flex: 1; }
+
+  input, textarea, select {
+    width: 100%;
+    border: none;
+    border-radius: 0;
+    padding: $space-sm $space-md;
+    font-size: $font-size-md;
+    background: transparent;
+    box-shadow: none;
+    outline: none;
+    resize: vertical;
+
+    &:focus { background: #FFFDE7; }
+  }
+
+  textarea { min-height: 90px; }
+}
+
+.beschaffung-label {
+  font-size: $font-size-xs;
+  color: $grau;
+  padding: $space-xs $space-md 0;
+  white-space: nowrap;
+}
+
+// Tabellen-Kopfzeile
+.beschaffung-table-header {
+  display: flex;
+  background: $grau-hell;
+  border-bottom: 1px solid $grau-rand;
+}
+
+.beschaffung-th {
+  padding: $space-xs $space-md;
+  font-size: $font-size-xs;
+  font-weight: 600;
+  color: $grau-dunkel;
+  border-right: 1px solid $grau-rand;
+
+  &:last-child { border-right: none; }
+  &--menge { width: 80px; }
+  &--einheit { width: 140px; }
+  &--gegenstand { flex: 1; }
+}
+
+// Tabellen-Zeile
+.beschaffung-table-row {
+  display: flex;
+  border-bottom: 1px solid $grau-rand;
+}
+
+.beschaffung-td {
+  padding: 0;
+  border-right: 1px solid $grau-rand;
+
+  &:last-child { border-right: none; }
+  &--menge { width: 80px; }
+  &--einheit { width: 140px; }
+  &--gegenstand { flex: 1; }
+
+  input, select {
+    width: 100%;
+    border: none;
+    border-radius: 0;
+    padding: $space-sm $space-md;
+    font-size: $font-size-md;
+    background: transparent;
+    box-shadow: none;
+    outline: none;
+
+    &:focus { background: #FFFDE7; }
+  }
+}
+
+.beschaffung-hint {
+  font-size: $font-size-xs;
+  color: $grau-mittel;
+  padding: $space-xs $space-md;
+  border-bottom: 1px solid $grau-rand;
+}

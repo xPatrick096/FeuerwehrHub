@@ -14,142 +14,178 @@ export async function renderNewOrder() {
   content.innerHTML = `
     <div class="page-header">
       <div>
-        <h2>Neue Bestellung</h2>
-        <p>Beschaffungsauftrag erfassen</p>
+        <h2>Neuer Beschaffungsauftrag</h2>
+        <p>${esc(settings?.ff_name || '')}</p>
       </div>
     </div>
 
-    <div class="card">
-      <div class="card__header">Bestelldaten</div>
+    <div class="card beschaffung-card">
       <div class="card__body">
-        <div class="form-grid">
-          <div class="form-group form-group--full">
-            <label>Artikel (aus Stamm wählen oder frei eingeben)</label>
-            <select id="article-select">
-              <option value="">— Frei eingeben —</option>
-              ${articles.map(a => `<option value="${a.id}" data-name="${esc(a.name)}" data-unit="${esc(a.unit)}">${esc(a.name)}</option>`).join('')}
-            </select>
-          </div>
-          <div class="form-group form-group--full">
-            <label>Artikelbezeichnung *</label>
-            <input type="text" id="article-name" placeholder="z.B. HP 85A Toner" />
-          </div>
-          <div class="form-group">
-            <label>Menge *</label>
-            <input type="number" id="order-qty" min="0.01" step="0.01" placeholder="1" />
-          </div>
-          <div class="form-group">
-            <label>Einheit *</label>
-            <select id="order-unit">
-              ${units.map(u => `<option value="${esc(u.label)}">${esc(u.label)}</option>`).join('')}
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Lieferant</label>
-            <input type="text" id="order-supplier" placeholder="z.B. Staples, Amazon..." />
-          </div>
-          <div class="form-group">
-            <label>Bestelldatum</label>
-            <input type="date" id="order-date" value="${today()}" />
-          </div>
-          <div class="form-group form-group--full">
-            <label>Anmerkungen</label>
-            <textarea id="order-notes" placeholder="Optional..."></textarea>
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <div class="card">
-      <div class="card__header">Beschaffungsauftrag (PDF)</div>
-      <div class="card__body">
-        <p style="font-size:13px;color:#666;margin-bottom:16px">
-          Diese Felder werden im offiziellen Beschaffungsauftrag der Stadt Leipzig verwendet.
-        </p>
-        <div class="form-grid">
-          <div class="form-group">
-            <label>Telefon Bedarfsmelder(in)</label>
-            <input type="text" id="pdf-telefon" placeholder="z.B. 0341 / 12345" />
-          </div>
-          <div class="form-group">
-            <label>Lieferanschrift</label>
-            <input type="text" id="pdf-lieferanschrift" placeholder="z.B. Feuerwehr Böhlitz-Ehrenberg" />
-          </div>
-          <div class="form-group form-group--full">
-            <label>Begründung der Notwendigkeit</label>
-            <textarea id="pdf-begruendung" rows="4"
-              placeholder="Warum wird die Beschaffung benötigt?"></textarea>
-          </div>
-          <div class="form-group">
-            <label>Händler / Anbieter 1</label>
-            <input type="text" id="pdf-haendler1" placeholder="z.B. Amazon Business" />
-          </div>
-          <div class="form-group">
-            <label>Händler / Anbieter 2</label>
-            <input type="text" id="pdf-haendler2" placeholder="Optional" />
-          </div>
-          <div class="form-group">
-            <label>Händler / Anbieter 3</label>
-            <input type="text" id="pdf-haendler3" placeholder="Optional" />
-          </div>
+        <!-- Artikel aus Stamm wählen (Hilfsfunktion) -->
+        <div class="form-group beschaffung-article-select">
+          <label>Artikel aus Stamm wählen</label>
+          <select id="article-select">
+            <option value="">— Frei eingeben —</option>
+            ${articles.map(a =>
+              `<option value="${a.id}" data-name="${esc(a.name)}" data-unit="${esc(a.unit)}">${esc(a.name)}</option>`
+            ).join('')}
+          </select>
         </div>
+
+        <div class="beschaffung-form">
+
+          <!-- Zeile 1: Bedarfsmelder | Telefon | Datum -->
+          <div class="beschaffung-row beschaffung-row--header">
+            <div class="beschaffung-cell beschaffung-cell--bedarfsmelder">
+              <div class="beschaffung-label">Bedarfsmelder(in)</div>
+              <input type="text" id="field-bedarfsmelder"
+                value="${esc(user?.username || '')}" />
+            </div>
+            <div class="beschaffung-cell beschaffung-cell--telefon">
+              <div class="beschaffung-label">Telefon</div>
+              <input type="text" id="field-telefon" placeholder="z.B. 0341 / 12345" />
+            </div>
+            <div class="beschaffung-cell beschaffung-cell--datum">
+              <div class="beschaffung-label">Datum</div>
+              <input type="date" id="field-datum" value="${today()}" />
+            </div>
+          </div>
+
+          <!-- Zeile 2: Lieferanschrift -->
+          <div class="beschaffung-row">
+            <div class="beschaffung-cell beschaffung-cell--full">
+              <div class="beschaffung-label">Lieferanschrift (ggf. mit Zimmernummer)</div>
+              <input type="text" id="field-lieferanschrift"
+                placeholder="${esc(settings?.ff_strasse ? settings.ff_strasse + ', ' + settings.ff_ort : 'Lieferanschrift eingeben')}" />
+            </div>
+          </div>
+
+          <!-- Tabelle: Menge | Einheit | Gegenstand / Leistung -->
+          <div class="beschaffung-table-header">
+            <div class="beschaffung-th beschaffung-th--menge">Menge¹</div>
+            <div class="beschaffung-th beschaffung-th--einheit">Einheit²</div>
+            <div class="beschaffung-th beschaffung-th--gegenstand">Gegenstand / Leistung</div>
+          </div>
+          <div class="beschaffung-table-row">
+            <div class="beschaffung-td beschaffung-td--menge">
+              <input type="number" id="field-menge" min="0.01" step="0.01" placeholder="1" />
+            </div>
+            <div class="beschaffung-td beschaffung-td--einheit">
+              <select id="field-einheit">
+                ${units.map(u => `<option value="${esc(u.label)}">${esc(u.label)}</option>`).join('')}
+              </select>
+            </div>
+            <div class="beschaffung-td beschaffung-td--gegenstand">
+              <input type="text" id="field-gegenstand" placeholder="Artikelbezeichnung" />
+            </div>
+          </div>
+          <div class="beschaffung-hint">
+            ¹ Anzahl / Mengenwert &nbsp;&nbsp; ² Einheit (z.B.: Stück / kg / l / cbm / Verpackungseinheit)
+          </div>
+
+          <!-- Begründung -->
+          <div class="beschaffung-row">
+            <div class="beschaffung-cell beschaffung-cell--full">
+              <div class="beschaffung-label">Begründung der Notwendigkeit</div>
+              <textarea id="field-begruendung" rows="4"
+                placeholder="Begründung eingeben ..."></textarea>
+            </div>
+          </div>
+
+          <!-- Händler -->
+          <div class="beschaffung-row">
+            <div class="beschaffung-cell beschaffung-cell--full">
+              <div class="beschaffung-label">Geeignete Händler / Anbieter (bitte bis zu drei angeben)</div>
+            </div>
+          </div>
+          <div class="beschaffung-row beschaffung-row--haendler">
+            <div class="beschaffung-cell beschaffung-cell--full">
+              <input type="text" id="field-haendler1" placeholder="Händler / Anbieter 1" />
+            </div>
+          </div>
+          <div class="beschaffung-row beschaffung-row--haendler">
+            <div class="beschaffung-cell beschaffung-cell--full">
+              <input type="text" id="field-haendler2" placeholder="Händler / Anbieter 2" />
+            </div>
+          </div>
+          <div class="beschaffung-row beschaffung-row--haendler">
+            <div class="beschaffung-cell beschaffung-cell--full">
+              <input type="text" id="field-haendler3" placeholder="Händler / Anbieter 3" />
+            </div>
+          </div>
+
+          <!-- Interne Anmerkungen -->
+          <div class="beschaffung-row" style="margin-top:8px">
+            <div class="beschaffung-cell beschaffung-cell--full">
+              <div class="beschaffung-label">Interne Anmerkungen (erscheinen nicht im PDF)</div>
+              <textarea id="field-notes" rows="2" placeholder="Optional..."></textarea>
+            </div>
+          </div>
+
+        </div><!-- /beschaffung-form -->
       </div>
     </div>
 
     <div class="btn-group" style="margin-top:8px">
-      <button class="btn btn--primary" id="btn-save-order">Bestellung speichern</button>
+      <button class="btn btn--primary" id="btn-save-order">Speichern</button>
       <button class="btn btn--outline" id="btn-cancel">Abbrechen</button>
     </div>
   `;
 
-  // Artikel aus Stamm wählen → Felder befüllen
+  // Artikel aus Stamm → Felder befüllen
   document.getElementById('article-select').addEventListener('change', (e) => {
     const opt = e.target.selectedOptions[0];
-    if (opt && opt.dataset.name) {
-      document.getElementById('article-name').value = opt.dataset.name;
-      const unitSelect = document.getElementById('order-unit');
-      for (const o of unitSelect.options) {
-        if (o.value === opt.dataset.unit) { unitSelect.value = o.value; break; }
+    if (opt?.dataset.name) {
+      document.getElementById('field-gegenstand').value = opt.dataset.name;
+      const unitSel = document.getElementById('field-einheit');
+      for (const o of unitSel.options) {
+        if (o.value === opt.dataset.unit) { unitSel.value = o.value; break; }
       }
     }
   });
 
+  // Lieferanschrift-Placeholder aus Einstellungen
+  if (settings?.ff_strasse && settings?.ff_ort) {
+    document.getElementById('field-lieferanschrift').value =
+      `${settings.ff_strasse}, ${settings.ff_ort}`;
+  }
+
+  // Speichern
   document.getElementById('btn-save-order').addEventListener('click', async () => {
     const articleSelect = document.getElementById('article-select');
     const articleId   = articleSelect.value || null;
-    const articleName = document.getElementById('article-name').value.trim();
-    const qty         = parseFloat(document.getElementById('order-qty').value);
-    const unit        = document.getElementById('order-unit').value;
-    const supplier    = document.getElementById('order-supplier').value.trim();
-    const orderDate   = document.getElementById('order-date').value;
-    const notes       = document.getElementById('order-notes').value.trim();
-    const telefon     = document.getElementById('pdf-telefon').value.trim();
-    const lieferanschrift = document.getElementById('pdf-lieferanschrift').value.trim();
-    const begruendung = document.getElementById('pdf-begruendung').value.trim();
-    const haendler_1  = document.getElementById('pdf-haendler1').value.trim();
-    const haendler_2  = document.getElementById('pdf-haendler2').value.trim();
-    const haendler_3  = document.getElementById('pdf-haendler3').value.trim();
+    const gegenstand  = document.getElementById('field-gegenstand').value.trim();
+    const menge       = parseFloat(document.getElementById('field-menge').value);
+    const einheit     = document.getElementById('field-einheit').value;
+    const datum       = document.getElementById('field-datum').value;
+    const telefon     = document.getElementById('field-telefon').value.trim();
+    const lieferanschrift = document.getElementById('field-lieferanschrift').value.trim();
+    const begruendung = document.getElementById('field-begruendung').value.trim();
+    const haendler_1  = document.getElementById('field-haendler1').value.trim();
+    const haendler_2  = document.getElementById('field-haendler2').value.trim();
+    const haendler_3  = document.getElementById('field-haendler3').value.trim();
+    const notes       = document.getElementById('field-notes').value.trim();
 
-    if (!articleName) { toast('Artikelbezeichnung eingeben', 'error'); return; }
-    if (!qty || qty <= 0) { toast('Menge eingeben', 'error'); return; }
+    if (!gegenstand) { toast('Gegenstand / Leistung eingeben', 'error'); return; }
+    if (!menge || menge <= 0) { toast('Menge eingeben', 'error'); return; }
 
     try {
       await api.createOrder({
-        article_id: articleId,
-        article_name: articleName,
-        quantity: qty,
-        unit,
-        supplier:         supplier     || undefined,
-        order_date:       orderDate    || undefined,
-        notes:            notes        || undefined,
-        telefon:          telefon      || undefined,
-        lieferanschrift:  lieferanschrift || undefined,
-        begruendung:      begruendung  || undefined,
-        haendler_1:       haendler_1   || undefined,
-        haendler_2:       haendler_2   || undefined,
-        haendler_3:       haendler_3   || undefined,
+        article_id:      articleId,
+        article_name:    gegenstand,
+        quantity:        menge,
+        unit:            einheit,
+        order_date:      datum     || undefined,
+        notes:           notes     || undefined,
+        telefon:         telefon   || undefined,
+        lieferanschrift: lieferanschrift || undefined,
+        begruendung:     begruendung    || undefined,
+        haendler_1:      haendler_1     || undefined,
+        haendler_2:      haendler_2     || undefined,
+        haendler_3:      haendler_3     || undefined,
       });
-      toast('Bestellung gespeichert!');
+      toast('Beschaffungsauftrag gespeichert');
       navigate('#/orders');
     } catch (e) {
       toast(e.message, 'error');
