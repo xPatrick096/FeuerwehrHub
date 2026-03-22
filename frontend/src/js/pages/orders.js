@@ -230,7 +230,18 @@ export async function renderOrders() {
         <div><strong>Bedarfsmelder:</strong><br>${esc(order.ordered_by_name) || '—'}</div>
         <div><strong>Telefon:</strong><br>${esc(order.telefon) || '—'}</div>
         <div><strong>Datum:</strong><br>${formatDate(order.order_date)}</div>
-        <div><strong>Status:</strong><br><span class="badge badge--${order.status}">${statusLabel(order.status)}</span></div>
+        <div>
+          <strong>Status:</strong><br>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+            <select id="detail-status-select" style="font-size:0.9em">
+              <option value="offen"         ${order.status==='offen'         ?'selected':''}>Offen</option>
+              <option value="teillieferung" ${order.status==='teillieferung' ?'selected':''}>Teillieferung</option>
+              <option value="vollstaendig"  ${order.status==='vollstaendig'  ?'selected':''}>Vollständig</option>
+              <option value="storniert"     ${order.status==='storniert'     ?'selected':''}>Storniert</option>
+            </select>
+            <button class="btn btn--secondary btn--sm" id="btn-save-status" data-id="${order.id}">Speichern</button>
+          </div>
+        </div>
         <div style="grid-column:1/-1"><strong>Lieferanschrift:</strong><br>${esc(order.lieferanschrift) || '—'}</div>
       </div>
 
@@ -276,6 +287,20 @@ export async function renderOrders() {
         </div>
       ` : ''}
     `;
+
+    document.getElementById('btn-save-status').addEventListener('click', async (e) => {
+      const orderId = e.currentTarget.dataset.id;
+      const newStatus = document.getElementById('detail-status-select').value;
+      try {
+        await api.setStatus(orderId, newStatus);
+        toast('Status geändert');
+        document.getElementById('detail-modal').classList.remove('active');
+        load();
+      } catch (err) {
+        toast(err.message, 'error');
+      }
+    });
+
     document.getElementById('detail-modal').classList.add('active');
   }
 

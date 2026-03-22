@@ -365,13 +365,25 @@ pub async fn add_delivery(
         return Err(AppError::BadRequest("Liefermenge muss größer als 0 sein".into()));
     }
 
-    let order = sqlx::query_as::<_, (f64,)>(
-        "SELECT quantity::float8 FROM orders WHERE id = $1"
+    // Bestellung laden: Menge + Positionen für Status-Berechnung
+    let order_data = sqlx::query_as::<_, (f64, Option<serde_json::Value>)>(
+        "SELECT quantity::float8, positions FROM orders WHERE id = $1"
     )
     .bind(id)
     .fetch_optional(&state.db)
     .await?
     .ok_or(AppError::NotFound)?;
+
+    // Anzahl nicht-leerer Positionen
+    let positions_count = order_data.1.as_ref()
+        .and_then(|v| v.as_array())
+        .map(|arr| arr.iter().filter(|p| {
+            p.get("gegenstand")
+                .and_then(|g| g.as_str())
+                .map(|s| !s.trim().is_empty())
+                .unwrap_or(false)
+        }).count())
+        .unwrap_or(0);
 
     let delivery_date = body.delivery_date.unwrap_or_else(|| chrono::Local::now().date_naive());
 
@@ -383,23 +395,37 @@ pub async fn add_delivery(
     .bind(body.quantity_delivered)
     .bind(delivery_date)
     .bind(body.notes)
-    .bind(body.position_name)
+    .bind(&body.position_name)
     .bind(claims.sub)
     .bind(&claims.username)
     .execute(&state.db)
     .await?;
 
-    let total_delivered: f64 = sqlx::query_scalar(
-        "SELECT COALESCE(SUM(quantity_delivered), 0)::float8 FROM deliveries WHERE order_id = $1"
-    )
-    .bind(id)
-    .fetch_one(&state.db)
-    .await?;
+    // Status-Berechnung: bei mehreren Positionen erst vollständig wenn alle eine Lieferung haben
+    let new_status = if positions_count > 1 {
+        let delivered_positions: i64 = sqlx::query_scalar(
+            "SELECT COUNT(DISTINCT position_name) FROM deliveries
+             WHERE order_id = $1 AND position_name IS NOT NULL AND position_name != ''"
+        )
+        .bind(id)
+        .fetch_one(&state.db)
+        .await?;
 
-    let new_status = if total_delivered >= order.0 {
-        "vollstaendig"
+        if delivered_positions >= positions_count as i64 {
+            "vollstaendig"
+        } else {
+            "teillieferung"
+        }
     } else {
-        "teillieferung"
+        // Einzelposition: Mengenvergleich
+        let total_delivered: f64 = sqlx::query_scalar(
+            "SELECT COALESCE(SUM(quantity_delivered), 0)::float8 FROM deliveries WHERE order_id = $1"
+        )
+        .bind(id)
+        .fetch_one(&state.db)
+        .await?;
+
+        if total_delivered >= order_data.0 { "vollstaendig" } else { "teillieferung" }
     };
 
     sqlx::query("UPDATE orders SET status = $1::order_status WHERE id = $2")
@@ -431,11 +457,42 @@ pub async fn get_stats(State(state): State<AppState>) -> AppResult<Json<serde_js
     })))
 }
 
+// ── Handler: Status manuell setzen ───────────────────────────────────────────
+
+#[derive(Deserialize)]
+pub struct SetStatusBody {
+    pub status: String,
+}
+
+pub async fn set_status(
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+    Json(body): Json<SetStatusBody>,
+) -> AppResult<Json<serde_json::Value>> {
+    let valid = ["offen", "teillieferung", "vollstaendig", "storniert"];
+    if !valid.contains(&body.status.as_str()) {
+        return Err(AppError::BadRequest("Ungültiger Status".into()));
+    }
+
+    let result = sqlx::query("UPDATE orders SET status = $1::order_status WHERE id = $2")
+        .bind(&body.status)
+        .bind(id)
+        .execute(&state.db)
+        .await?;
+
+    if result.rows_affected() == 0 {
+        return Err(AppError::NotFound);
+    }
+
+    Ok(Json(serde_json::json!({ "status": body.status })))
+}
+
 pub fn router(state: AppState) -> Router<AppState> {
     Router::new()
         .route("/", get(list_orders).post(create_order))
         .route("/stats", get(get_stats))
         .route("/:id", get(get_order).put(update_order).delete(delete_order))
         .route("/:id/delivery", post(add_delivery))
+        .route("/:id/status", post(set_status))
         .route_layer(middleware::from_fn_with_state(state, require_auth))
 }

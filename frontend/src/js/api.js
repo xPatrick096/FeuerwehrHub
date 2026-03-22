@@ -55,6 +55,7 @@ export const api = {
   updateOrder:  (id, b)  => request('PUT',    `/orders/${id}`, b),
   deleteOrder:  (id)     => request('DELETE', `/orders/${id}`),
   addDelivery:  (id, b)  => request('POST',   `/orders/${id}/delivery`, b),
+  setStatus:    (id, s)  => request('POST',   `/orders/${id}/status`, { status: s }),
   getStats:     ()       => request('GET',    '/orders/stats'),
 
   // Artikel
