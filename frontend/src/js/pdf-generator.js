@@ -230,8 +230,7 @@ function generateGenericPdf(order) {
   doc.text('Hiermit bitte ich um die Beschaffung der oben beschriebenen Leistungen!', margin, y);
 
   // PDF öffnen
-  const blob = doc.output('blob');
-  openPdf(new Uint8Array(await blob.arrayBuffer()));
+  openPdf(new Uint8Array(doc.output('arraybuffer')));
 }
 
 // ── Hilfsfunktion ─────────────────────────────────────────────────────────────
