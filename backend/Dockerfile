@@ -1,18 +1,19 @@
 FROM rust:latest AS builder
 
-WORKDIR /app
+WORKDIR /app/backend
 
 ENV SQLX_OFFLINE=true
 
 # Abhängigkeiten cachen
-COPY Cargo.toml ./
+COPY backend/Cargo.toml ./
 RUN mkdir src && echo "fn main() {}" > src/main.rs
 RUN cargo build --release
 RUN rm -f target/release/deps/feuerwehrhub*
 
-# Quellcode und sqlx-Cache kopieren und bauen
-COPY .sqlx ./.sqlx
-COPY src ./src
+# Quellcode, sqlx-Cache und Migrationen kopieren und bauen
+COPY backend/.sqlx ./.sqlx
+COPY backend/src ./src
+COPY migrations ../migrations
 RUN cargo build --release
 
 # Minimales Laufzeit-Image
@@ -25,7 +26,7 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-COPY --from=builder /app/target/release/feuerwehrhub .
+COPY --from=builder /app/backend/target/release/feuerwehrhub .
 
 EXPOSE 3000
 
