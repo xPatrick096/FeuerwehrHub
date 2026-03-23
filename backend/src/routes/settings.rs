@@ -3,7 +3,7 @@ use axum::{
     http::{header, StatusCode},
     middleware,
     response::{IntoResponse, Response},
-    routing::{get, post},
+    routing::{get, post, put},
     Extension, Json, Router,
 };
 use serde::{Deserialize, Serialize};
@@ -18,12 +18,15 @@ use crate::{
     AppState,
 };
 
+pub const KNOWN_MODULES: &[&str] = &["lager"];
+
 #[derive(Serialize)]
 pub struct Settings {
     pub ff_name: String,
     pub ff_strasse: String,
     pub ff_ort: String,
     pub setup_complete: bool,
+    pub modules: HashMap<String, bool>,
 }
 
 #[derive(Deserialize)]
@@ -43,11 +46,18 @@ pub async fn get_settings(State(state): State<AppState>) -> AppResult<Json<Setti
         .map(|r| (r.key, r.value))
         .collect();
 
+    let mut modules = HashMap::new();
+    for &m in KNOWN_MODULES {
+        let key = format!("module_{}", m);
+        modules.insert(m.to_string(), map.get(&key).map(|v| v == "true").unwrap_or(false));
+    }
+
     Ok(Json(Settings {
         ff_name: map.get("ff_name").cloned().unwrap_or_default(),
         ff_strasse: map.get("ff_strasse").cloned().unwrap_or_default(),
         ff_ort: map.get("ff_ort").cloned().unwrap_or_default(),
         setup_complete: map.get("setup_complete").map(|v| v == "true").unwrap_or(false),
+        modules,
     }))
 }
 
@@ -93,6 +103,52 @@ pub async fn update_settings(
         Some("settings"), None, None).await;
 
     get_settings(State(state)).await
+}
+
+// ── Module aktivieren/deaktivieren ───────────────────────────────────────────
+
+#[derive(Deserialize)]
+pub struct UpdateModules {
+    pub modules: HashMap<String, bool>,
+}
+
+pub async fn update_modules(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Json(body): Json<UpdateModules>,
+) -> AppResult<Json<serde_json::Value>> {
+    if !claims.is_admin_or_above() {
+        return Err(AppError::Forbidden);
+    }
+
+    for (key, value) in &body.modules {
+        if !KNOWN_MODULES.contains(&key.as_str()) {
+            continue;
+        }
+        let setting_key = format!("module_{}", key);
+        let setting_val = if *value { "true" } else { "false" };
+        sqlx::query(
+            "INSERT INTO settings (key, value) VALUES ($1, $2)
+             ON CONFLICT (key) DO UPDATE SET value = $2",
+        )
+        .bind(&setting_key)
+        .bind(setting_val)
+        .execute(&state.db)
+        .await?;
+    }
+
+    audit::log(
+        &state.db,
+        Some(claims.sub),
+        &claims.username,
+        "MODULES_UPDATED",
+        Some("settings"),
+        None,
+        None,
+    )
+    .await;
+
+    Ok(Json(serde_json::json!({ "ok": true })))
 }
 
 // ── PDF-Vorlage: öffentlich abrufbar ─────────────────────────────────────────
@@ -152,6 +208,7 @@ pub async fn upload_pdf(
 pub fn router(state: AppState) -> Router<AppState> {
     let protected = Router::new()
         .route("/", get(get_settings).put(update_settings))
+        .route("/modules", put(update_modules))
         .route("/pdf", post(upload_pdf))
         .route_layer(middleware::from_fn_with_state(state.clone(), require_auth));
 

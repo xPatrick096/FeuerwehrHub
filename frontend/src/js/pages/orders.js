@@ -5,7 +5,7 @@ import { generateBeschaffungsauftrag } from '../pdf-generator.js';
 
 export async function renderOrders() {
   const [settings, user] = await Promise.all([api.getSettings(), api.me()]);
-  setShellInfo(settings?.ff_name, user);
+  setShellInfo(settings?.ff_name, user, settings?.modules);
   renderShell('orders');
 
   const content = document.getElementById('page-content');

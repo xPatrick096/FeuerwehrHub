@@ -14,7 +14,7 @@ const MODULE_LABELS = {
 
 export async function renderAdmin() {
   const [settings, me] = await Promise.all([api.getSettings(), api.me()]);
-  setShellInfo(settings?.ff_name, me);
+  setShellInfo(settings?.ff_name, me, settings?.modules);
   renderShell('admin');
 
   // Zugriffsprüfung
@@ -36,6 +36,7 @@ export async function renderAdmin() {
     <div class="tab-bar">
       <button class="tab-btn tab-btn--active" data-tab="users">Benutzer</button>
       <button class="tab-btn" data-tab="roles">Rollen</button>
+      <button class="tab-btn" data-tab="modules">Module</button>
       <button class="tab-btn" data-tab="config">Konfiguration</button>
       <button class="tab-btn" data-tab="audit">Audit-Log</button>
     </div>
@@ -59,6 +60,15 @@ export async function renderAdmin() {
           <button class="btn btn--primary btn--sm" id="btn-new-role">+ Rolle anlegen</button>
         </div>
         <div class="card__body" id="roles-table-wrap"><p>Lade...</p></div>
+      </div>
+    </div>
+
+    <div id="tab-modules" class="tab-panel" style="display:none">
+      <div class="card">
+        <div class="card__header">Module aktivieren / deaktivieren</div>
+        <div class="card__body" id="modules-list">
+          <p>Lade...</p>
+        </div>
       </div>
     </div>
 
@@ -204,6 +214,7 @@ export async function renderAdmin() {
       content.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none');
       document.getElementById(`tab-${btn.dataset.tab}`).style.display = 'block';
       if (btn.dataset.tab === 'audit') loadAuditLog();
+      if (btn.dataset.tab === 'modules') loadModules();
     });
   });
 
@@ -551,6 +562,69 @@ async function loadUsers(me, roles = []) {
         </tbody>
       </table>
     `;
+  } catch (e) {
+    wrap.innerHTML = `<p style="color:red;font-size:13px">Fehler: ${e.message}</p>`;
+  }
+}
+
+const MODULE_DEFS = [
+  { key: 'lager',           icon: '🏪', label: 'Lager',           desc: 'Beschaffungsaufträge, Bestellübersicht, Artikelstamm' },
+  { key: 'einsatzberichte', icon: '🚒', label: 'Einsatzberichte', desc: 'Einsatzberichte erfassen und verwalten',               soon: true },
+  { key: 'fahrzeuge',       icon: '🚗', label: 'Fahrzeuge',       desc: 'TÜV-Fristen, Wartung, Geräteprüfung',                  soon: true },
+  { key: 'personal',        icon: '👥', label: 'Personal',        desc: 'Qualifikationen, Schlüssel, Pager, G26.3',              soon: true },
+  { key: 'jugendfeuerwehr', icon: '🧒', label: 'Jugendfeuerwehr', desc: 'JF-Mitglieder, Termine, Wettbewerbe',                  soon: true },
+];
+
+async function loadModules() {
+  const wrap = document.getElementById('modules-list');
+  if (!wrap) return;
+
+  try {
+    const settings = await api.getSettings();
+    const modules = settings?.modules || {};
+
+    wrap.innerHTML = `
+      <p style="font-size:13px;color:#666;margin-bottom:20px">
+        Aktiviere oder deaktiviere Module für diese Feuerwehr.
+        Deaktivierte Module sind für alle Benutzer ausgeblendet.
+      </p>
+      <div style="display:flex;flex-direction:column;gap:0">
+        ${MODULE_DEFS.map(m => `
+          <div style="display:flex;align-items:center;justify-content:space-between;
+                      padding:14px 0;border-bottom:1px solid #f0f0f0">
+            <div style="display:flex;align-items:center;gap:12px">
+              <span style="font-size:22px">${m.icon}</span>
+              <div>
+                <div style="font-weight:600;font-size:14px">${m.label}
+                  ${m.soon ? '<span style="font-size:11px;color:#999;margin-left:6px;font-weight:400">Demnächst</span>' : ''}
+                </div>
+                <div style="font-size:12px;color:#888;margin-top:2px">${m.desc}</div>
+              </div>
+            </div>
+            <label class="toggle-switch" style="flex-shrink:0">
+              <input type="checkbox" data-module="${m.key}"
+                ${modules[m.key] ? 'checked' : ''}
+                ${m.soon ? 'disabled' : ''} />
+              <span class="toggle-switch__track"></span>
+            </label>
+          </div>
+        `).join('')}
+      </div>
+      <div class="btn-group" style="margin-top:20px">
+        <button class="btn btn--primary" id="btn-save-modules">Änderungen speichern</button>
+      </div>
+    `;
+
+    document.getElementById('btn-save-modules').addEventListener('click', async () => {
+      const updated = {};
+      wrap.querySelectorAll('input[data-module]').forEach(cb => {
+        if (!cb.disabled) updated[cb.dataset.module] = cb.checked;
+      });
+      try {
+        await api.updateModules({ modules: updated });
+        toast('Module gespeichert');
+      } catch (e) { toast(e.message, 'error'); }
+    });
   } catch (e) {
     wrap.innerHTML = `<p style="color:red;font-size:13px">Fehler: ${e.message}</p>`;
   }

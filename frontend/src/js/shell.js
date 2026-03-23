@@ -2,10 +2,12 @@ import { navigate } from './router.js';
 
 let ffName = 'FeuerwehrHub';
 let currentUser = null;
+let activeModules = {};
 
-export function setShellInfo(name, user) {
+export function setShellInfo(name, user, modules) {
   ffName = name || ffName;
   currentUser = user;
+  activeModules = modules || {};
 }
 
 function canAccess(user, module) {
@@ -39,7 +41,7 @@ export function renderShell(activePage) {
               <span class="sidebar__item__icon">🏠</span> Startseite
             </button>
             <div class="sidebar__divider"></div>
-            ${canAccess(currentUser, 'lager') ? `
+            ${canAccess(currentUser, 'lager') && activeModules['lager'] ? `
             <div class="sidebar__module">🏪 Lager</div>
             <button class="sidebar__item${activePage === 'orders' ? ' active' : ''}" data-page="orders">
               <span class="sidebar__item__icon">📋</span> Bestellübersicht

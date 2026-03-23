@@ -4,7 +4,7 @@ import { renderShell, setShellInfo } from '../shell.js';
 
 export async function renderSettings() {
   const [settings, user] = await Promise.all([api.getSettings(), api.me()]);
-  setShellInfo(settings?.ff_name, user);
+  setShellInfo(settings?.ff_name, user, settings?.modules);
   renderShell('settings');
 
   const content = document.getElementById('page-content');

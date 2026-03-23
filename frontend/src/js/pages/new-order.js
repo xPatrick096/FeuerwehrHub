@@ -9,7 +9,7 @@ export async function renderNewOrder() {
   const [settings, user, articles, units] = await Promise.all([
     api.getSettings(), api.me(), api.getArticles(), api.getUnits(),
   ]);
-  setShellInfo(settings?.ff_name, user);
+  setShellInfo(settings?.ff_name, user, settings?.modules);
   renderShell('new-order');
 
   const content = document.getElementById('page-content');

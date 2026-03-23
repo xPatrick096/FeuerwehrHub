@@ -152,3 +152,12 @@ MIT License — siehe [LICENSE](LICENSE)
 
 Issues und Pull Requests sind willkommen.
 Dieses Projekt entsteht ehrenamtlich — für Feuerwehren, von Feuerwehrmenschen.
+
+---
+
+## Copyright & Kontakt
+
+&copy; 2026 Patrick Faust
+
+Fragen, Feedback oder Kontakt:
+**webmaster@feuerwehrhub.de**

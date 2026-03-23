@@ -6,7 +6,7 @@ export async function renderArticles() {
   const [settings, user, units] = await Promise.all([
     api.getSettings(), api.me(), api.getUnits(),
   ]);
-  setShellInfo(settings?.ff_name, user);
+  setShellInfo(settings?.ff_name, user, settings?.modules);
   renderShell('articles');
 
   const content = document.getElementById('page-content');

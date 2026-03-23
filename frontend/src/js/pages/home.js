@@ -4,7 +4,7 @@ import { renderShell, setShellInfo, canAccess } from '../shell.js';
 
 export async function renderHome() {
   const [settings, user] = await Promise.all([api.getSettings(), api.me()]);
-  setShellInfo(settings?.ff_name, user);
+  setShellInfo(settings?.ff_name, user, settings?.modules);
   renderShell('home');
 
   const content = document.getElementById('page-content');
@@ -69,7 +69,7 @@ export async function renderHome() {
   `;
 
   await loadAnnouncements(user, isAdmin);
-  renderModuleCards(user);
+  renderModuleCards(user, settings?.modules || {});
 
   if (isAdmin) {
     setupAnnouncementModal(user);
@@ -203,64 +203,51 @@ function openAnnouncementModal(ann, user, isAdmin) {
 
 // ── Modul-Kacheln ─────────────────────────────────────────────────────────────
 
-function renderModuleCards(user) {
+function renderModuleCards(user, modules) {
   const grid = document.getElementById('module-cards');
   if (!grid) return;
 
-  const modules = [
-    {
-      key: 'lager',
-      icon: '🏪',
-      label: 'Lager',
-      desc: 'Bestellungen, Artikelstamm',
-      page: '#/orders',
-    },
-    {
-      key: 'einsatzberichte',
-      icon: '🚒',
-      label: 'Einsatzberichte',
-      desc: 'Berichte erfassen & verwalten',
-      page: null, // noch nicht implementiert
-    },
-    {
-      key: 'fahrzeuge',
-      icon: '🚗',
-      label: 'Fahrzeuge',
-      desc: 'TÜV-Fristen, Wartung',
-      page: null,
-    },
-    {
-      key: 'personal',
-      icon: '👥',
-      label: 'Personal',
-      desc: 'Qualifikationen, Schlüssel, Pager',
-      page: null,
-    },
-    {
-      key: 'jugendfeuerwehr',
-      icon: '🧒',
-      label: 'Jugendfeuerwehr',
-      desc: 'JF-Mitglieder, Termine',
-      page: null,
-    },
+  const isAdmin = user?.role === 'admin' || user?.role === 'superuser';
+
+  const allModules = [
+    { key: 'lager',           icon: '🏪', label: 'Lager',           desc: 'Bestellungen, Artikelstamm',          page: '#/orders', implemented: true },
+    { key: 'einsatzberichte', icon: '🚒', label: 'Einsatzberichte', desc: 'Berichte erfassen & verwalten',        page: null,       implemented: false },
+    { key: 'fahrzeuge',       icon: '🚗', label: 'Fahrzeuge',       desc: 'TÜV-Fristen, Wartung',                 page: null,       implemented: false },
+    { key: 'personal',        icon: '👥', label: 'Personal',        desc: 'Qualifikationen, Schlüssel, Pager',    page: null,       implemented: false },
+    { key: 'jugendfeuerwehr', icon: '🧒', label: 'Jugendfeuerwehr', desc: 'JF-Mitglieder, Termine',               page: null,       implemented: false },
   ];
 
-  const accessible = modules.filter(m => canAccess(user, m.key));
+  // Für reguläre Benutzer: nur aktive Module mit Berechtigung
+  // Für Admins: aktive Module + deaktivierte implementierte Module (als Hinweis) + Demnächst-Module
+  const visible = allModules.filter(m => {
+    if (!m.implemented) return isAdmin; // Demnächst nur für Admins
+    const isActive = modules[m.key] === true;
+    if (isActive) return canAccess(user, m.key);
+    return isAdmin; // Deaktivierte Module nur für Admins sichtbar
+  });
 
-  if (!accessible.length) {
+  if (!visible.length) {
     grid.innerHTML = `<p style="color:#888;font-size:13px">Keine Module verfügbar. Wende dich an deinen Administrator.</p>`;
     return;
   }
 
-  grid.innerHTML = accessible.map(m => `
-    <div class="dashboard-card ${m.page ? 'dashboard-card--active' : 'dashboard-card--soon'}"
-      ${m.page ? `data-page="${m.page}"` : ''}>
-      <div class="dashboard-card__icon">${m.icon}</div>
-      <div class="dashboard-card__label">${m.label}</div>
-      <div class="dashboard-card__desc">${m.desc}</div>
-      ${!m.page ? `<div class="dashboard-card__soon">Demnächst</div>` : ''}
-    </div>
-  `).join('');
+  grid.innerHTML = visible.map(m => {
+    const isActive = modules[m.key] === true;
+    const isClickable = m.implemented && isActive && m.page;
+    let badge = '';
+    if (!m.implemented) badge = `<div class="dashboard-card__soon">Demnächst</div>`;
+    else if (!isActive) badge = `<div class="dashboard-card__soon">Deaktiviert</div>`;
+
+    return `
+      <div class="dashboard-card ${isClickable ? 'dashboard-card--active' : 'dashboard-card--soon'}"
+        ${isClickable ? `data-page="${m.page}"` : ''}>
+        <div class="dashboard-card__icon">${m.icon}</div>
+        <div class="dashboard-card__label">${m.label}</div>
+        <div class="dashboard-card__desc">${m.desc}</div>
+        ${badge}
+      </div>
+    `;
+  }).join('');
 
   grid.querySelectorAll('.dashboard-card--active[data-page]').forEach(card => {
     card.addEventListener('click', () => {

@@ -68,6 +68,7 @@ export const api = {
   // Einstellungen
   getSettings:    ()     => request('GET', '/settings'),
   updateSettings: (body) => request('PUT', '/settings', body),
+  updateModules:  (body) => request('PUT', '/settings/modules', body),
 
   // PDF-Vorlage
   uploadPdf: (file) => {
