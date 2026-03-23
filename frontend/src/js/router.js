@@ -32,7 +32,7 @@ export function initRouter() {
         const isAdmin = user?.role === 'admin' || user?.role === 'superuser';
         const hasPerm = isAdmin || (user?.permissions || []).includes(requiredPerm);
         if (!hasPerm) {
-          window.location.hash = '#/';
+          window.location.hash = '#/'; // → Startseite, immer zugänglich
           return;
         }
       }

@@ -547,3 +547,51 @@ tr:hover td { background: #FAFAFA; }
   padding: $space-xs $space-md;
   border-bottom: 1px solid $grau-rand;
 }
+
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: $space-md;
+}
+
+.dashboard-card {
+  background: $weiss;
+  border-radius: $radius-md;
+  box-shadow: $schatten-md;
+  padding: $space-lg;
+  text-align: center;
+  position: relative;
+  transition: box-shadow 0.15s, transform 0.15s;
+
+  &__icon  { font-size: 32px; margin-bottom: 8px; }
+  &__label { font-size: 14px; font-weight: 600; color: $grau-dunkel; margin-bottom: 4px; }
+  &__desc  { font-size: 12px; color: $grau-mittel; }
+  &__soon  {
+    margin-top: 8px;
+    font-size: 11px;
+    color: $weiss;
+    background: $grau-mittel;
+    border-radius: 10px;
+    padding: 2px 8px;
+    display: inline-block;
+  }
+
+  &--active {
+    cursor: pointer;
+    &:hover {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      transform: translateY(-2px);
+    }
+  }
+
+  &--soon {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.announcement-card {
+  .card__header { background: $grau-dunkel; }
+}

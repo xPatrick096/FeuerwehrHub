@@ -35,6 +35,10 @@ export function renderShell(activePage) {
       <div class="body-layout">
         <nav class="sidebar">
           <div class="sidebar__nav">
+            <button class="sidebar__item${activePage === 'home' ? ' active' : ''}" data-page="">
+              <span class="sidebar__item__icon">🏠</span> Startseite
+            </button>
+            <div class="sidebar__divider"></div>
             ${canAccess(currentUser, 'lager') ? `
             <div class="sidebar__module">🏪 Lager</div>
             <button class="sidebar__item${activePage === 'orders' ? ' active' : ''}" data-page="orders">

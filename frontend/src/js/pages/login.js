@@ -55,7 +55,7 @@ async function doLogin() {
     if (res.requires_totp) {
       renderTotpVerify();
     } else {
-      navigate('#/orders');
+      navigate('#/');
     }
   } catch (e) {
     toast(e.message || 'Anmeldung fehlgeschlagen', 'error');
@@ -96,7 +96,7 @@ async function doVerifyTotp() {
     const res = await api.verifyTotp({ code });
     if (!res) return;
     localStorage.setItem('ff_token', res.token);
-    navigate('#/orders');
+    navigate('#/');
   } catch (e) {
     toast(e.message || 'Ungültiger Code', 'error');
   }

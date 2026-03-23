@@ -99,4 +99,10 @@ export const api = {
   resetPassword:  (id, body)  => request('POST',   `/admin/users/${id}/reset-password`, body),
   deleteUser:     (id)        => request('DELETE', `/admin/users/${id}`),
   getAuditLog:    ()          => request('GET',    '/admin/audit-log'),
+
+  // Ankündigungen
+  getAnnouncements:    ()          => request('GET',    '/announcements'),
+  createAnnouncement:  (body)      => request('POST',   '/announcements', body),
+  updateAnnouncement:  (id, body)  => request('PUT',    `/announcements/${id}`, body),
+  deleteAnnouncement:  (id)        => request('DELETE', `/announcements/${id}`),
 };
