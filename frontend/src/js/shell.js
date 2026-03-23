@@ -36,7 +36,7 @@ export function renderShell(activePage) {
       </header>
       <div class="body-layout">
         <nav class="sidebar">
-          <div class="sidebar__nav">
+          <div class="sidebar__nav" style="flex:1">
             <button class="sidebar__item${activePage === 'home' ? ' active' : ''}" data-page="">
               <span class="sidebar__item__icon">🏠</span> Startseite
             </button>
@@ -62,6 +62,7 @@ export function renderShell(activePage) {
               <span class="sidebar__item__icon">🛡️</span> Admin Panel
             </button>` : ''}
           </div>
+          <div class="sidebar__copyright">© 2026 Patrick Faust</div>
         </nav>
         <main class="main-content" id="main-content">
           <div id="page-content"></div>

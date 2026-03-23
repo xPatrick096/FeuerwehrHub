@@ -13,9 +13,11 @@ Jedes Modul kann einzeln aktiviert werden — eine Wehr ohne Jugendfeuerwehr akt
 
 | Modul | Beschreibung |
 |-------|-------------|
-| 🏠 **Startseite** | Ankündigungen der Wehrführung, Modul-Übersicht |
+| 🏠 **Startseite** | Ankündigungen der Wehrführung, Modul-Kacheln |
 | 🏪 **Lager** | Beschaffungsaufträge, Bestellübersicht, Artikelstamm, PDF-Export |
 | 🔒 **Benutzerverwaltung** | Rollen, 2FA (TOTP), Passwort-Reset, Audit-Log |
+| ⚙️ **Modulverwaltung** | Module pro Wehr aktivieren/deaktivieren im Admin-Panel |
+| 👥 **Feuerwehrrollen** | WL, ZF, GF, TF, TM, Gerätewart, JFW als anpassbare Vorlagen |
 
 ### In Planung
 

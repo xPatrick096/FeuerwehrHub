@@ -91,11 +91,23 @@
   background: $grau-dunkel;
   flex-shrink: 0;
   overflow-y: auto;
-  padding: $space-md 0;
+  padding: $space-md 0 0;
+  display: flex;
+  flex-direction: column;
 
   &__nav {
     display: flex;
     flex-direction: column;
+    flex: 1;
+  }
+
+  &__copyright {
+    padding: $space-md $space-lg;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    font-size: 10px;
+    color: rgba(255,255,255,0.22);
+    text-align: center;
+    letter-spacing: 0.02em;
   }
 
   &__item {
