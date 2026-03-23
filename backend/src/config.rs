@@ -13,6 +13,9 @@ pub struct Config {
     pub jwt_expiry_hours: i64,
     pub ff_name: String,
     pub data_dir: String,
+    pub frontend_url: String,
+    pub login_max_attempts: u32,
+    pub lockout_minutes: i64,
 }
 
 impl Config {
@@ -40,6 +43,16 @@ impl Config {
                 .unwrap_or_else(|_| "Freiwillige Feuerwehr".into()),
             data_dir: std::env::var("DATA_DIR")
                 .unwrap_or_else(|_| "/data".into()),
+            frontend_url: std::env::var("FRONTEND_URL")
+                .unwrap_or_else(|_| "http://localhost".into()),
+            login_max_attempts: std::env::var("LOGIN_MAX_ATTEMPTS")
+                .unwrap_or_else(|_| "5".into())
+                .parse()
+                .unwrap_or(5),
+            lockout_minutes: std::env::var("LOCKOUT_MINUTES")
+                .unwrap_or_else(|_| "15".into())
+                .parse()
+                .unwrap_or(15),
         })
     }
 

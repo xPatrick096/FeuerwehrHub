@@ -16,6 +16,9 @@ services:
       JWT_EXPIRY_HOURS: ${JWT_EXPIRY_HOURS:-8}
       FF_NAME: ${FF_NAME:-Freiwillige Feuerwehr}
       DATA_DIR: /data
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8080}
+      LOGIN_MAX_ATTEMPTS: ${LOGIN_MAX_ATTEMPTS:-5}
+      LOCKOUT_MINUTES: ${LOCKOUT_MINUTES:-15}
     volumes:
       - ff-data:/data
     ports:

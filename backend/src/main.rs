@@ -4,12 +4,12 @@ mod errors;
 mod routes;
 
 use axum::{
-    http::Method,
+    http::{HeaderValue, Method},
     Router,
 };
 use sqlx::PgPool;
 use tower_http::{
-    cors::{Any, CorsLayer},
+    cors::CorsLayer,
     trace::TraceLayer,
 };
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -37,15 +37,25 @@ async fn main() -> anyhow::Result<()> {
     let pool = PgPool::connect(&config.database_url()).await?;
     tracing::info!("Datenbankverbindung hergestellt");
 
+    sqlx::migrate!("../migrations").run(&pool).await?;
+    tracing::info!("Migrationen abgeschlossen");
+
     let state = AppState {
         db: pool,
         config: config.clone(),
     };
 
+    let origin: HeaderValue = config.frontend_url
+        .parse()
+        .expect("FRONTEND_URL ist keine gültige Origin");
+
     let cors = CorsLayer::new()
-        .allow_origin(Any)
+        .allow_origin(origin)
         .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
-        .allow_headers(Any);
+        .allow_headers([
+            axum::http::header::AUTHORIZATION,
+            axum::http::header::CONTENT_TYPE,
+        ]);
 
     let app = Router::new()
         .nest("/api/auth", routes::auth::router(state.clone()))
@@ -62,7 +72,11 @@ async fn main() -> anyhow::Result<()> {
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     tracing::info!("Server läuft auf http://{}", addr);
 
-    axum::serve(listener, app).await?;
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<std::net::SocketAddr>(),
+    )
+    .await?;
 
     Ok(())
 }

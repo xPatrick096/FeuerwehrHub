@@ -11,15 +11,19 @@ use crate::{
             verify_totp,
         },
         middleware::{require_auth, require_partial_auth},
+        rate_limit::{login_rate_limit, LoginRateLimiter},
     },
     AppState,
 };
 
 pub fn router(state: AppState) -> Router<AppState> {
+    let rate_limiter = LoginRateLimiter::new();
+
     // Routen ohne Auth
     let public = Router::new()
         .route("/login", post(login))
-        .route("/setup", post(initial_setup));
+        .route("/setup", post(initial_setup))
+        .route_layer(middleware::from_fn_with_state(rate_limiter, login_rate_limit));
 
     // Routen mit partiellem Auth (JWT gültig, TOTP noch nicht nötig)
     let partial_auth = Router::new()

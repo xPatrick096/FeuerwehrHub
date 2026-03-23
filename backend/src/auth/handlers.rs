@@ -26,24 +26,77 @@ pub struct LoginResponse {
     pub totp_setup_required: bool,
 }
 
+#[derive(sqlx::FromRow)]
+struct LoginUserRow {
+    id: Uuid,
+    username: String,
+    password_hash: String,
+    totp_secret: Option<String>,
+    totp_enabled: bool,
+    is_admin: bool,
+    role: String,
+    failed_login_attempts: i32,
+    locked_until: Option<chrono::DateTime<Utc>>,
+}
+
 pub async fn login(
     State(state): State<AppState>,
     Json(body): Json<LoginRequest>,
 ) -> AppResult<Json<LoginResponse>> {
-    let user = sqlx::query!(
-        "SELECT id, username, password_hash, totp_secret, totp_enabled, is_admin, role
-         FROM users WHERE username = $1",
-        body.username
+    let user = sqlx::query_as::<_, LoginUserRow>(
+        "SELECT id, username, password_hash, totp_secret, totp_enabled, is_admin, role,
+                failed_login_attempts, locked_until
+         FROM users WHERE username = $1"
     )
+    .bind(&body.username)
     .fetch_optional(&state.db)
     .await?
     .ok_or(AppError::Unauthorized)?;
 
+    // Account-Lockout prüfen
+    if let Some(locked_until) = user.locked_until {
+        if locked_until > Utc::now() {
+            return Err(AppError::BadRequest(
+                "Account vorübergehend gesperrt. Bitte später erneut versuchen.".into(),
+            ));
+        }
+    }
+
     if !verify(&body.password, &user.password_hash)
         .map_err(|e| AppError::Internal(e.into()))?
     {
+        // Fehlversuch zählen
+        let new_attempts = user.failed_login_attempts + 1;
+        let locked_until = if new_attempts >= state.config.login_max_attempts as i32 {
+            tracing::warn!(
+                "Account gesperrt nach {} Fehlversuchen: {}",
+                new_attempts,
+                user.username
+            );
+            Some(Utc::now() + Duration::minutes(state.config.lockout_minutes))
+        } else {
+            None
+        };
+
+        sqlx::query(
+            "UPDATE users SET failed_login_attempts = $1, locked_until = $2 WHERE id = $3"
+        )
+        .bind(new_attempts)
+        .bind(locked_until)
+        .bind(user.id)
+        .execute(&state.db)
+        .await?;
+
         return Err(AppError::Unauthorized);
     }
+
+    // Erfolgreicher Login → Zähler zurücksetzen
+    sqlx::query(
+        "UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = $1"
+    )
+    .bind(user.id)
+    .execute(&state.db)
+    .await?;
 
     // TOTP nicht aktiv → direkt vollen Token ausgeben
     if !user.totp_enabled {
