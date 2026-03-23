@@ -1,34 +1,123 @@
 # FeuerwehrHub
 
-**Modulare Verwaltungs- und Hilfsmittel-Sammlung für Freiwillige Feuerwehren**
+**Die modulare Verwaltungsplattform für Freiwillige Feuerwehren — selbst gehostet, kostenlos, open source.**
+
+FeuerwehrHub entsteht ehrenamtlich und wächst mit den Bedürfnissen der Wehr.
+Jedes Modul kann einzeln aktiviert werden — eine Wehr ohne Jugendfeuerwehr aktiviert das JF-Modul einfach nicht.
 
 ---
 
-## Module
+## Was kann FeuerwehrHub?
 
-| Modul | Beschreibung | Status |
-|---|---|---|
-| FeuerwehrHub | Beschaffung & Verwaltung von Druckern und Verbrauchsmaterialien | 🚧 In Entwicklung |
+### Heute verfügbar
+
+| Modul | Beschreibung |
+|-------|-------------|
+| 🏠 **Startseite** | Ankündigungen der Wehrführung, Modul-Übersicht |
+| 🏪 **Lager** | Beschaffungsaufträge, Bestellübersicht, Artikelstamm, PDF-Export |
+| 🔒 **Benutzerverwaltung** | Rollen, 2FA (TOTP), Passwort-Reset, Audit-Log |
+
+### In Planung
+
+| Modul | Zielgruppe |
+|-------|-----------|
+| 🚒 **Einsatzberichte** | Ab Truppführer |
+| 👥 **Personal & Qualifikationen** | Wehrleiter — G26.3, Schlüssel, Pager |
+| 🚗 **Fahrzeugverwaltung** | Gerätewart — TÜV-Fristen, Wartung |
+| 🧒 **Jugendfeuerwehr** | JFW — Mitglieder, Termine, Wettbewerbe |
+| 📅 **Termine / Kalender** | Alle — Übungen, Dienstabende, iCal-Export |
+| 🏛️ **Vereinsverwaltung** | Vorstand — Beiträge, Protokolle |
 
 ---
 
-## FeuerwehrHub
+## Rollensystem
 
-Webbasierte Anwendung zur Verwaltung von Druckern, Bestellungen und Beschaffungsaufträgen für Freiwillige Feuerwehren.
+Jede Person hat genau eine Rolle. Höhere Rollen sehen mehr:
 
-### Features
+```
+Admin (System)
+└── Wehrleiter
+      ├── Zugführer (ZF)
+      │     └── Gruppenführer (GF)
+      │           └── Truppführer (TF)
+      │                 └── Truppmann (TM)
+      ├── Gerätewart
+      └── Jugendfeuerwehrwart
+```
 
-- 📋 Bestellungen erfassen, verwalten & filtern
-- 📄 Beschaffungsaufträge erstellen & als PDF exportieren
-- 📦 Lieferungsstatus verfolgen (Offen / Teillieferung / Vollständig)
-- 📊 Übersicht & Statistiken
-- 🔒 Benutzeranmeldung mit 2-Faktor-Authentifizierung (TOTP)
-- 🌐 Zugriff über lokales Netzwerk im Gerätehaus
+Rollen werden als Vorlagen mitgeliefert und können angepasst werden.
 
-### Tech Stack
+---
+
+## Selbst hosten — so einfach wie möglich
+
+FeuerwehrHub läuft per Docker Compose. Kein Cloud-Account, keine Abhängigkeiten, deine Daten bleiben bei dir.
+
+### Voraussetzungen
+
+- [Docker](https://www.docker.com/) & Docker Compose
+- PostgreSQL-Datenbank (lokal oder im Netzwerk)
+- Optional: Reverse Proxy (z.B. nginx Proxy Manager) für eigene Domain + HTTPS
+
+### Schnellstart
+
+```bash
+# 1. Repository klonen
+git clone https://github.com/xPatrick096/FeuerwehrHub.git
+cd FeuerwehrHub
+
+# 2. Konfiguration anlegen
+cp .env.example .env
+# .env anpassen (Datenbankzugangsdaten, JWT-Secret, Frontend-URL)
+
+# 3. Starten
+docker compose up -d
+```
+
+Die App ist danach unter `http://DEINE-IP:8080` erreichbar.
+Beim ersten Start öffnet sich automatisch der Einrichtungs-Assistent.
+
+### Konfiguration (`.env`)
+
+```env
+# Datenbank
+DB_HOST=192.168.1.100
+DB_PORT=5432
+DB_NAME=feuerwehrhub
+DB_USER=feuerwehrhub_user
+DB_PASSWORD=sicheres-passwort
+
+# Anwendung
+APP_PORT=3000
+JWT_SECRET=langer-zufaelliger-string   # openssl rand -hex 64
+
+# Feuerwehr
+FF_NAME=Freiwillige Feuerwehr Musterstadt
+
+# Sicherheit
+FRONTEND_URL=http://192.168.1.10:8080   # URL des Frontends (für CORS)
+LOGIN_MAX_ATTEMPTS=5                     # Fehlversuche bis Account-Sperre
+LOCKOUT_MINUTES=15                       # Sperrdauer in Minuten
+```
+
+> Die `.env`-Datei enthält sensible Daten — niemals einchecken!
+
+---
+
+## Erster Start
+
+1. App öffnen → Einrichtungs-Assistent startet automatisch
+2. Admin-Account anlegen (Benutzername + Passwort)
+3. Feuerwehrname & Stammdaten im Admin-Panel eintragen
+4. Benutzer anlegen und Rollen zuweisen
+5. Gewünschte Module aktivieren — fertig
+
+---
+
+## Tech Stack
 
 | Schicht | Technologie |
-|---|---|
+|---------|------------|
 | Backend | [Rust](https://www.rust-lang.org/) + [Axum](https://github.com/tokio-rs/axum) |
 | Frontend | Vanilla JavaScript + SCSS |
 | Datenbank | PostgreSQL |
@@ -37,88 +126,19 @@ Webbasierte Anwendung zur Verwaltung von Druckern, Bestellungen und Beschaffungs
 
 ---
 
-## Voraussetzungen
-
-- [Docker](https://www.docker.com/) & [Docker Compose](https://docs.docker.com/compose/)
-- PostgreSQL-Datenbankserver (lokal oder im Netzwerk)
-- Ein TOTP-fähiger Authenticator (z.B. 2FAS, Google Authenticator, Authy)
-
----
-
-## Installation
-
-### 1. Repository klonen
-
-```bash
-git clone https://github.com/DEIN-USERNAME/FeuerwehrHub.git
-cd FeuerwehrHub
-```
-
-### 2. Konfiguration
-
-Erstelle eine `.env`-Datei im Projektroot (Vorlage: `.env.example`):
-
-```env
-# Datenbank
-DB_HOST=your-db-host
-DB_PORT=5432
-DB_NAME=feuerwehrhub
-DB_USER=your-db-user
-DB_PASSWORD=your-db-password
-
-# Anwendung
-APP_PORT=8080
-JWT_SECRET=change-this-to-a-random-secret
-
-# Feuerwehr
-FF_NAME=Freiwillige Feuerwehr Musterstadt
-```
-
-> **Hinweis:** Die `.env`-Datei enthält sensible Daten und ist in `.gitignore` eingetragen — niemals einchecken!
-
-### 3. Starten
-
-```bash
-docker compose up -d
-```
-
-Die Anwendung ist anschließend unter `http://localhost:8080` erreichbar.
-
----
-
-## Erster Start & Admin-Account
-
-Beim ersten Start wird automatisch ein Einrichtungs-Assistent gestartet. Dort kannst du:
-
-1. Den Admin-Account anlegen (Benutzername + Passwort)
-2. 2FA einrichten (QR-Code mit Authenticator-App scannen)
-3. Den Namen deiner Feuerwehr konfigurieren
-
----
-
-## Netzwerkzugriff im Gerätehaus
-
-Für den Zugriff aus dem lokalen Netzwerk (z.B. im Gerätehaus) reicht es, den `APP_PORT` freizugeben und die IP-Adresse des Servers zu verwenden:
-
-```
-http://192.168.x.x:8080
-```
-
-Eine eigene Domain (z.B. `drucker.feuerwehr-musterstadt.de`) kann später über einen Reverse Proxy (z.B. nginx) eingerichtet werden.
-
----
-
 ## Entwicklung
 
 ```bash
-# Backend (Rust)
+# Backend
 cd backend
 cargo run
 
-# Frontend (SCSS kompilieren)
+# Frontend
 cd frontend
 npm run dev
 ```
+
+Datenbankmigrationen laufen beim Start automatisch durch (`sqlx::migrate!`).
 
 ---
 
@@ -130,5 +150,5 @@ MIT License — siehe [LICENSE](LICENSE)
 
 ## Mitwirken
 
-Pull Requests und Issues sind willkommen!
-Dieses Projekt entsteht ehrenamtlich für den Einsatz in Freiwilligen Feuerwehren.
+Issues und Pull Requests sind willkommen.
+Dieses Projekt entsteht ehrenamtlich — für Feuerwehren, von Feuerwehrmenschen.
