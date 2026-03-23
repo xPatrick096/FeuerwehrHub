@@ -1,4 +1,5 @@
 use axum::{
+    body::Body,
     extract::{Request, State},
     middleware::Next,
     response::Response,
@@ -95,6 +96,54 @@ pub async fn require_admin(
 
     req.extensions_mut().insert(claims);
     Ok(next.run(req).await)
+}
+
+// ── Modul-Berechtigungsprüfung ────────────────────────────────────────────────
+
+/// Prüft ob ein User Zugriff auf ein Modul hat (DB-Lookup, wirkt sofort bei Änderungen).
+/// Admins und Superuser haben immer Zugriff.
+async fn check_module(state: &AppState, claims: &Claims, module: &str) -> Result<(), AppError> {
+    if claims.is_admin_or_above() {
+        return Ok(());
+    }
+
+    let has_perm: bool = sqlx::query_scalar(
+        "SELECT $1 = ANY(
+            COALESCE(u.permissions, '{}') || COALESCE(r.permissions, '{}')
+         )
+         FROM users u
+         LEFT JOIN roles r ON r.id = u.role_id
+         WHERE u.id = $2"
+    )
+    .bind(module)
+    .bind(claims.sub)
+    .fetch_one(&state.db)
+    .await
+    .unwrap_or(false);
+
+    if has_perm { Ok(()) } else { Err(AppError::Forbidden) }
+}
+
+/// Middleware-Factory: gibt eine Middleware zurück die das angegebene Modul prüft.
+/// Verwendung: `.route_layer(middleware::from_fn_with_state(state.clone(), require_module("lager")))`
+pub fn require_module(
+    module: &'static str,
+) -> impl Fn(
+    State<AppState>,
+    axum::Extension<Claims>,
+    Request<Body>,
+    Next,
+) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<Response, AppError>> + Send>>
++ Clone {
+    move |State(state): State<AppState>,
+          axum::Extension(claims): axum::Extension<Claims>,
+          req: Request<Body>,
+          next: Next| {
+        Box::pin(async move {
+            check_module(&state, &claims, module).await?;
+            Ok(next.run(req).await)
+        })
+    }
 }
 
 fn extract_token(req: &Request) -> Option<String> {

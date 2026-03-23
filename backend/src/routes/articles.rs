@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
-    auth::middleware::require_auth,
+    auth::middleware::{require_auth, require_module},
     errors::{AppError, AppResult},
     AppState,
 };
@@ -153,5 +153,6 @@ pub fn router(state: AppState) -> Router<AppState> {
         .route("/", get(list_articles).post(create_article))
         .route("/:id", get(get_article).put(update_article).delete(delete_article))
         .route("/units", get(list_units))
+        .route_layer(middleware::from_fn_with_state(state.clone(), require_module("lager")))
         .route_layer(middleware::from_fn_with_state(state, require_auth))
 }

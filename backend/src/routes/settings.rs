@@ -12,6 +12,7 @@ use std::path::Path;
 use tokio::fs;
 
 use crate::{
+    audit,
     auth::middleware::{require_auth, Claims},
     errors::{AppError, AppResult},
     AppState,
@@ -52,8 +53,12 @@ pub async fn get_settings(State(state): State<AppState>) -> AppResult<Json<Setti
 
 pub async fn update_settings(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Json(body): Json<UpdateSettings>,
 ) -> AppResult<Json<Settings>> {
+    if !claims.is_admin_or_above() {
+        return Err(AppError::Forbidden);
+    }
     if let Some(name) = &body.ff_name {
         sqlx::query!(
             "INSERT INTO settings (key, value) VALUES ('ff_name', $1)
@@ -83,6 +88,9 @@ pub async fn update_settings(
         .execute(&state.db)
         .await?;
     }
+
+    audit::log(&state.db, Some(claims.sub), &claims.username, "SETTINGS_UPDATED",
+        Some("settings"), None, None).await;
 
     get_settings(State(state)).await
 }

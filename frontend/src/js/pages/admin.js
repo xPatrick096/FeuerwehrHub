@@ -37,6 +37,7 @@ export async function renderAdmin() {
       <button class="tab-btn tab-btn--active" data-tab="users">Benutzer</button>
       <button class="tab-btn" data-tab="roles">Rollen</button>
       <button class="tab-btn" data-tab="config">Konfiguration</button>
+      <button class="tab-btn" data-tab="audit">Audit-Log</button>
     </div>
 
     <div id="tab-users" class="tab-panel">
@@ -102,6 +103,16 @@ export async function renderAdmin() {
             <a class="btn btn--outline" href="/api/settings/pdf" target="_blank" id="btn-view-pdf">Aktuelles PDF ansehen</a>
           </div>
         </div>
+      </div>
+    </div>
+
+    <div id="tab-audit" class="tab-panel" style="display:none">
+      <div class="card">
+        <div class="card__header" style="display:flex;justify-content:space-between;align-items:center">
+          <span>Audit-Log</span>
+          <button class="btn btn--outline btn--sm" id="btn-refresh-audit">Aktualisieren</button>
+        </div>
+        <div class="card__body" id="audit-table-wrap"><p>Lade...</p></div>
       </div>
     </div>
 
@@ -192,6 +203,7 @@ export async function renderAdmin() {
       btn.classList.add('tab-btn--active');
       content.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none');
       document.getElementById(`tab-${btn.dataset.tab}`).style.display = 'block';
+      if (btn.dataset.tab === 'audit') loadAuditLog();
     });
   });
 
@@ -238,6 +250,8 @@ export async function renderAdmin() {
 
   // Rollen-Tab
   await loadRoles(me);
+
+  document.getElementById('btn-refresh-audit').addEventListener('click', loadAuditLog);
 
   // Modal: Neuer Benutzer
   let resetTarget = null;
@@ -539,6 +553,59 @@ async function loadUsers(me, roles = []) {
     `;
   } catch (e) {
     wrap.innerHTML = `<p style="color:red;font-size:13px">Fehler: ${e.message}</p>`;
+  }
+}
+
+async function loadAuditLog() {
+  const wrap = document.getElementById('audit-table-wrap');
+  if (!wrap) return;
+  wrap.innerHTML = '<p>Lade...</p>';
+
+  try {
+    const entries = await api.getAuditLog();
+
+    if (!entries.length) {
+      wrap.innerHTML = '<p style="color:#666;font-size:13px">Noch keine Einträge.</p>';
+      return;
+    }
+
+    const ACTION_LABELS = {
+      LOGIN_SUCCESS:    '✅ Login erfolgreich',
+      LOGIN_FAILED:     '⚠️ Login fehlgeschlagen',
+      ACCOUNT_LOCKED:   '🔒 Account gesperrt',
+      USER_CREATED:     '➕ Benutzer angelegt',
+      USER_DELETED:     '🗑️ Benutzer gelöscht',
+      PASSWORD_RESET:   '🔑 Passwort zurückgesetzt',
+      ROLE_CHANGED:     '🔧 Systemrolle geändert',
+      SETTINGS_UPDATED: '⚙️ Einstellungen geändert',
+    };
+
+    wrap.innerHTML = `
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Zeitpunkt</th>
+            <th>Benutzer</th>
+            <th>Aktion</th>
+            <th>Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${entries.map(e => `
+            <tr>
+              <td style="font-size:12px;color:#666;white-space:nowrap">
+                ${new Date(e.created_at).toLocaleString('de-DE')}
+              </td>
+              <td>${esc(e.username)}</td>
+              <td style="white-space:nowrap">${ACTION_LABELS[e.action] || esc(e.action)}</td>
+              <td style="font-size:12px;color:#666">${esc(e.details || '')}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  } catch (err) {
+    wrap.innerHTML = `<p style="color:red;font-size:13px">Fehler: ${err.message}</p>`;
   }
 }
 

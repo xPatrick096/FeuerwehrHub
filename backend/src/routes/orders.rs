@@ -10,7 +10,7 @@ use sqlx::FromRow;
 use uuid::Uuid;
 
 use crate::{
-    auth::middleware::{require_auth, Claims},
+    auth::middleware::{require_auth, require_module, Claims},
     errors::{AppError, AppResult},
     AppState,
 };
@@ -494,5 +494,6 @@ pub fn router(state: AppState) -> Router<AppState> {
         .route("/:id", get(get_order).put(update_order).delete(delete_order))
         .route("/:id/delivery", post(add_delivery))
         .route("/:id/status", post(set_status))
+        .route_layer(middleware::from_fn_with_state(state.clone(), require_module("lager")))
         .route_layer(middleware::from_fn_with_state(state, require_auth))
 }

@@ -98,4 +98,5 @@ export const api = {
   deleteRole:  (id)     => request('DELETE', `/roles/${id}`),
   resetPassword:  (id, body)  => request('POST',   `/admin/users/${id}/reset-password`, body),
   deleteUser:     (id)        => request('DELETE', `/admin/users/${id}`),
+  getAuditLog:    ()          => request('GET',    '/admin/audit-log'),
 };

@@ -14,30 +14,7 @@ export async function renderSettings() {
     <div class="page-header">
       <div>
         <h2>Einstellungen</h2>
-        <p>Feuerwehr-Daten und Konto verwalten</p>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card__header">Feuerwehr</div>
-      <div class="card__body">
-        <div class="form-grid">
-          <div class="form-group form-group--full">
-            <label>Name der Feuerwehr</label>
-            <input type="text" id="set-ff-name" value="${esc(settings?.ff_name || '')}" />
-          </div>
-          <div class="form-group">
-            <label>Straße & Hausnummer</label>
-            <input type="text" id="set-ff-strasse" value="${esc(settings?.ff_strasse || '')}" />
-          </div>
-          <div class="form-group">
-            <label>PLZ & Ort</label>
-            <input type="text" id="set-ff-ort" value="${esc(settings?.ff_ort || '')}" />
-          </div>
-        </div>
-        <div class="btn-group" style="margin-top:16px">
-          <button class="btn btn--primary" id="btn-save-settings">Speichern</button>
-        </div>
+        <p>Konto verwalten</p>
       </div>
     </div>
 
@@ -107,19 +84,6 @@ export async function renderSettings() {
       </div>
     </div>
   `;
-
-  document.getElementById('btn-save-settings').addEventListener('click', async () => {
-    try {
-      await api.updateSettings({
-        ff_name: document.getElementById('set-ff-name').value.trim(),
-        ff_strasse: document.getElementById('set-ff-strasse').value.trim(),
-        ff_ort: document.getElementById('set-ff-ort').value.trim(),
-      });
-      toast('Einstellungen gespeichert');
-    } catch (e) {
-      toast(e.message, 'error');
-    }
-  });
 
   document.getElementById('btn-save-profile').addEventListener('click', async () => {
     try {

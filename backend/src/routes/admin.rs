@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
+    audit,
     auth::middleware::{require_auth, Claims},
     errors::{AppError, AppResult},
     AppState,
@@ -146,6 +147,9 @@ pub async fn create_user(
     .fetch_one(&state.db)
     .await?;
 
+    audit::log(&state.db, Some(claims.sub), &claims.username, "USER_CREATED",
+        Some("user"), Some(new_id), Some(&format!("Rolle: {}", body.role))).await;
+
     Ok(Json(row))
 }
 
@@ -197,6 +201,9 @@ pub async fn update_role(
     .fetch_one(&state.db)
     .await?;
 
+    audit::log(&state.db, Some(claims.sub), &claims.username, "ROLE_CHANGED",
+        Some("user"), Some(id), Some(&format!("Neue Systemrolle: {}", body.role))).await;
+
     Ok(Json(row))
 }
 
@@ -242,6 +249,9 @@ pub async fn reset_password(
         return Err(AppError::NotFound);
     }
 
+    audit::log(&state.db, Some(claims.sub), &claims.username, "PASSWORD_RESET",
+        Some("user"), Some(id), None).await;
+
     Ok(Json(serde_json::json!({ "message": "Passwort zurückgesetzt" })))
 }
 
@@ -276,9 +286,18 @@ pub async fn delete_user(
         return Err(AppError::Forbidden);
     }
 
+    let username_row = sqlx::query_as::<_, (String,)>("SELECT username FROM users WHERE id = $1")
+        .bind(id)
+        .fetch_optional(&state.db)
+        .await?
+        .ok_or(AppError::NotFound)?;
+
     sqlx::query!("DELETE FROM users WHERE id = $1", id)
         .execute(&state.db)
         .await?;
+
+    audit::log(&state.db, Some(claims.sub), &claims.username, "USER_DELETED",
+        Some("user"), Some(id), Some(&format!("Gelöschter Benutzer: {}", username_row.0))).await;
 
     Ok(Json(serde_json::json!({ "message": "Benutzer gelöscht" })))
 }
@@ -349,6 +368,38 @@ pub async fn update_permissions(
     Ok(Json(serde_json::json!({ "permissions": permissions })))
 }
 
+// ── Handler: Audit-Log abrufen ────────────────────────────────────────────────
+
+#[derive(Serialize, sqlx::FromRow)]
+pub struct AuditEntry {
+    pub id: Uuid,
+    pub user_id: Option<Uuid>,
+    pub username: String,
+    pub action: String,
+    pub entity: Option<String>,
+    pub entity_id: Option<Uuid>,
+    pub details: Option<String>,
+    pub created_at: DateTime<Utc>,
+}
+
+pub async fn get_audit_log(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+) -> AppResult<Json<Vec<AuditEntry>>> {
+    if !claims.is_admin_or_above() {
+        return Err(AppError::Forbidden);
+    }
+
+    let entries = sqlx::query_as::<_, AuditEntry>(
+        "SELECT id, user_id, username, action, entity, entity_id, details, created_at
+         FROM audit_log ORDER BY created_at DESC LIMIT 500"
+    )
+    .fetch_all(&state.db)
+    .await?;
+
+    Ok(Json(entries))
+}
+
 // ── Router ────────────────────────────────────────────────────────────────────
 
 pub fn router(state: AppState) -> Router<AppState> {
@@ -359,5 +410,6 @@ pub fn router(state: AppState) -> Router<AppState> {
         .route("/users/:id/permissions", put(update_permissions))
         .route("/users/:id/assign-role", put(assign_role))
         .route("/users/:id", delete(delete_user))
+        .route("/audit-log", get(get_audit_log))
         .route_layer(middleware::from_fn_with_state(state, require_auth))
 }

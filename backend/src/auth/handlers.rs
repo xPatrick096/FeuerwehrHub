@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
+    audit,
     auth::{middleware::Claims, totp},
     errors::{AppError, AppResult},
     AppState,
@@ -87,6 +88,9 @@ pub async fn login(
         .execute(&state.db)
         .await?;
 
+        let action = if locked_until.is_some() { "ACCOUNT_LOCKED" } else { "LOGIN_FAILED" };
+        audit::log(&state.db, Some(user.id), &user.username, action, Some("user"), Some(user.id), None).await;
+
         return Err(AppError::Unauthorized);
     }
 
@@ -97,6 +101,8 @@ pub async fn login(
     .bind(user.id)
     .execute(&state.db)
     .await?;
+
+    audit::log(&state.db, Some(user.id), &user.username, "LOGIN_SUCCESS", Some("user"), Some(user.id), None).await;
 
     // TOTP nicht aktiv → direkt vollen Token ausgeben
     if !user.totp_enabled {
