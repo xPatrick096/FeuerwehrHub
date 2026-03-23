@@ -1,4 +1,4 @@
-CREATE TABLE articles (
+CREATE TABLE IF NOT EXISTS articles (
     id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name        VARCHAR(256) NOT NULL,
     category    VARCHAR(128),
@@ -9,12 +9,13 @@ CREATE TABLE articles (
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+DROP TRIGGER IF EXISTS articles_updated_at ON articles;
 CREATE TRIGGER articles_updated_at
     BEFORE UPDATE ON articles
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 -- Standard-Einheiten als Lookup-Tabelle
-CREATE TABLE units (
+CREATE TABLE IF NOT EXISTS units (
     id    SERIAL PRIMARY KEY,
     label VARCHAR(32) NOT NULL UNIQUE
 );
@@ -26,4 +27,5 @@ INSERT INTO units (label) VALUES
     ('Rolle'),
     ('Liter'),
     ('Kilogramm'),
-    ('Meter');
+    ('Meter')
+ON CONFLICT (label) DO NOTHING;

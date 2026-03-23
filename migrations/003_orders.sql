@@ -1,6 +1,9 @@
-CREATE TYPE order_status AS ENUM ('offen', 'teillieferung', 'vollstaendig', 'storniert');
+DO $$ BEGIN
+    CREATE TYPE order_status AS ENUM ('offen', 'teillieferung', 'vollstaendig', 'storniert');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-CREATE TABLE orders (
+CREATE TABLE IF NOT EXISTS orders (
     id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     article_id      UUID REFERENCES articles(id) ON DELETE SET NULL,
     article_name    VARCHAR(256) NOT NULL,  -- Snapshot bei Bestellung
@@ -16,11 +19,12 @@ CREATE TABLE orders (
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+DROP TRIGGER IF EXISTS orders_updated_at ON orders;
 CREATE TRIGGER orders_updated_at
     BEFORE UPDATE ON orders
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
-CREATE TABLE deliveries (
+CREATE TABLE IF NOT EXISTS deliveries (
     id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     order_id            UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
     quantity_delivered  DOUBLE PRECISION NOT NULL,
@@ -32,6 +36,6 @@ CREATE TABLE deliveries (
 );
 
 -- Index für häufige Abfragen
-CREATE INDEX idx_orders_status ON orders(status);
-CREATE INDEX idx_orders_order_date ON orders(order_date);
-CREATE INDEX idx_deliveries_order_id ON deliveries(order_id);
+CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+CREATE INDEX IF NOT EXISTS idx_orders_order_date ON orders(order_date);
+CREATE INDEX IF NOT EXISTS idx_deliveries_order_id ON deliveries(order_id);
