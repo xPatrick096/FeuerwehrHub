@@ -18,7 +18,7 @@ use crate::{
     AppState,
 };
 
-pub const KNOWN_MODULES: &[&str] = &["lager"];
+pub const KNOWN_MODULES: &[&str] = &["lager", "personal"];
 
 #[derive(Serialize)]
 pub struct Settings {
