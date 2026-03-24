@@ -467,16 +467,24 @@ tr:hover td { background: $bg-card-hover; }
     position: relative;
 
     .auth-emblem {
-      width: 64px;
-      height: 64px;
+      width: 68px;
+      height: 68px;
       background: rgba(255,255,255,0.15);
-      border: 2px solid rgba(255,255,255,0.3);
+      border: 2px solid rgba(255,255,255,0.25);
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 30px;
       margin: 0 auto $space-md;
+      overflow: hidden;
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        padding: 6px;
+      }
     }
 
     h1 { font-size: $font-size-xl; font-weight: 700; letter-spacing: -0.01em; }

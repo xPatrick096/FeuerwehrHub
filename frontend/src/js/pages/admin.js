@@ -97,9 +97,28 @@ export async function renderAdmin() {
       </div>
 
       <div class="card" style="margin-top:0">
+        <div class="card__header">Wappen / Logo</div>
+        <div class="card__body">
+          <p style="font-size:13px;color:#7d8590;margin-bottom:16px">
+            Lade das Wappen oder Logo deiner Feuerwehr hoch. Es erscheint auf der Anmeldeseite und in der Navigation.
+            Empfohlen: PNG mit transparentem Hintergrund, max. 500 KB.
+          </p>
+          <div id="logo-preview" style="display:flex;align-items:center;gap:12px;margin-bottom:16px;min-height:40px;"></div>
+          <div class="form-group">
+            <label>Bilddatei auswählen (PNG, JPG, SVG, WEBP)</label>
+            <input type="file" id="logo-upload-input" accept="image/*" />
+          </div>
+          <div class="btn-group" style="margin-top:12px">
+            <button class="btn btn--primary" id="btn-upload-logo">Wappen speichern</button>
+            <button class="btn btn--outline" id="btn-remove-logo">Standard (Flamme) wiederherstellen</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:0">
         <div class="card__header">Beschaffungsauftrag PDF-Vorlage</div>
         <div class="card__body">
-          <p style="font-size:13px;color:#666;margin-bottom:16px">
+          <p style="font-size:13px;color:#7d8590;margin-bottom:16px">
             Lade das offizielle Formular deiner Feuerwehr / Stadt hoch.
             Dieses PDF wird als Vorlage für alle Beschaffungsaufträge verwendet und mit den Bestelldaten befüllt.
           </p>
@@ -235,9 +254,9 @@ export async function renderAdmin() {
     const statusEl = document.getElementById('pdf-upload-status');
     if (!statusEl) return;
     if (res.ok) {
-      statusEl.innerHTML = '<span style="color:#1E8449">✅ PDF-Vorlage ist hinterlegt</span>';
+      statusEl.innerHTML = '<span style="color:#3fb950">✅ PDF-Vorlage ist hinterlegt</span>';
     } else {
-      statusEl.innerHTML = '<span style="color:#C0392B">⚠️ Noch keine PDF-Vorlage hochgeladen</span>';
+      statusEl.innerHTML = '<span style="color:#ff8a80">⚠️ Noch keine PDF-Vorlage hochgeladen</span>';
     }
   }).catch(() => {});
 
@@ -253,6 +272,42 @@ export async function renderAdmin() {
       document.getElementById('pdf-upload-status').innerHTML =
         '<span style="color:#1E8449">✅ PDF-Vorlage ist hinterlegt</span>';
     } catch (e) { toast(e.message, 'error'); }
+  });
+
+  // Logo-Verwaltung
+  const updateLogoPreview = () => {
+    const el = document.getElementById('logo-preview');
+    if (!el) return;
+    const saved = localStorage.getItem('ff_custom_logo');
+    if (saved) {
+      el.innerHTML = `
+        <img src="${saved}" style="width:56px;height:56px;object-fit:contain;border:1px solid #21273d;border-radius:12px;padding:4px;background:#161b27;">
+        <span style="font-size:12px;color:#3fb950;font-weight:600;">✓ Eigenes Wappen aktiv</span>`;
+    } else {
+      el.innerHTML = `<span style="font-size:12px;color:#7d8590">🔥 Standard-Logo (Flamme) aktiv</span>`;
+    }
+  };
+  updateLogoPreview();
+
+  document.getElementById('btn-upload-logo').addEventListener('click', () => {
+    const file = document.getElementById('logo-upload-input').files[0];
+    if (!file) { toast('Keine Datei ausgewählt', 'error'); return; }
+    if (!file.type.startsWith('image/')) { toast('Nur Bilddateien erlaubt', 'error'); return; }
+    if (file.size > 500 * 1024) { toast('Datei zu groß (max. 500 KB)', 'error'); return; }
+    const reader = new FileReader();
+    reader.onload = e => {
+      localStorage.setItem('ff_custom_logo', e.target.result);
+      toast('Wappen gespeichert — wird ab dem nächsten Seitenaufruf angezeigt');
+      updateLogoPreview();
+      document.getElementById('logo-upload-input').value = '';
+    };
+    reader.readAsDataURL(file);
+  });
+
+  document.getElementById('btn-remove-logo').addEventListener('click', () => {
+    localStorage.removeItem('ff_custom_logo');
+    toast('Standard-Logo wiederhergestellt');
+    updateLogoPreview();
   });
 
   // Benutzer + Rollen laden

@@ -1,4 +1,5 @@
 import { navigate } from './router.js';
+import { getHeaderLogo } from './logo.js';
 
 let ffName = 'FeuerwehrHub';
 let currentUser = null;
@@ -24,7 +25,7 @@ export function renderShell(activePage) {
   app.innerHTML = `
     <div class="app-shell">
       <header class="header">
-        <div class="header__emblem">🚒</div>
+        <div class="header__emblem">${getHeaderLogo()}</div>
         <div class="header__title">
           <h1>${ffName}</h1>
           <p>FeuerwehrHub</p>

@@ -1,6 +1,7 @@
 import { api } from '../api.js';
 import { toast } from '../toast.js';
 import { navigate } from '../router.js';
+import { getLoginLogo } from '../logo.js';
 
 export function renderLogin() {
   const app = document.getElementById('app');
@@ -9,7 +10,7 @@ export function renderLogin() {
     <div class="auth-page">
       <div class="auth-card">
         <div class="auth-header">
-          <div class="auth-emblem">🚒</div>
+          <div class="auth-emblem">${getLoginLogo()}</div>
           <h1>FeuerwehrHub</h1>
           <p>Freiwillige Feuerwehr</p>
         </div>
