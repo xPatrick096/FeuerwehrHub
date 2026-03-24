@@ -213,7 +213,7 @@ function renderModuleCards(user, modules) {
     { key: 'lager',           icon: '🏪', label: 'Lager',           desc: 'Bestellungen, Artikelstamm',          page: '#/orders', implemented: true },
     { key: 'einsatzberichte', icon: '🚒', label: 'Einsatzberichte', desc: 'Berichte erfassen & verwalten',        page: null,       implemented: false },
     { key: 'fahrzeuge',       icon: '🚗', label: 'Fahrzeuge',       desc: 'TÜV-Fristen, Wartung',                 page: null,       implemented: false },
-    { key: 'personal',        icon: '👥', label: 'Personal',        desc: 'Qualifikationen, Schlüssel, Pager',    page: null,       implemented: false },
+    { key: 'personal',        icon: '👥', label: 'Personal',        desc: 'Mitglieder, Qualifikationen, Ehrungen', page: '#/personal', implemented: true },
     { key: 'jugendfeuerwehr', icon: '🧒', label: 'Jugendfeuerwehr', desc: 'JF-Mitglieder, Termine',               page: null,       implemented: false },
   ];
 

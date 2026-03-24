@@ -17,6 +17,8 @@ Jedes Modul kann einzeln aktiviert werden — eine Wehr ohne Jugendfeuerwehr akt
 |-------|-------------|
 | 🏠 **Startseite** | Ankündigungen der Wehrführung, Modul-Kacheln |
 | 🏪 **Lager** | Beschaffungsaufträge, Bestellübersicht, Artikelstamm, Lagerbestand Soll/Haben, PDF-Export (generisch oder Vorlage), CSV-Export, Unterschrift im PDF |
+| 👤 **Mein Bereich** | Eigenes Profil, Kontaktdaten & Notfallkontakt, Qualifikationen & Ablaufdaten (Ampel), Ausrüstung — für alle Mitglieder |
+| 👥 **Personal** | Mitgliederstamm, Qualifikationen, Ausrüstung, Ehrungen — für Wehrleiter |
 | 🔒 **Benutzerverwaltung** | Rollen, 2FA (TOTP) mit QR-Code, 2FA selbst deaktivieren, Admin-Reset bei verlorenem Handy, Passwort-Reset, Audit-Log |
 | ⚙️ **Modulverwaltung** | Module pro Wehr aktivieren/deaktivieren im Admin-Panel |
 | 👥 **Feuerwehrrollen** | WL, ZF, GF, TF, TM, Gerätewart, JFW als anpassbare Vorlagen |
@@ -26,7 +28,6 @@ Jedes Modul kann einzeln aktiviert werden — eine Wehr ohne Jugendfeuerwehr akt
 | Modul | Zielgruppe |
 |-------|-----------|
 | 🚒 **Einsatzberichte** | Ab Truppführer |
-| 👥 **Personal & Qualifikationen** | Wehrleiter — G26.3, Schlüssel, Pager |
 | 🚗 **Fahrzeugverwaltung** | Gerätewart — TÜV-Fristen, Wartung |
 | 🧒 **Jugendfeuerwehr** | JFW — Mitglieder, Termine, Wettbewerbe |
 | 📅 **Termine / Kalender** | Alle — Übungen, Dienstabende, iCal-Export |
