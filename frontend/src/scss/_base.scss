@@ -13,9 +13,10 @@ html, body {
 body {
   font-family: $font-family;
   font-size: $font-size-md;
-  color: $grau-dunkel;
-  background: #EBEBEB;
+  color: $text;
+  background: $bg;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 a {
@@ -27,6 +28,7 @@ a {
 button, input, select, textarea {
   font-family: inherit;
   font-size: inherit;
+  color: inherit;
 }
 
 ul, ol {
@@ -35,18 +37,15 @@ ul, ol {
 
 hr {
   border: none;
-  border-top: 1px solid $grau-rand;
+  border-top: 1px solid $border;
   margin: $space-md 0;
 }
 
 // Scrollbar
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track { background: $grau-hell; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: $bg; }
 ::-webkit-scrollbar-thumb {
-  background: $grau-rand;
+  background: $border;
   border-radius: $radius-pill;
-  &:hover { background: $grau-mittel; }
+  &:hover { background: $text-subtle; }
 }

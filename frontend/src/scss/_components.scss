@@ -2,15 +2,17 @@
 
 // ── Card ──────────────────────────────────────────────────────────────────────
 .card {
-  background: $weiss;
-  border-radius: $radius-md;
-  box-shadow: $schatten-md;
+  background: $bg-card;
+  border: 1px solid $border;
+  border-radius: $radius-lg;
   margin-bottom: $space-lg;
   overflow: hidden;
+  transition: border-color $transition-fast;
 
   &__header {
-    background: $grau-dunkel;
-    color: $weiss;
+    background: $bg-card-hover;
+    border-bottom: 1px solid $border;
+    color: $text;
     padding: 12px $space-lg;
     font-size: $font-size-md;
     font-weight: 600;
@@ -23,7 +25,10 @@
     padding: $space-lg;
   }
 
-  &--rot &__header { background: $rot; }
+  &--rot {
+    border-top: 2px solid $rot;
+    .card__header { background: $rot-hell; color: $text; border-bottom-color: rgba(230,48,34,0.2); }
+  }
 }
 
 // ── Buttons ───────────────────────────────────────────────────────────────────
@@ -31,29 +36,66 @@
   display: inline-flex;
   align-items: center;
   gap: $space-sm;
-  padding: 9px 18px;
+  padding: 8px 16px;
   border: none;
-  border-radius: $radius-sm;
+  border-radius: $radius-md;
   cursor: pointer;
   font-size: $font-size-sm;
   font-weight: 600;
   transition: all $transition-fast;
   white-space: nowrap;
+  text-decoration: none;
 
   &:disabled {
-    opacity: 0.5;
+    opacity: 0.4;
     cursor: not-allowed;
   }
 
-  &--primary    { background: $rot;          color: $weiss;        &:hover:not(:disabled) { background: $rot-dunkel; } }
-  &--secondary  { background: $grau-dunkel;  color: $weiss;        &:hover:not(:disabled) { background: #444; } }
-  &--success    { background: $gruen;        color: $weiss;        &:hover:not(:disabled) { background: #219A52; } }
-  &--warning    { background: $orange;       color: $weiss;        &:hover:not(:disabled) { background: #CA6F1E; } }
-  &--outline    { background: transparent;   color: $grau;  border: 1px solid $grau-rand; &:hover:not(:disabled) { background: $grau-hell; } }
-  &--danger     { background: transparent;   color: $rot;   border: 1px solid $rot;       &:hover:not(:disabled) { background: $rot-hell; } }
+  &--primary {
+    background: $rot;
+    color: #fff;
+    &:hover:not(:disabled) {
+      background: $rot-dunkel;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(230,48,34,0.35);
+    }
+  }
 
-  &--sm { padding: 5px 10px; font-size: $font-size-xs; }
-  &--lg { padding: 12px 24px; font-size: $font-size-md; }
+  &--secondary {
+    background: $bg-card-hover;
+    color: $text;
+    border: 1px solid $border;
+    &:hover:not(:disabled) { background: $border; }
+  }
+
+  &--success {
+    background: $gruen;
+    color: #fff;
+    &:hover:not(:disabled) { background: darken($gruen, 8%); }
+  }
+
+  &--warning {
+    background: $orange;
+    color: #fff;
+    &:hover:not(:disabled) { filter: brightness(0.9); }
+  }
+
+  &--outline {
+    background: transparent;
+    color: $text-muted;
+    border: 1px solid $border;
+    &:hover:not(:disabled) { background: $bg-card-hover; color: $text; border-color: $text-muted; }
+  }
+
+  &--danger {
+    background: transparent;
+    color: $rot;
+    border: 1px solid $rot;
+    &:hover:not(:disabled) { background: $rot-hell; }
+  }
+
+  &--sm  { padding: 5px 10px; font-size: $font-size-xs; border-radius: $radius-sm; }
+  &--lg  { padding: 11px 22px; font-size: $font-size-md; }
   &--full { width: 100%; justify-content: center; }
 }
 
@@ -80,26 +122,28 @@
   label {
     font-size: $font-size-xs;
     font-weight: 600;
-    color: $grau;
+    color: $text-muted;
     text-transform: uppercase;
-    letter-spacing: 0.4px;
+    letter-spacing: 0.5px;
   }
 
   input, select, textarea {
     padding: 8px 12px;
-    border: 1px solid $grau-rand;
-    border-radius: $radius-sm;
-    color: $grau-dunkel;
-    background: $weiss;
-    transition: border-color $transition-fast;
+    border: 1px solid $border;
+    border-radius: $radius-md;
+    color: $text;
+    background: $bg;
+    transition: border-color $transition-fast, box-shadow $transition-fast;
 
     &:focus {
       outline: none;
       border-color: $rot;
-      box-shadow: 0 0 0 2px rgba($rot, 0.12);
+      box-shadow: 0 0 0 3px rgba(230, 48, 34, 0.12);
     }
 
-    &::placeholder { color: $grau-mittel; }
+    &::placeholder { color: $text-subtle; }
+
+    option { background: $bg-card; }
   }
 
   textarea { resize: vertical; min-height: 80px; }
@@ -116,33 +160,34 @@ table {
 }
 
 th {
-  background: $grau-hell;
+  background: $bg-card-hover;
   padding: 10px 12px;
   text-align: left;
   font-size: $font-size-xs;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.4px;
-  color: $grau;
-  border-bottom: 2px solid $grau-rand;
+  letter-spacing: 0.5px;
+  color: $text-muted;
+  border-bottom: 1px solid $border;
   white-space: nowrap;
 }
 
 td {
   padding: 10px 12px;
-  border-bottom: 1px solid $grau-rand;
+  border-bottom: 1px solid $border;
   vertical-align: middle;
+  color: $text;
 
   &:last-child { white-space: nowrap; }
 }
 
 tr:last-child td { border-bottom: none; }
-tr:hover td { background: #FAFAFA; }
+tr:hover td { background: $bg-card-hover; }
 
 .table-empty {
   text-align: center;
   padding: 48px;
-  color: $grau;
+  color: $text-muted;
   font-style: italic;
 }
 
@@ -154,40 +199,37 @@ tr:hover td { background: #FAFAFA; }
   font-size: $font-size-xs;
   font-weight: 600;
 
-  // Status-Badges (Bestellungen)
-  &--offen        { background: $rot-hell;    color: #C0392B; }
-  &--teillieferung { background: $orange-hell; color: #CA6F1E; }
-  &--vollstaendig  { background: $gruen-hell;  color: #1E8449; }
-  &--storniert     { background: $grau-hell;   color: $grau; }
+  &--offen        { background: $rot-hell;    color: #ff8a80; }
+  &--teillieferung { background: $orange-hell; color: #ffb74d; }
+  &--vollstaendig  { background: $gruen-hell;  color: $gruen; }
+  &--storniert     { background: $bg-card-hover; color: $text-muted; }
 
-  // Rollen-Badges
-  &--superuser { background: #FEF3C7; color: #92400E; }
-  &--admin     { background: #EDE9FE; color: #5B21B6; }
-  &--user      { background: $grau-hell; color: $grau; }
+  &--superuser { background: $orange-hell; color: $orange; }
+  &--admin     { background: $lila-hell;   color: $lila; }
+  &--user      { background: $bg-card-hover; color: $text-muted; }
 }
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 .tab-bar {
   display: flex;
-  gap: 4px;
+  gap: 2px;
   margin-bottom: $space-lg;
-  border-bottom: 2px solid $grau-rand;
-  padding-bottom: 0;
+  border-bottom: 1px solid $border;
 }
 
 .tab-btn {
   background: none;
   border: none;
-  padding: 10px 20px;
+  padding: 10px 18px;
   font-size: $font-size-sm;
   font-weight: 600;
-  color: $grau;
+  color: $text-muted;
   cursor: pointer;
-  border-bottom: 3px solid transparent;
-  margin-bottom: -2px;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
   transition: all $transition-fast;
 
-  &:hover { color: $grau-dunkel; }
+  &:hover { color: $text; }
   &--active { color: $rot; border-bottom-color: $rot; }
 }
 
@@ -202,30 +244,35 @@ tr:hover td { background: #FAFAFA; }
 }
 
 .stat-card {
-  background: $weiss;
-  border-radius: $radius-md;
+  background: $bg-card;
+  border: 1px solid $border;
+  border-radius: $radius-lg;
   padding: $space-md;
-  box-shadow: $schatten-md;
   text-align: center;
+  transition: border-color $transition-fast, transform $transition-fast;
+
+  &:hover { border-color: rgba(230,48,34,0.3); transform: translateY(-1px); }
 
   &__number {
     font-size: $font-size-2xl;
-    font-weight: 700;
+    font-weight: 800;
     line-height: 1;
     margin-bottom: 6px;
+    letter-spacing: -0.02em;
   }
 
   &__label {
     font-size: $font-size-xs;
-    color: $grau;
+    color: $text-muted;
     text-transform: uppercase;
-    letter-spacing: 0.4px;
+    letter-spacing: 0.5px;
+    font-weight: 600;
   }
 
-  &--offen        .stat-card__number { color: #C0392B; }
-  &--teillieferung .stat-card__number { color: #CA6F1E; }
-  &--vollstaendig  .stat-card__number { color: #1E8449; }
-  &--gesamt       .stat-card__number { color: $grau-dunkel; }
+  &--offen         .stat-card__number { color: #ff8a80; }
+  &--teillieferung  .stat-card__number { color: $orange; }
+  &--vollstaendig   .stat-card__number { color: $gruen; }
+  &--gesamt        .stat-card__number { color: $text; }
 }
 
 // ── Filter-Bar ────────────────────────────────────────────────────────────────
@@ -238,20 +285,22 @@ tr:hover td { background: #FAFAFA; }
 
   input, select {
     padding: 7px 12px;
-    border: 1px solid $grau-rand;
-    border-radius: $radius-sm;
+    border: 1px solid $border;
+    border-radius: $radius-md;
     font-size: $font-size-sm;
-    color: $grau-dunkel;
-    background: $weiss;
+    color: $text;
+    background: $bg-card;
 
     &:focus {
       outline: none;
       border-color: $rot;
     }
+
+    option { background: $bg-card; }
   }
 }
 
-// ── Modal (Admin-Variante mit Backdrop-Div) ───────────────────────────────────
+// ── Modal (Admin-Variante) ────────────────────────────────────────────────────
 .modal {
   &[style*="display: flex"], &[style*="display:flex"] {
     position: fixed;
@@ -264,14 +313,16 @@ tr:hover td { background: #FAFAFA; }
   &__backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.45);
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(4px);
   }
 
   &__box {
     position: relative;
     z-index: 1;
-    background: $weiss;
-    border-radius: $radius-md;
+    background: $bg-card;
+    border: 1px solid $border;
+    border-radius: $radius-xl;
     box-shadow: $schatten-lg;
     width: 90%;
     max-width: 480px;
@@ -279,12 +330,13 @@ tr:hover td { background: #FAFAFA; }
   }
 }
 
-// ── Modal (Legacy-Variante mit modal-overlay) ─────────────────────────────────
+// ── Modal (Legacy mit modal-overlay) ─────────────────────────────────────────
 .modal-overlay {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.45);
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(4px);
   z-index: 200;
   align-items: center;
   justify-content: center;
@@ -293,8 +345,9 @@ tr:hover td { background: #FAFAFA; }
 }
 
 .modal {
-  background: $weiss;
-  border-radius: $radius-md;
+  background: $bg-card;
+  border: 1px solid $border;
+  border-radius: $radius-xl;
   box-shadow: $schatten-lg;
   width: 90%;
   max-width: 540px;
@@ -302,8 +355,9 @@ tr:hover td { background: #FAFAFA; }
   overflow-y: auto;
 
   &__header {
-    background: $grau-dunkel;
-    color: $weiss;
+    background: $bg-card-hover;
+    border-bottom: 1px solid $border;
+    color: $text;
     padding: 14px $space-lg;
     font-size: $font-size-md;
     font-weight: 600;
@@ -315,24 +369,25 @@ tr:hover td { background: #FAFAFA; }
   &__close {
     background: none;
     border: none;
-    color: $weiss;
-    font-size: 20px;
+    color: $text-muted;
+    font-size: 18px;
     cursor: pointer;
-    opacity: 0.7;
     line-height: 1;
-    &:hover { opacity: 1; }
+    padding: 2px;
+    border-radius: $radius-sm;
+    transition: color $transition-fast;
+    &:hover { color: $text; }
   }
 
-  &__body {
-    padding: $space-lg;
-  }
+  &__body { padding: $space-lg; }
 
   &__footer {
     padding: $space-md $space-lg;
-    border-top: 1px solid $grau-rand;
+    border-top: 1px solid $border;
     display: flex;
     justify-content: flex-end;
     gap: $space-sm;
+    background: $bg-card-hover;
   }
 }
 
@@ -348,16 +403,19 @@ tr:hover td { background: #FAFAFA; }
 }
 
 .toast {
-  background: $grau-dunkel;
-  color: $weiss;
+  background: $bg-card;
+  border: 1px solid $border;
+  color: $text;
   padding: 10px $space-md;
-  border-radius: $radius-sm;
+  border-radius: $radius-lg;
   box-shadow: $schatten-lg;
   font-size: $font-size-sm;
+  font-weight: 500;
   animation: toast-in 0.2s ease;
-  border-left: 4px solid $gruen;
+  border-left: 3px solid $gruen;
+  min-width: 240px;
 
-  &--error  { border-left-color: $rot; }
+  &--error   { border-left-color: $rot; }
   &--warning { border-left-color: $orange; }
 }
 
@@ -372,36 +430,56 @@ tr:hover td { background: #FAFAFA; }
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #EBEBEB;
+  background: $bg;
+  position: relative;
+  overflow: hidden;
+
+  // Subtiler Hintergrund-Glow wie auf der Landing Page
+  &::before {
+    content: '';
+    position: absolute;
+    top: -150px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(ellipse, rgba(230,48,34,0.10) 0%, transparent 70%);
+    pointer-events: none;
+  }
 
   .auth-card {
-    background: $weiss;
-    border-radius: $radius-lg;
+    background: $bg-card;
+    border: 1px solid $border;
+    border-radius: $radius-xl;
     box-shadow: $schatten-lg;
     width: 100%;
     max-width: 400px;
     overflow: hidden;
+    position: relative;
+    z-index: 1;
   }
 
   .auth-header {
     background: $rot;
-    color: $weiss;
+    color: #fff;
     padding: $space-xl $space-lg;
     text-align: center;
+    position: relative;
 
     .auth-emblem {
       width: 64px;
       height: 64px;
-      background: $weiss;
+      background: rgba(255,255,255,0.15);
+      border: 2px solid rgba(255,255,255,0.3);
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 32px;
+      font-size: 30px;
       margin: 0 auto $space-md;
     }
 
-    h1 { font-size: $font-size-xl; font-weight: 700; }
+    h1 { font-size: $font-size-xl; font-weight: 700; letter-spacing: -0.01em; }
     p  { font-size: $font-size-sm; opacity: 0.85; margin-top: 4px; }
   }
 
@@ -414,10 +492,10 @@ tr:hover td { background: #FAFAFA; }
   .auth-totp-hint {
     text-align: center;
     font-size: $font-size-sm;
-    color: $grau;
+    color: $text-muted;
     margin-bottom: $space-md;
 
-    strong { color: $grau-dunkel; display: block; margin-bottom: $space-xs; }
+    strong { color: $text; display: block; margin-bottom: $space-xs; font-size: $font-size-md; }
   }
 
   .totp-code-input {
@@ -425,31 +503,29 @@ tr:hover td { background: #FAFAFA; }
     font-size: 24px;
     letter-spacing: 8px;
     font-weight: 700;
+    background: $bg !important;
   }
 }
 
-// ── Beschaffungsauftrag-Formular ─────────────────────────────────────────────
+// ── Beschaffungsauftrag-Formular ──────────────────────────────────────────────
 .beschaffung-card {
   .card__body { padding: 0; }
 }
 
 .beschaffung-article-select {
   padding: $space-md $space-md $space-sm;
-  border-bottom: 1px solid $grau-rand;
+  border-bottom: 1px solid $border;
 }
 
-.beschaffung-form {
-  padding: 0;
-}
+.beschaffung-form { padding: 0; }
 
 .beschaffung-row {
   display: flex;
-  border-bottom: 1px solid $grau-rand;
+  border-bottom: 1px solid $border;
 
   &--haendler {
     border-bottom: none;
-    border-top: 1px solid $grau-rand;
-
+    border-top: 1px solid $border;
     & + & { border-top: none; }
   }
 }
@@ -457,10 +533,9 @@ tr:hover td { background: #FAFAFA; }
 .beschaffung-cell {
   flex: 1;
   padding: 0;
-  border-right: 1px solid $grau-rand;
+  border-right: 1px solid $border;
 
   &:last-child { border-right: none; }
-
   &--full { flex: 1 1 100%; border-right: none; }
   &--bedarfsmelder { flex: 2; }
   &--telefon { flex: 1; }
@@ -473,11 +548,13 @@ tr:hover td { background: #FAFAFA; }
     padding: $space-sm $space-md;
     font-size: $font-size-md;
     background: transparent;
+    color: $text;
     box-shadow: none;
     outline: none;
     resize: vertical;
 
-    &:focus { background: #FFFDE7; }
+    &:focus { background: rgba(230,48,34,0.05); }
+    &::placeholder { color: $text-subtle; }
   }
 
   textarea { min-height: 90px; }
@@ -485,46 +562,47 @@ tr:hover td { background: #FAFAFA; }
 
 .beschaffung-label {
   font-size: $font-size-xs;
-  color: $grau;
+  color: $text-muted;
   padding: $space-xs $space-md 0;
   white-space: nowrap;
 }
 
-// Tabellen-Kopfzeile
 .beschaffung-table-header {
   display: flex;
-  background: $grau-hell;
-  border-bottom: 1px solid $grau-rand;
+  background: $bg-card-hover;
+  border-bottom: 1px solid $border;
 }
 
 .beschaffung-th {
   padding: $space-xs $space-md;
   font-size: $font-size-xs;
-  font-weight: 600;
-  color: $grau-dunkel;
-  border-right: 1px solid $grau-rand;
+  font-weight: 700;
+  color: $text-muted;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-right: 1px solid $border;
 
   &:last-child { border-right: none; }
-  &--menge { width: 80px; }
-  &--einheit { width: 140px; }
-  &--gesamt { width: 90px; }
+  &--menge     { width: 80px; }
+  &--einheit   { width: 140px; }
+  &--gesamt    { width: 90px; }
   &--gegenstand { flex: 1; }
 }
 
-// Tabellen-Zeile
 .beschaffung-table-row {
   display: flex;
-  border-bottom: 1px solid $grau-rand;
+  border-bottom: 1px solid $border;
+  &:hover { background: $bg-card-hover; }
 }
 
 .beschaffung-td {
   padding: 0;
-  border-right: 1px solid $grau-rand;
+  border-right: 1px solid $border;
 
   &:last-child { border-right: none; }
-  &--menge { width: 80px; }
-  &--einheit { width: 140px; }
-  &--gesamt { width: 90px; }
+  &--menge     { width: 80px; }
+  &--einheit   { width: 140px; }
+  &--gesamt    { width: 90px; }
   &--gegenstand { flex: 1; }
 
   input, select {
@@ -534,22 +612,23 @@ tr:hover td { background: #FAFAFA; }
     padding: $space-sm $space-md;
     font-size: $font-size-md;
     background: transparent;
+    color: $text;
     box-shadow: none;
     outline: none;
 
-    &:focus { background: #FFFDE7; }
+    &:focus { background: rgba(230,48,34,0.05); }
+    option { background: $bg-card; }
   }
 }
 
 .beschaffung-hint {
   font-size: $font-size-xs;
-  color: $grau-mittel;
+  color: $text-subtle;
   padding: $space-xs $space-md;
-  border-bottom: 1px solid $grau-rand;
+  border-bottom: 1px solid $border;
 }
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
-
 .dashboard-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -557,43 +636,82 @@ tr:hover td { background: #FAFAFA; }
 }
 
 .dashboard-card {
-  background: $weiss;
-  border-radius: $radius-md;
-  box-shadow: $schatten-md;
+  background: $bg-card;
+  border: 1px solid $border;
+  border-radius: $radius-xl;
   padding: $space-lg;
   text-align: center;
   position: relative;
-  transition: box-shadow 0.15s, transform 0.15s;
+  overflow: hidden;
+  transition: all $transition-md;
 
-  &__icon  { font-size: 32px; margin-bottom: 8px; }
-  &__label { font-size: 14px; font-weight: 600; color: $grau-dunkel; margin-bottom: 4px; }
-  &__desc  { font-size: 12px; color: $grau-mittel; }
-  &__soon  {
-    margin-top: 8px;
-    font-size: 11px;
-    color: $weiss;
-    background: $grau-mittel;
-    border-radius: 10px;
-    padding: 2px 8px;
+  // Roter Akzent oben (wie Feature-Cards auf der Landing Page)
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 2px;
+    background: linear-gradient(90deg, $rot, transparent);
+    opacity: 0;
+    transition: opacity $transition-md;
+  }
+
+  &__icon {
+    width: 48px;
+    height: 48px;
+    background: $rot-hell;
+    border: 1px solid rgba(230,48,34,0.2);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    margin: 0 auto $space-sm;
+  }
+
+  &__label {
+    font-size: 14px;
+    font-weight: 700;
+    color: $text;
+    margin-bottom: 4px;
+  }
+
+  &__desc { font-size: 12px; color: $text-muted; line-height: 1.5; }
+
+  &__soon {
+    margin-top: $space-sm;
+    font-size: 10px;
+    color: $text-muted;
+    background: $bg-card-hover;
+    border: 1px solid $border;
+    border-radius: $radius-pill;
+    padding: 2px 10px;
     display: inline-block;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
 
   &--active {
     cursor: pointer;
     &:hover {
-      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
-      transform: translateY(-2px);
+      border-color: rgba(230,48,34,0.3);
+      background: $bg-card-hover;
+      transform: translateY(-3px);
+      box-shadow: 0 10px 28px rgba(0,0,0,0.35);
+
+      &::after { opacity: 1; }
     }
   }
 
   &--soon {
-    opacity: 0.6;
+    opacity: 0.55;
     cursor: default;
   }
 }
 
 .announcement-card {
-  .card__header { background: $grau-dunkel; }
+  border-left: 3px solid $rot;
 }
 
 // ── Toggle Switch ─────────────────────────────────────────────────────────────
@@ -609,27 +727,18 @@ tr:hover td { background: #FAFAFA; }
     width: 0;
     height: 0;
 
-    &:checked + .toggle-switch__track {
-      background: $rot;
-    }
-
-    &:checked + .toggle-switch__track::after {
-      transform: translateX(20px);
-    }
-
-    &:disabled + .toggle-switch__track {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
+    &:checked + .toggle-switch__track { background: $rot; }
+    &:checked + .toggle-switch__track::after { transform: translateX(20px); }
+    &:disabled + .toggle-switch__track { opacity: 0.35; cursor: not-allowed; }
   }
 
   &__track {
     display: block;
     width: 44px;
     height: 24px;
-    background: #ccc;
+    background: $border;
     border-radius: 12px;
-    transition: background 0.2s;
+    transition: background $transition-md;
     position: relative;
 
     &::after {
@@ -639,10 +748,10 @@ tr:hover td { background: #FAFAFA; }
       left: 3px;
       width: 18px;
       height: 18px;
-      background: $weiss;
+      background: $text;
       border-radius: 50%;
-      transition: transform 0.2s;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+      transition: transform $transition-md;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.4);
     }
   }
 }

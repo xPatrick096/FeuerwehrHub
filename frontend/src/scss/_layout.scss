@@ -1,9 +1,7 @@
 @use 'variables' as *;
 
-// ── App-Shell ────────────────────────────────────────────────────────────────
-#app {
-  height: 100%;
-}
+// ── App-Shell ─────────────────────────────────────────────────────────────────
+#app { height: 100%; }
 
 .app-shell {
   display: flex;
@@ -14,25 +12,27 @@
 // ── Header ────────────────────────────────────────────────────────────────────
 .header {
   height: $header-height;
-  background: $rot;
-  color: $weiss;
+  background: rgba(13, 17, 23, 0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid $border;
+  color: $text;
   display: flex;
   align-items: center;
   padding: 0 $space-lg;
   gap: $space-md;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
   flex-shrink: 0;
   z-index: 100;
 
   &__emblem {
-    width: 40px;
-    height: 40px;
-    background: $weiss;
-    border-radius: 50%;
+    width: 38px;
+    height: 38px;
+    background: $rot-hell;
+    border: 1px solid rgba(230, 48, 34, 0.3);
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 20px;
+    font-size: 18px;
     flex-shrink: 0;
   }
 
@@ -40,10 +40,13 @@
     h1 {
       font-size: $font-size-lg;
       font-weight: 700;
+      color: $text;
+      letter-spacing: -0.01em;
     }
     p {
-      font-size: $font-size-sm;
-      opacity: 0.85;
+      font-size: $font-size-xs;
+      color: $text-muted;
+      margin-top: 1px;
     }
   }
 
@@ -51,29 +54,33 @@
     margin-left: auto;
     display: flex;
     align-items: center;
-    gap: $space-md;
-    font-size: $font-size-sm;
-    opacity: 0.9;
+    gap: $space-sm;
   }
 
   &__user {
     display: flex;
     align-items: center;
-    gap: $space-sm;
+    gap: $space-xs;
+    font-size: $font-size-sm;
+    color: $text-muted;
+    padding: 0 $space-sm;
   }
 
   &__logout {
-    background: rgba(255,255,255,0.15);
-    border: none;
-    color: $weiss;
-    padding: $space-xs $space-md;
-    border-radius: $radius-sm;
+    background: transparent;
+    border: 1px solid $border;
+    color: $text-muted;
+    padding: 6px $space-md;
+    border-radius: $radius-md;
     cursor: pointer;
     font-size: $font-size-sm;
-    transition: background $transition-fast;
+    font-weight: 600;
+    transition: all $transition-fast;
 
     &:hover {
-      background: rgba(255,255,255,0.25);
+      border-color: $rot;
+      color: $rot;
+      background: $rot-hell;
     }
   }
 }
@@ -88,10 +95,11 @@
 // ── Sidebar ───────────────────────────────────────────────────────────────────
 .sidebar {
   width: $sidebar-width;
-  background: $grau-dunkel;
+  background: $bg;
+  border-right: 1px solid $border;
   flex-shrink: 0;
   overflow-y: auto;
-  padding: $space-md 0 0;
+  padding: $space-sm 0 0;
   display: flex;
   flex-direction: column;
 
@@ -103,9 +111,9 @@
 
   &__copyright {
     padding: $space-md $space-lg;
-    border-top: 1px solid rgba(255,255,255,0.08);
+    border-top: 1px solid $border;
     font-size: 10px;
-    color: rgba(255,255,255,0.22);
+    color: $text-subtle;
     text-align: center;
     letter-spacing: 0.02em;
   }
@@ -114,47 +122,51 @@
     display: flex;
     align-items: center;
     gap: $space-sm;
-    padding: 11px $space-lg;
-    color: rgba(255,255,255,0.65);
+    padding: 10px $space-md;
+    color: $text-muted;
     cursor: pointer;
     border: none;
     background: none;
     width: 100%;
     text-align: left;
     font-size: $font-size-md;
+    font-weight: 500;
     transition: all $transition-fast;
-    border-left: 3px solid transparent;
+    border-left: 2px solid transparent;
+    margin: 1px 0;
 
     &:hover {
-      color: $weiss;
-      background: rgba(255,255,255,0.06);
+      color: $text;
+      background: $bg-card;
     }
 
     &.active {
-      color: $weiss;
-      background: rgba(255,255,255,0.08);
+      color: $text;
+      background: $bg-card;
       border-left-color: $rot;
+      font-weight: 600;
     }
 
     &__icon {
-      font-size: 16px;
+      font-size: 15px;
       width: 20px;
       text-align: center;
+      flex-shrink: 0;
     }
   }
 
   &__divider {
     height: 1px;
-    background: rgba(255,255,255,0.08);
-    margin: $space-sm $space-md;
+    background: $border;
+    margin: $space-xs $space-md;
   }
 
   &__module {
     display: flex;
     align-items: center;
     gap: $space-sm;
-    padding: 10px $space-lg 4px;
-    color: rgba(255,255,255,0.35);
+    padding: 10px $space-md 4px;
+    color: $text-subtle;
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.1em;
@@ -165,7 +177,7 @@
       content: '';
       flex: 1;
       height: 1px;
-      background: rgba(255,255,255,0.08);
+      background: $border;
     }
   }
 }
@@ -175,6 +187,7 @@
   flex: 1;
   overflow-y: auto;
   padding: $space-lg;
+  background: $bg;
 }
 
 .page {
@@ -182,9 +195,7 @@
   margin: 0 auto;
   display: none;
 
-  &.active {
-    display: block;
-  }
+  &.active { display: block; }
 }
 
 .page-header {
@@ -196,12 +207,13 @@
   h2 {
     font-size: $font-size-xl;
     font-weight: 700;
-    color: $grau-dunkel;
+    color: $text;
+    letter-spacing: -0.02em;
   }
 
   p {
     font-size: $font-size-sm;
-    color: $grau;
-    margin-top: 2px;
+    color: $text-muted;
+    margin-top: 3px;
   }
 }

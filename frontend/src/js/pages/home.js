@@ -21,14 +21,14 @@ export async function renderHome() {
 
     <div id="announcements-section">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <h3 style="margin:0;font-size:15px;font-weight:600;color:#333">Ankündigungen</h3>
+        <h3 style="margin:0;font-size:15px;font-weight:600;color:#e6edf3">Ankündigungen</h3>
         ${isAdmin ? `<button class="btn btn--primary btn--sm" id="btn-new-announcement">+ Neu</button>` : ''}
       </div>
-      <div id="announcements-list"><p style="color:#888;font-size:13px">Lade...</p></div>
+      <div id="announcements-list"><p style="color:#7d8590;font-size:13px">Lade...</p></div>
     </div>
 
     <div id="dashboard-modules" style="margin-top:32px">
-      <h3 style="margin:0 0 12px;font-size:15px;font-weight:600;color:#333">Meine Module</h3>
+      <h3 style="margin:0 0 12px;font-size:15px;font-weight:600;color:#e6edf3">Meine Module</h3>
       <div class="dashboard-grid" id="module-cards"></div>
     </div>
 
@@ -49,7 +49,7 @@ export async function renderHome() {
           <div class="form-group">
             <label>Inhalt</label>
             <textarea id="ann-content" rows="5"
-              style="width:100%;resize:vertical;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px"
+              style="width:100%;resize:vertical;padding:8px;border:1px solid #21273d;border-radius:8px;font-size:14px;background:#0d1117;color:#e6edf3"
               placeholder="Nachricht..."></textarea>
           </div>
           <div class="form-group">
@@ -86,7 +86,7 @@ async function loadAnnouncements(user, isAdmin) {
     const items = await api.getAnnouncements();
 
     if (!items.length) {
-      list.innerHTML = `<p style="color:#888;font-size:13px">Keine Ankündigungen vorhanden.</p>`;
+      list.innerHTML = `<p style="color:#7d8590;font-size:13px">Keine Ankündigungen vorhanden.</p>`;
       return;
     }
 
@@ -98,7 +98,7 @@ async function loadAnnouncements(user, isAdmin) {
             <strong>${esc(a.title)}</strong>
           </span>
           <span style="display:flex;align-items:center;gap:12px">
-            <span style="font-size:11px;color:#999">
+            <span style="font-size:11px;color:#7d8590">
               ${esc(a.created_by_name)} · ${formatDate(a.created_at)}
             </span>
             ${isAdmin ? `
@@ -112,7 +112,7 @@ async function loadAnnouncements(user, isAdmin) {
             ` : ''}
           </span>
         </div>
-        <div class="card__body" style="white-space:pre-wrap;font-size:14px;color:#444">
+        <div class="card__body" style="white-space:pre-wrap;font-size:14px;color:#e6edf3">
           ${esc(a.content)}
         </div>
       </div>
@@ -142,7 +142,7 @@ async function loadAnnouncements(user, isAdmin) {
       });
     }
   } catch (e) {
-    list.innerHTML = `<p style="color:red;font-size:13px">Fehler: ${e.message}</p>`;
+    list.innerHTML = `<p style="color:#ff8a80;font-size:13px">Fehler: ${e.message}</p>`;
   }
 }
 
@@ -227,7 +227,7 @@ function renderModuleCards(user, modules) {
   });
 
   if (!visible.length) {
-    grid.innerHTML = `<p style="color:#888;font-size:13px">Keine Module verfügbar. Wende dich an deinen Administrator.</p>`;
+    grid.innerHTML = `<p style="color:#7d8590;font-size:13px">Keine Module verfügbar. Wende dich an deinen Administrator.</p>`;
     return;
   }
 

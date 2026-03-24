@@ -117,7 +117,7 @@ function renderTotpSetup() {
         <strong>Scanne den QR-Code</strong>
         Öffne deine Authenticator-App und scanne den Code.
       </div>
-      <div id="qr-uri" style="word-break:break-all;font-size:11px;background:#f5f5f5;padding:10px;border-radius:4px;margin-bottom:12px;"></div>
+      <div id="qr-uri" style="word-break:break-all;font-size:11px;background:#0d1117;color:#7d8590;padding:10px;border-radius:8px;border:1px solid #21273d;margin-bottom:12px;font-family:monospace;"></div>
       <div class="form-group">
         <label>Code zum Bestätigen</label>
         <input type="text" id="totp-confirm-code" class="totp-code-input"
