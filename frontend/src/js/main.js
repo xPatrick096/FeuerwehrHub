@@ -7,11 +7,13 @@ import { renderNewOrder } from './pages/new-order.js';
 import { renderArticles } from './pages/articles.js';
 import { renderSettings } from './pages/settings.js';
 import { renderAdmin } from './pages/admin.js';
+import { renderMyArea } from './pages/my-area.js';
 
 // Routen registrieren
 registerRoute('#/login',     renderLogin);
 registerRoute('#/setup',     renderSetup);
 registerRoute('#/',          renderHome);
+registerRoute('#/my-area',   renderMyArea);
 registerRoute('#/orders',    renderOrders,    'lager');
 registerRoute('#/new-order', renderNewOrder,  'lager');
 registerRoute('#/articles',  renderArticles,  'lager');

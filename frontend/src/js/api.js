@@ -104,6 +104,12 @@ export const api = {
   deleteUser:     (id)        => request('DELETE', `/admin/users/${id}`),
   getAuditLog:    ()          => request('GET',    '/admin/audit-log'),
 
+  // Mein Bereich (Selfservice)
+  getMyProfile:        ()          => request('GET',    '/me/profile'),
+  updateMyProfile:     (body)      => request('PUT',    '/me/profile', body),
+  getMyQualifications: ()          => request('GET',    '/me/qualifications'),
+  getMyEquipment:      ()          => request('GET',    '/me/equipment'),
+
   // Ankündigungen
   getAnnouncements:    ()          => request('GET',    '/announcements'),
   createAnnouncement:  (body)      => request('POST',   '/announcements', body),
