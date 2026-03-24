@@ -79,15 +79,15 @@ export async function renderAdmin() {
           <div class="form-grid">
             <div class="form-group form-group--full">
               <label>Name der Feuerwehr</label>
-              <input type="text" id="cfg-ff-name" value="${esc(settings?.ff_name || '')}" />
+              <input type="text" id="cfg-ff-name" maxlength="100" value="${esc(settings?.ff_name || '')}" />
             </div>
             <div class="form-group">
               <label>Straße & Hausnummer</label>
-              <input type="text" id="cfg-ff-strasse" value="${esc(settings?.ff_strasse || '')}" />
+              <input type="text" id="cfg-ff-strasse" maxlength="100" value="${esc(settings?.ff_strasse || '')}" />
             </div>
             <div class="form-group">
               <label>PLZ & Ort</label>
-              <input type="text" id="cfg-ff-ort" value="${esc(settings?.ff_ort || '')}" />
+              <input type="text" id="cfg-ff-ort" maxlength="100" value="${esc(settings?.ff_ort || '')}" />
             </div>
           </div>
           <div class="btn-group" style="margin-top:16px">
@@ -175,7 +175,7 @@ export async function renderAdmin() {
         <div class="modal__body">
           <div class="form-group">
             <label>Benutzername</label>
-            <input type="text" id="new-user-name" autocomplete="off" />
+            <input type="text" id="new-user-name" maxlength="64" autocomplete="off" />
           </div>
           <div class="form-group">
             <label>Passwort (mind. 8 Zeichen)</label>
@@ -207,7 +207,7 @@ export async function renderAdmin() {
         <div class="modal__body">
           <div class="form-group">
             <label>Rollenname</label>
-            <input type="text" id="role-name" placeholder="z.B. Lagerverwalter" autocomplete="off" />
+            <input type="text" id="role-name" maxlength="64" placeholder="z.B. Lagerverwalter" autocomplete="off" />
           </div>
           <div class="form-group">
             <label>Module</label>
@@ -217,6 +217,33 @@ export async function renderAdmin() {
         <div class="modal__footer">
           <button class="btn btn--primary" id="btn-submit-role">Speichern</button>
           <button class="btn btn--outline" id="btn-cancel-role">Abbrechen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Benutzer bearbeiten -->
+    <div id="modal-edit-user" class="modal" style="display:none">
+      <div class="modal__backdrop"></div>
+      <div class="modal__box">
+        <div class="modal__header">
+          <h3>Benutzer bearbeiten</h3>
+          <button class="modal__close" id="btn-close-edit-user">✕</button>
+        </div>
+        <div class="modal__body">
+          <p id="edit-user-info" style="font-size:13px;color:#7d8590;margin-bottom:12px"></p>
+          <div class="form-group">
+            <label>Benutzername</label>
+            <input type="text" id="edit-user-username" maxlength="64" autocomplete="off" />
+          </div>
+          <div class="form-group">
+            <label>Anzeigename</label>
+            <input type="text" id="edit-user-displayname" maxlength="100"
+              placeholder="Leer = Benutzername wird verwendet" />
+          </div>
+        </div>
+        <div class="modal__footer">
+          <button class="btn btn--primary" id="btn-submit-edit-user">Speichern</button>
+          <button class="btn btn--outline" id="btn-cancel-edit-user">Abbrechen</button>
         </div>
       </div>
     </div>
@@ -376,6 +403,7 @@ export async function renderAdmin() {
 
   // Modal: Neuer Benutzer
   let resetTarget = null;
+  let editUserTarget = null;
 
   document.getElementById('btn-new-user').addEventListener('click', () => {
     document.getElementById('modal-new-user').style.display = 'flex';
@@ -426,6 +454,32 @@ export async function renderAdmin() {
     } catch (e) { toast(e.message, 'error'); }
   });
 
+  // Modal: Benutzer bearbeiten
+  const closeEditUser = () => {
+    document.getElementById('modal-edit-user').style.display = 'none';
+    document.getElementById('edit-user-username').value = '';
+    document.getElementById('edit-user-displayname').value = '';
+    editUserTarget = null;
+  };
+  document.getElementById('btn-close-edit-user').addEventListener('click', closeEditUser);
+  document.getElementById('btn-cancel-edit-user').addEventListener('click', closeEditUser);
+
+  document.getElementById('btn-submit-edit-user').addEventListener('click', async () => {
+    const username    = document.getElementById('edit-user-username').value.trim();
+    const displayName = document.getElementById('edit-user-displayname').value.trim();
+    if (!username) { toast('Benutzername darf nicht leer sein', 'error'); return; }
+    try {
+      await api.updateUser(editUserTarget.id, {
+        username,
+        display_name: displayName || null,
+      });
+      toast(`Benutzer "${username}" aktualisiert`);
+      closeEditUser();
+      const roles = await api.getRoles().catch(() => []);
+      await loadUsers(me, roles);
+    } catch (e) { toast(e.message, 'error'); }
+  });
+
   // Event Delegation für Tabellen-Aktionen
   document.getElementById('users-table-wrap').addEventListener('click', async (e) => {
     const id = e.target.dataset.id;
@@ -436,6 +490,15 @@ export async function renderAdmin() {
       document.getElementById('reset-pw-username').textContent = `Benutzer: ${username}`;
       document.getElementById('modal-reset-pw').style.display = 'flex';
       document.getElementById('reset-pw-value').focus();
+    }
+
+    if (e.target.matches('[data-action="edit-user"]')) {
+      editUserTarget = { id, username };
+      document.getElementById('edit-user-info').textContent = `Benutzer: ${username}`;
+      document.getElementById('edit-user-username').value = e.target.dataset.username;
+      document.getElementById('edit-user-displayname').value = e.target.dataset.displayname || '';
+      document.getElementById('modal-edit-user').style.display = 'flex';
+      document.getElementById('edit-user-username').focus();
     }
 
     if (e.target.matches('[data-action="reset-totp"]')) {
@@ -452,7 +515,7 @@ export async function renderAdmin() {
       const currentRole = e.target.dataset.role;
       const newRole = currentRole === 'admin' ? 'user' : 'admin';
       try {
-        await api.updateRole(id, { role: newRole });
+        await api.updateUserSystemRole(id, { role: newRole });
         toast(`Systemrolle auf "${ROLE_LABELS[newRole]}" geändert`);
         const roles = await api.getRoles().catch(() => []);
         await loadUsers(me, roles);
@@ -632,6 +695,7 @@ async function loadUsers(me, roles = []) {
             const isSuperuser = u.role === 'superuser';
             const canEdit = me?.role === 'superuser' && !isSuperuser;
             const canReset = (me?.role === 'superuser' || (me?.role === 'admin' && u.role === 'user'));
+            const canEditUser = !isSelf && !isSuperuser && canReset;
             const isPrivileged = u.role === 'admin' || u.role === 'superuser';
 
             const roleDropdown = isPrivileged
@@ -659,6 +723,13 @@ async function loadUsers(me, roles = []) {
                 </td>
                 <td>
                   <div class="btn-group">
+                    ${canEditUser ? `
+                      <button class="btn btn--outline btn--sm"
+                        data-action="edit-user" data-id="${u.id}"
+                        data-username="${esc(u.username)}"
+                        data-displayname="${esc(u.display_name || '')}">
+                        Bearbeiten
+                      </button>` : ''}
                     ${canReset ? `
                       <button class="btn btn--outline btn--sm"
                         data-action="reset-pw" data-id="${u.id}" data-username="${esc(u.username)}">

@@ -23,6 +23,7 @@ use crate::{
 pub struct UserEntry {
     pub id: Uuid,
     pub username: String,
+    pub display_name: Option<String>,
     pub role: String,
     pub is_admin: bool,
     pub totp_enabled: bool,
@@ -70,7 +71,7 @@ pub async fn list_users(
     }
 
     let users = sqlx::query_as::<_, UserEntry>(
-        "SELECT u.id, u.username, u.role, u.is_admin, u.totp_enabled,
+        "SELECT u.id, u.username, u.display_name, u.role, u.is_admin, u.totp_enabled,
                 u.permissions, u.role_id, r.name as assigned_role_name, u.created_at
          FROM users u
          LEFT JOIN roles r ON r.id = u.role_id
@@ -139,7 +140,7 @@ pub async fn create_user(
     })?;
 
     let row = sqlx::query_as::<_, UserEntry>(
-        "SELECT u.id, u.username, u.role, u.is_admin, u.totp_enabled,
+        "SELECT u.id, u.username, u.display_name, u.role, u.is_admin, u.totp_enabled,
                 u.permissions, u.role_id, r.name as assigned_role_name, u.created_at
          FROM users u LEFT JOIN roles r ON r.id = u.role_id WHERE u.id = $1"
     )
@@ -149,6 +150,82 @@ pub async fn create_user(
 
     audit::log(&state.db, Some(claims.sub), &claims.username, "USER_CREATED",
         Some("user"), Some(new_id), Some(&format!("Rolle: {}", body.role))).await;
+
+    Ok(Json(row))
+}
+
+// ── Handler: Benutzer bearbeiten ─────────────────────────────────────────────
+
+#[derive(Deserialize)]
+pub struct UpdateUserBody {
+    pub username:     Option<String>,
+    pub display_name: Option<String>,
+}
+
+pub async fn update_user(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+    Json(body): Json<UpdateUserBody>,
+) -> AppResult<Json<UserEntry>> {
+    if !claims.is_admin_or_above() {
+        return Err(AppError::Forbidden);
+    }
+
+    let target = sqlx::query_as::<_, (String,)>("SELECT role FROM users WHERE id = $1")
+        .bind(id)
+        .fetch_optional(&state.db)
+        .await?
+        .ok_or(AppError::NotFound)?;
+
+    // Admin darf keine anderen Admins/Superuser bearbeiten
+    if !claims.is_superuser() && (target.0 == "admin" || target.0 == "superuser") {
+        return Err(AppError::Forbidden);
+    }
+
+    if let Some(ref username) = body.username {
+        let username = username.trim();
+        if username.is_empty() {
+            return Err(AppError::BadRequest("Benutzername darf nicht leer sein".into()));
+        }
+        if username.len() > 64 {
+            return Err(AppError::BadRequest("Benutzername zu lang (max. 64 Zeichen)".into()));
+        }
+        sqlx::query("UPDATE users SET username = $1 WHERE id = $2")
+            .bind(username)
+            .bind(id)
+            .execute(&state.db)
+            .await
+            .map_err(|e| {
+                if e.to_string().contains("unique") {
+                    AppError::BadRequest("Benutzername bereits vergeben".into())
+                } else {
+                    AppError::Database(e)
+                }
+            })?;
+    }
+
+    if let Some(ref display_name) = body.display_name {
+        let dn = display_name.trim();
+        let value: Option<&str> = if dn.is_empty() { None } else { Some(dn) };
+        sqlx::query("UPDATE users SET display_name = $1 WHERE id = $2")
+            .bind(value)
+            .bind(id)
+            .execute(&state.db)
+            .await?;
+    }
+
+    let row = sqlx::query_as::<_, UserEntry>(
+        "SELECT u.id, u.username, u.display_name, u.role, u.is_admin, u.totp_enabled,
+                u.permissions, u.role_id, r.name as assigned_role_name, u.created_at
+         FROM users u LEFT JOIN roles r ON r.id = u.role_id WHERE u.id = $1"
+    )
+    .bind(id)
+    .fetch_one(&state.db)
+    .await?;
+
+    audit::log(&state.db, Some(claims.sub), &claims.username, "USER_UPDATED",
+        Some("user"), Some(id), None).await;
 
     Ok(Json(row))
 }
@@ -193,7 +270,7 @@ pub async fn update_role(
     .ok_or(AppError::NotFound)?;
 
     let row = sqlx::query_as::<_, UserEntry>(
-        "SELECT u.id, u.username, u.role, u.is_admin, u.totp_enabled,
+        "SELECT u.id, u.username, u.display_name, u.role, u.is_admin, u.totp_enabled,
                 u.permissions, u.role_id, r.name as assigned_role_name, u.created_at
          FROM users u LEFT JOIN roles r ON r.id = u.role_id WHERE u.id = $1"
     )
@@ -455,7 +532,7 @@ pub fn router(state: AppState) -> Router<AppState> {
         .route("/users/:id/reset-password", post(reset_password))
         .route("/users/:id/permissions", put(update_permissions))
         .route("/users/:id/assign-role", put(assign_role))
-        .route("/users/:id", delete(delete_user))
+        .route("/users/:id", put(update_user).delete(delete_user))
         .route("/users/:id/reset-totp", post(reset_totp))
         .route("/audit-log", get(get_audit_log))
         .route_layer(middleware::from_fn_with_state(state, require_auth))

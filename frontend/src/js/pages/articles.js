@@ -49,11 +49,11 @@ export async function renderArticles() {
         <div class="modal__body">
           <div class="form-group">
             <label>Bezeichnung *</label>
-            <input type="text" id="a-name" placeholder="z.B. HP 85A Toner" />
+            <input type="text" id="a-name" maxlength="255" placeholder="z.B. HP 85A Toner" />
           </div>
           <div class="form-group">
             <label>Kategorie</label>
-            <input type="text" id="a-category" placeholder="z.B. Toner, Papier..." />
+            <input type="text" id="a-category" maxlength="100" placeholder="z.B. Toner, Papier..." />
           </div>
           <div class="form-group">
             <label>Einheit *</label>
@@ -73,7 +73,7 @@ export async function renderArticles() {
           </div>
           <div class="form-group">
             <label>Anmerkung</label>
-            <textarea id="a-notes" placeholder="Optional..."></textarea>
+            <textarea id="a-notes" maxlength="500" placeholder="Optional..."></textarea>
           </div>
         </div>
         <div class="modal__footer">

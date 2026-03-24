@@ -30,10 +30,10 @@ export async function renderNewOrder() {
         </select>
       </div>
       <div class="beschaffung-td beschaffung-td--gesamt">
-        <input type="text" id="pos-${i}-gesamt" placeholder="" />
+        <input type="text" id="pos-${i}-gesamt" maxlength="50" placeholder="" />
       </div>
       <div class="beschaffung-td beschaffung-td--gegenstand">
-        <input type="text" id="pos-${i}-gegenstand" placeholder="${i === 0 ? 'Artikelbezeichnung' : ''}" />
+        <input type="text" id="pos-${i}-gegenstand" maxlength="255" placeholder="${i === 0 ? 'Artikelbezeichnung' : ''}" />
       </div>
     </div>
   `).join('');
@@ -66,12 +66,12 @@ export async function renderNewOrder() {
           <div class="beschaffung-row beschaffung-row--header">
             <div class="beschaffung-cell beschaffung-cell--bedarfsmelder">
               <div class="beschaffung-label">Bedarfsmelder(in)</div>
-              <input type="text" id="field-bedarfsmelder"
+              <input type="text" id="field-bedarfsmelder" maxlength="100"
                 value="${esc(user?.display_name || user?.username || '')}" />
             </div>
             <div class="beschaffung-cell beschaffung-cell--telefon">
               <div class="beschaffung-label">Telefon</div>
-              <input type="text" id="field-telefon" placeholder="z.B. 0341 / 12345" />
+              <input type="text" id="field-telefon" maxlength="30" placeholder="z.B. 0341 / 12345" />
             </div>
             <div class="beschaffung-cell beschaffung-cell--datum">
               <div class="beschaffung-label">Datum</div>
@@ -83,7 +83,7 @@ export async function renderNewOrder() {
           <div class="beschaffung-row">
             <div class="beschaffung-cell beschaffung-cell--full">
               <div class="beschaffung-label">Lieferanschrift (ggf. mit Zimmernummer)</div>
-              <input type="text" id="field-lieferanschrift"
+              <input type="text" id="field-lieferanschrift" maxlength="200"
                 placeholder="${esc(settings?.ff_strasse ? settings.ff_strasse + ', ' + settings.ff_ort : 'Lieferanschrift eingeben')}" />
             </div>
           </div>
@@ -104,7 +104,7 @@ export async function renderNewOrder() {
           <div class="beschaffung-row">
             <div class="beschaffung-cell beschaffung-cell--full">
               <div class="beschaffung-label">Begründung der Notwendigkeit</div>
-              <textarea id="field-begruendung" rows="4"
+              <textarea id="field-begruendung" rows="4" maxlength="1000"
                 placeholder="Begründung eingeben ..."></textarea>
             </div>
           </div>
@@ -117,17 +117,17 @@ export async function renderNewOrder() {
           </div>
           <div class="beschaffung-row beschaffung-row--haendler">
             <div class="beschaffung-cell beschaffung-cell--full">
-              <input type="text" id="field-haendler1" placeholder="Händler / Anbieter 1" />
+              <input type="text" id="field-haendler1" maxlength="100" placeholder="Händler / Anbieter 1" />
             </div>
           </div>
           <div class="beschaffung-row beschaffung-row--haendler">
             <div class="beschaffung-cell beschaffung-cell--full">
-              <input type="text" id="field-haendler2" placeholder="Händler / Anbieter 2" />
+              <input type="text" id="field-haendler2" maxlength="100" placeholder="Händler / Anbieter 2" />
             </div>
           </div>
           <div class="beschaffung-row beschaffung-row--haendler">
             <div class="beschaffung-cell beschaffung-cell--full">
-              <input type="text" id="field-haendler3" placeholder="Händler / Anbieter 3" />
+              <input type="text" id="field-haendler3" maxlength="100" placeholder="Händler / Anbieter 3" />
             </div>
           </div>
 
@@ -135,7 +135,7 @@ export async function renderNewOrder() {
           <div class="beschaffung-row" style="margin-top:8px">
             <div class="beschaffung-cell beschaffung-cell--full">
               <div class="beschaffung-label">Interne Anmerkungen (erscheinen nicht im PDF)</div>
-              <textarea id="field-notes" rows="2" placeholder="Optional..."></textarea>
+              <textarea id="field-notes" rows="2" maxlength="500" placeholder="Optional..."></textarea>
             </div>
           </div>
 

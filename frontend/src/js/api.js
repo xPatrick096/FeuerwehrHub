@@ -88,11 +88,12 @@ export const api = {
   },
 
   // Admin
-  getUsers:       ()          => request('GET',    '/admin/users'),
-  createUser:     (body)      => request('POST',   '/admin/users', body),
-  updateRole:        (id, body) => request('PUT', `/admin/users/${id}/role`, body),
-  updatePermissions: (id, perms) => request('PUT', `/admin/users/${id}/permissions`, { permissions: perms }),
-  assignRole:        (id, roleId) => request('PUT', `/admin/users/${id}/assign-role`, { role_id: roleId }),
+  getUsers:            ()          => request('GET',    '/admin/users'),
+  createUser:          (body)      => request('POST',   '/admin/users', body),
+  updateUser:          (id, body)  => request('PUT',    `/admin/users/${id}`, body),
+  updateUserSystemRole:(id, body)  => request('PUT',    `/admin/users/${id}/role`, body),
+  updatePermissions:   (id, perms) => request('PUT',    `/admin/users/${id}/permissions`, { permissions: perms }),
+  assignRole:          (id, roleId)=> request('PUT',    `/admin/users/${id}/assign-role`, { role_id: roleId }),
 
   getRoles:    ()       => request('GET',    '/roles'),
   createRole:  (body)   => request('POST',   '/roles', body),

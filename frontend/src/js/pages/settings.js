@@ -24,7 +24,7 @@ export async function renderSettings() {
         <div class="form-grid" style="margin-bottom:16px">
           <div class="form-group form-group--full">
             <label>Anzeigename (wird als Bedarfsmelder vorausgefüllt)</label>
-            <input type="text" id="set-display-name"
+            <input type="text" id="set-display-name" maxlength="100"
               value="${esc(user?.display_name || '')}"
               placeholder="${esc(user?.username || '')}" />
           </div>

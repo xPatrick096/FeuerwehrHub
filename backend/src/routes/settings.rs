@@ -185,10 +185,20 @@ pub async fn upload_pdf(
         .map_err(|e| AppError::BadRequest(e.to_string()))?
     {
         if field.name() == Some("file") {
+            let content_type = field.content_type().unwrap_or("").to_string();
+            if content_type != "application/pdf" {
+                return Err(AppError::BadRequest("Nur PDF-Dateien erlaubt".into()));
+            }
+
             let data = field
                 .bytes()
                 .await
                 .map_err(|e| AppError::BadRequest(e.to_string()))?;
+
+            const MAX_PDF_SIZE: usize = 10 * 1024 * 1024; // 10 MB
+            if data.len() > MAX_PDF_SIZE {
+                return Err(AppError::BadRequest("PDF zu groß (max. 10 MB)".into()));
+            }
 
             let dir = Path::new(&state.config.data_dir);
             fs::create_dir_all(dir)
