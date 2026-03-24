@@ -63,16 +63,21 @@ FeuerwehrHub läuft per Docker Compose. Kein Cloud-Account, keine Abhängigkeite
 
 ### Schnellstart
 
+**Modus A — Standalone (PostgreSQL inklusive, empfohlen für Einsteiger):**
 ```bash
-# 1. Repository klonen
 git clone https://github.com/xPatrick096/FeuerwehrHub.git
 cd FeuerwehrHub
-
-# 2. Konfiguration anlegen
 cp .env.example .env
-# .env anpassen (Datenbankzugangsdaten, JWT-Secret, Frontend-URL)
+# Nur JWT_SECRET, DB_PASSWORD und FF_NAME anpassen — fertig.
+docker compose --profile standalone up -d
+```
 
-# 3. Starten
+**Modus B — Externe Datenbank (eigener PostgreSQL-Server):**
+```bash
+git clone https://github.com/xPatrick096/FeuerwehrHub.git
+cd FeuerwehrHub
+cp .env.example .env
+# DB_HOST, DB_USER, DB_PASSWORD, JWT_SECRET und FF_NAME anpassen
 docker compose up -d
 ```
 

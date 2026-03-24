@@ -1,24 +1,53 @@
 services:
+
+  # ── Datenbank (optional, nur mit --profile standalone) ────────────────────────
+  # Starte mit: docker compose --profile standalone up -d
+  # Für externe Datenbank: DB_HOST in .env setzen und diesen Block ignorieren.
+  postgres:
+    image: postgres:17-alpine
+    profiles: ["standalone"]
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       ${DB_NAME:-feuerwehrhub}
+      POSTGRES_USER:     ${DB_USER:-feuerwehrhub}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-feuerwehrhub} -d ${DB_NAME:-feuerwehrhub}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - ff-net
+
+  # ── Backend ───────────────────────────────────────────────────────────────────
   backend:
     build:
       context: .
       dockerfile: backend/Dockerfile
     restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+        required: false   # Wird nur abgewartet wenn standalone-Profil aktiv ist
     environment:
-      DB_HOST: ${DB_HOST}
-      DB_PORT: ${DB_PORT}
-      DB_NAME: ${DB_NAME}
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-      APP_HOST: ${APP_HOST:-0.0.0.0}
-      APP_PORT: ${APP_PORT:-3000}
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_EXPIRY_HOURS: ${JWT_EXPIRY_HOURS:-8}
-      FF_NAME: ${FF_NAME:-Freiwillige Feuerwehr}
-      DATA_DIR: /data
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8080}
-      LOGIN_MAX_ATTEMPTS: ${LOGIN_MAX_ATTEMPTS:-5}
-      LOCKOUT_MINUTES: ${LOCKOUT_MINUTES:-15}
+      # DB_HOST: Standard "postgres" (Container-Name) für standalone.
+      #          Für externe DB z.B. DB_HOST=192.168.1.100 in .env setzen.
+      DB_HOST:              ${DB_HOST:-postgres}
+      DB_PORT:              ${DB_PORT:-5432}
+      DB_NAME:              ${DB_NAME:-feuerwehrhub}
+      DB_USER:              ${DB_USER:-feuerwehrhub}
+      DB_PASSWORD:          ${DB_PASSWORD}
+      APP_HOST:             ${APP_HOST:-0.0.0.0}
+      APP_PORT:             ${APP_PORT:-3000}
+      JWT_SECRET:           ${JWT_SECRET}
+      JWT_EXPIRY_HOURS:     ${JWT_EXPIRY_HOURS:-8}
+      FF_NAME:              ${FF_NAME:-Freiwillige Feuerwehr}
+      DATA_DIR:             /data
+      FRONTEND_URL:         ${FRONTEND_URL:-http://localhost:8080}
+      LOGIN_MAX_ATTEMPTS:   ${LOGIN_MAX_ATTEMPTS:-5}
+      LOCKOUT_MINUTES:      ${LOCKOUT_MINUTES:-15}
     volumes:
       - ff-data:/data
     ports:
@@ -28,6 +57,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
+  # ── Frontend ──────────────────────────────────────────────────────────────────
   frontend:
     build:
       context: ./frontend
@@ -46,3 +76,4 @@ networks:
 
 volumes:
   ff-data:
+  pg-data:
