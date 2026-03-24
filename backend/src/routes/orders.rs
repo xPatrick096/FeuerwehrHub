@@ -155,6 +155,8 @@ pub struct OrderBody {
 pub struct OrderFilter {
     pub status: Option<String>,
     pub search: Option<String>,
+    pub limit:  Option<i64>,
+    pub offset: Option<i64>,
 }
 
 #[derive(Deserialize)]
@@ -213,12 +215,15 @@ pub async fn list_orders(
         "SELECT {ORDER_COLUMNS} FROM orders
          WHERE ($1::text IS NULL OR status::text = $1)
            AND ($2::text IS NULL OR article_name ILIKE '%' || $2 || '%')
-         ORDER BY order_date DESC, created_at DESC"
+         ORDER BY order_date DESC, created_at DESC
+         LIMIT $3 OFFSET $4"
     );
 
     let rows = sqlx::query_as::<_, OrderRow>(&sql)
         .bind(filter.status)
         .bind(filter.search)
+        .bind(filter.limit.unwrap_or(1000))
+        .bind(filter.offset.unwrap_or(0))
         .fetch_all(&state.db)
         .await?;
 

@@ -211,6 +211,15 @@ function generateGenericPdf(order) {
   doc.setLineWidth(0.3);
   const sigW = pageW / 3 - 5;
 
+  // Gespeicherte Unterschrift einbetten (auf der Bedarfsmelder-Linie)
+  const storedSig = localStorage.getItem('ff_signature');
+  if (storedSig) {
+    const imgFmt = storedSig.startsWith('data:image/png') ? 'PNG' : 'JPEG';
+    try {
+      doc.addImage(storedSig, imgFmt, margin + sigW + 5, y - 16, sigW, 13);
+    } catch (_) {}
+  }
+
   doc.line(margin, y, margin + sigW, y);
   doc.line(margin + sigW + 5, y, margin + sigW * 2 + 5, y);
   doc.line(margin + sigW * 2 + 10, y, margin + pageW, y);

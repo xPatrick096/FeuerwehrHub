@@ -32,7 +32,7 @@ export async function renderSettings() {
         <div class="btn-group" style="margin-bottom:24px">
           <button class="btn btn--primary" id="btn-save-profile">Anzeigename speichern</button>
         </div>
-        <hr style="border:none;border-top:1px solid #e0e0e0;margin-bottom:20px" />
+        <hr style="border:none;border-top:1px solid #21273d;margin-bottom:20px" />
         <div class="form-grid">
           <div class="form-group">
             <label>Aktuelles Passwort</label>
@@ -56,7 +56,7 @@ export async function renderSettings() {
     <div class="card">
       <div class="card__header">2-Faktor-Authentifizierung</div>
       <div class="card__body">
-        <p style="font-size:13px;color:#666;margin-bottom:16px">
+        <p style="font-size:13px;color:#7d8590;margin-bottom:16px">
           ${totp_enabled
             ? '✅ 2FA ist aktiviert. Dein Account ist mit einem Authenticator gesichert.'
             : '⚠️ 2FA ist <strong>nicht aktiv</strong>. Du kannst es optional aktivieren.'}
@@ -66,10 +66,18 @@ export async function renderSettings() {
             <button class="btn btn--secondary" id="btn-setup-totp">2FA einrichten</button>
           </div>
           <div id="totp-qr-area" style="display:none;margin-top:16px">
-            <p style="font-size:13px;color:#666;margin-bottom:12px">
-              Scanne diesen Link mit deiner Authenticator-App (2FAS, Google Authenticator, Authy, ...):
+            <p style="font-size:13px;color:#7d8590;margin-bottom:12px">
+              Scanne den QR-Code mit deiner Authenticator-App (2FAS, Google Authenticator, Authy, ...):
             </p>
-            <div id="totp-uri" style="word-break:break-all;font-size:11px;background:#f5f5f5;padding:10px;border-radius:4px;margin-bottom:12px"></div>
+            <div style="margin-bottom:16px;display:flex;justify-content:flex-start">
+              <div style="background:#ffffff;padding:12px;border-radius:8px;display:inline-block">
+                <canvas id="totp-qr-canvas"></canvas>
+              </div>
+            </div>
+            <p style="font-size:12px;color:#7d8590;margin-bottom:6px">
+              Oder manuell eingeben:
+            </p>
+            <div id="totp-uri" style="word-break:break-all;font-size:11px;background:#0d1117;color:#7d8590;border:1px solid #21273d;padding:10px;border-radius:4px;margin-bottom:16px"></div>
             <div class="form-group" style="max-width:200px">
               <label>Code bestätigen</label>
               <input type="text" id="totp-code" maxlength="6" inputmode="numeric"
@@ -104,6 +112,16 @@ export async function renderSettings() {
         if (!res) return;
         document.getElementById('totp-setup-area').style.display = 'none';
         document.getElementById('totp-qr-area').style.display = 'block';
+
+        // QR-Code generieren
+        const QRCode = (await import('qrcode')).default;
+        const canvas = document.getElementById('totp-qr-canvas');
+        await QRCode.toCanvas(canvas, res.uri, {
+          width: 200,
+          margin: 2,
+          color: { dark: '#000000', light: '#ffffff' },
+        });
+
         document.getElementById('totp-uri').textContent = res.uri;
         document.getElementById('totp-code').focus();
       } catch (e) { toast(e.message, 'error'); }
@@ -122,7 +140,7 @@ export async function renderSettings() {
         if (!res) return;
         localStorage.setItem('ff_token', res.token);
         toast('2FA erfolgreich aktiviert!');
-        renderSettings(); // Seite neu laden
+        renderSettings();
       } catch (e) { toast(e.message || 'Ungültiger Code', 'error'); }
     });
   }

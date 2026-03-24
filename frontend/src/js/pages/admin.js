@@ -116,6 +116,25 @@ export async function renderAdmin() {
       </div>
 
       <div class="card" style="margin-top:0">
+        <div class="card__header">Unterschrift</div>
+        <div class="card__body">
+          <p style="font-size:13px;color:#7d8590;margin-bottom:16px">
+            Lade eine Unterschrift hoch. Sie wird automatisch in generierte PDFs eingesetzt
+            (generisches PDF, kein Template). Empfohlen: PNG mit transparentem Hintergrund, max. 500 KB.
+          </p>
+          <div id="sig-preview" style="display:flex;align-items:center;gap:12px;margin-bottom:16px;min-height:40px;"></div>
+          <div class="form-group">
+            <label>Bilddatei auswählen (PNG, JPG)</label>
+            <input type="file" id="sig-upload-input" accept="image/png,image/jpeg" />
+          </div>
+          <div class="btn-group" style="margin-top:12px">
+            <button class="btn btn--primary" id="btn-upload-sig">Unterschrift speichern</button>
+            <button class="btn btn--outline" id="btn-remove-sig">Unterschrift entfernen</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:0">
         <div class="card__header">Beschaffungsauftrag PDF-Vorlage</div>
         <div class="card__body">
           <p style="font-size:13px;color:#7d8590;margin-bottom:16px">
@@ -308,6 +327,42 @@ export async function renderAdmin() {
     localStorage.removeItem('ff_custom_logo');
     toast('Standard-Logo wiederhergestellt');
     updateLogoPreview();
+  });
+
+  // Unterschrift-Verwaltung
+  const updateSigPreview = () => {
+    const el = document.getElementById('sig-preview');
+    if (!el) return;
+    const saved = localStorage.getItem('ff_signature');
+    if (saved) {
+      el.innerHTML = `
+        <img src="${saved}" style="height:44px;max-width:220px;object-fit:contain;border:1px solid #21273d;border-radius:8px;padding:4px;background:#fff;">
+        <span style="font-size:12px;color:#3fb950;font-weight:600;">✓ Unterschrift gespeichert</span>`;
+    } else {
+      el.innerHTML = `<span style="font-size:12px;color:#7d8590">Keine Unterschrift hinterlegt</span>`;
+    }
+  };
+  updateSigPreview();
+
+  document.getElementById('btn-upload-sig').addEventListener('click', () => {
+    const file = document.getElementById('sig-upload-input').files[0];
+    if (!file) { toast('Keine Datei ausgewählt', 'error'); return; }
+    if (!file.type.startsWith('image/')) { toast('Nur Bilddateien erlaubt', 'error'); return; }
+    if (file.size > 500 * 1024) { toast('Datei zu groß (max. 500 KB)', 'error'); return; }
+    const reader = new FileReader();
+    reader.onload = e => {
+      localStorage.setItem('ff_signature', e.target.result);
+      toast('Unterschrift gespeichert');
+      updateSigPreview();
+      document.getElementById('sig-upload-input').value = '';
+    };
+    reader.readAsDataURL(file);
+  });
+
+  document.getElementById('btn-remove-sig').addEventListener('click', () => {
+    localStorage.removeItem('ff_signature');
+    toast('Unterschrift entfernt');
+    updateSigPreview();
   });
 
   // Benutzer + Rollen laden

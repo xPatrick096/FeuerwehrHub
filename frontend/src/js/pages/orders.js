@@ -3,6 +3,8 @@ import { toast } from '../toast.js';
 import { renderShell, setShellInfo } from '../shell.js';
 import { generateBeschaffungsauftrag } from '../pdf-generator.js';
 
+const PAGE_SIZE = 25;
+
 export async function renderOrders() {
   const [settings, user] = await Promise.all([api.getSettings(), api.me()]);
   setShellInfo(settings?.ff_name, user, settings?.modules);
@@ -15,6 +17,7 @@ export async function renderOrders() {
         <h2>Bestellübersicht</h2>
         <p>Alle erfassten Bestellungen und deren Status</p>
       </div>
+      <button class="btn btn--outline btn--sm" id="btn-csv-export">📊 CSV exportieren</button>
     </div>
     <div class="stats-row" id="stats-row"></div>
     <div class="card">
@@ -45,6 +48,13 @@ export async function renderOrders() {
             </thead>
             <tbody id="orders-tbody"></tbody>
           </table>
+        </div>
+        <div id="pagination-bar" style="display:none;align-items:center;justify-content:space-between;padding:10px 16px;border-top:1px solid #21273d;font-size:13px;color:#7d8590">
+          <span id="page-info"></span>
+          <div class="btn-group">
+            <button class="btn btn--outline btn--sm" id="btn-prev-page">← Zurück</button>
+            <button class="btn btn--outline btn--sm" id="btn-next-page">Weiter →</button>
+          </div>
         </div>
       </div>
     </div>
@@ -79,18 +89,30 @@ export async function renderOrders() {
     </div>
   `;
 
+  let allOrders = [];
+  let currentPage = 1;
   let currentOrderId = null;
+
+  // ── Daten laden ──────────────────────────────────────────────────────────────
 
   async function load() {
     const search = document.getElementById('filter-search').value;
     const status = document.getElementById('filter-status').value;
+    currentPage = 1;
 
     const [orders, stats] = await Promise.all([
       api.getOrders({ search: search || undefined, status: status || undefined }),
       api.getStats(),
     ]);
 
-    // Stats
+    allOrders = orders || [];
+    renderStats(stats);
+    renderTable();
+  }
+
+  // ── Stats ────────────────────────────────────────────────────────────────────
+
+  function renderStats(stats) {
     document.getElementById('stats-row').innerHTML = `
       <div class="stat-card stat-card--gesamt">
         <div class="stat-card__number">${stats.gesamt}</div>
@@ -109,63 +131,100 @@ export async function renderOrders() {
         <div class="stat-card__label">Vollständig</div>
       </div>
     `;
-
-    const tbody = document.getElementById('orders-tbody');
-    if (!orders || orders.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="5" class="table-empty">Keine Bestellungen gefunden</td></tr>`;
-      return;
-    }
-
-    tbody.innerHTML = orders.map(o => {
-      const positions = (o.positions || []).filter(p => p.gegenstand);
-
-      let positionsHtml;
-      if (positions.length > 0) {
-        positionsHtml = `
-          <table style="border-collapse:collapse;width:100%;font-size:0.85em">
-            <thead>
-              <tr>
-                <th style="padding:2px 8px 2px 0;color:#888;font-weight:600;white-space:nowrap;border-bottom:1px solid #e0e0e0;width:60px">Menge</th>
-                <th style="padding:2px 8px 2px 0;color:#888;font-weight:600;white-space:nowrap;border-bottom:1px solid #e0e0e0;width:110px">Einheit</th>
-                <th style="padding:2px 8px 2px 0;color:#888;font-weight:600;white-space:nowrap;border-bottom:1px solid #e0e0e0">Gegenstand / Leistung</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${positions.map(p => `
-                <tr>
-                  <td style="padding:2px 8px 2px 0;vertical-align:top">${esc(p.menge) || ''}</td>
-                  <td style="padding:2px 8px 2px 0;vertical-align:top">${esc(p.einheit) || ''}</td>
-                  <td style="padding:2px 0;vertical-align:top"><strong>${esc(p.gegenstand)}</strong></td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>`;
-      } else {
-        positionsHtml = `<span style="color:#888">${esc(o.article_name) || '—'}</span>`;
-      }
-
-      return `
-        <tr>
-          <td>${positionsHtml}</td>
-          <td>${esc(o.ordered_by_name) || '—'}</td>
-          <td>${formatDate(o.order_date)}</td>
-          <td><span class="badge badge--${o.status}">${statusLabel(o.status)}</span></td>
-          <td>
-            <div class="btn-group">
-              <button class="btn btn--secondary btn--sm" data-action="detail" data-id="${o.id}" title="Details">🔍</button>
-              ${o.status !== 'vollstaendig' && o.status !== 'storniert'
-                ? `<button class="btn btn--success btn--sm" data-action="delivery" data-id="${o.id}">📦</button>`
-                : ''}
-              <button class="btn btn--outline btn--sm" data-action="pdf" data-id="${o.id}">📄</button>
-              <button class="btn btn--danger btn--sm" data-action="delete" data-id="${o.id}">🗑</button>
-            </div>
-          </td>
-        </tr>
-      `;
-    }).join('');
   }
 
-  // Filter-Events
+  // ── Tabelle + Pagination ─────────────────────────────────────────────────────
+
+  function renderTable() {
+    const totalPages = Math.max(1, Math.ceil(allOrders.length / PAGE_SIZE));
+    const start = (currentPage - 1) * PAGE_SIZE;
+    const pageItems = allOrders.slice(start, start + PAGE_SIZE);
+
+    const tbody = document.getElementById('orders-tbody');
+    if (allOrders.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" class="table-empty">Keine Bestellungen gefunden</td></tr>`;
+    } else {
+      tbody.innerHTML = pageItems.map(o => {
+        const positions = (o.positions || []).filter(p => p.gegenstand);
+        let positionsHtml;
+        if (positions.length > 0) {
+          positionsHtml = `
+            <table style="border-collapse:collapse;width:100%;font-size:0.85em">
+              <thead>
+                <tr>
+                  <th style="padding:2px 8px 2px 0;color:#7d8590;font-weight:600;white-space:nowrap;border-bottom:1px solid #21273d;width:60px">Menge</th>
+                  <th style="padding:2px 8px 2px 0;color:#7d8590;font-weight:600;white-space:nowrap;border-bottom:1px solid #21273d;width:110px">Einheit</th>
+                  <th style="padding:2px 8px 2px 0;color:#7d8590;font-weight:600;white-space:nowrap;border-bottom:1px solid #21273d">Gegenstand / Leistung</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${positions.map(p => `
+                  <tr>
+                    <td style="padding:2px 8px 2px 0;vertical-align:top">${esc(p.menge) || ''}</td>
+                    <td style="padding:2px 8px 2px 0;vertical-align:top">${esc(p.einheit) || ''}</td>
+                    <td style="padding:2px 0;vertical-align:top"><strong>${esc(p.gegenstand)}</strong></td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>`;
+        } else {
+          positionsHtml = `<span style="color:#7d8590">${esc(o.article_name) || '—'}</span>`;
+        }
+
+        return `
+          <tr>
+            <td>${positionsHtml}</td>
+            <td>${esc(o.ordered_by_name) || '—'}</td>
+            <td>${formatDate(o.order_date)}</td>
+            <td><span class="badge badge--${o.status}">${statusLabel(o.status)}</span></td>
+            <td>
+              <div class="btn-group">
+                <button class="btn btn--secondary btn--sm" data-action="detail" data-id="${o.id}" title="Details">🔍</button>
+                ${o.status !== 'vollstaendig' && o.status !== 'storniert'
+                  ? `<button class="btn btn--success btn--sm" data-action="delivery" data-id="${o.id}" title="Lieferung">📦</button>`
+                  : ''}
+                <button class="btn btn--outline btn--sm" data-action="pdf" data-id="${o.id}" title="PDF">📄</button>
+                <button class="btn btn--outline btn--sm" data-action="email" data-id="${o.id}" title="E-Mail">📧</button>
+                <button class="btn btn--danger btn--sm" data-action="delete" data-id="${o.id}" title="Löschen">🗑</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Pagination-Bar
+    const bar = document.getElementById('pagination-bar');
+    if (totalPages <= 1 && allOrders.length <= PAGE_SIZE) {
+      bar.style.display = 'none';
+    } else {
+      bar.style.display = 'flex';
+      document.getElementById('page-info').textContent =
+        `${allOrders.length} Bestellungen — Seite ${currentPage} / ${totalPages}`;
+      document.getElementById('btn-prev-page').disabled = currentPage <= 1;
+      document.getElementById('btn-next-page').disabled = currentPage >= totalPages;
+    }
+  }
+
+  // ── Pagination Events ────────────────────────────────────────────────────────
+
+  document.getElementById('btn-prev-page').addEventListener('click', () => {
+    if (currentPage > 1) { currentPage--; renderTable(); }
+  });
+  document.getElementById('btn-next-page').addEventListener('click', () => {
+    const totalPages = Math.ceil(allOrders.length / PAGE_SIZE);
+    if (currentPage < totalPages) { currentPage++; renderTable(); }
+  });
+
+  // ── CSV Export ───────────────────────────────────────────────────────────────
+
+  document.getElementById('btn-csv-export').addEventListener('click', () => {
+    if (!allOrders.length) { toast('Keine Bestellungen zum Exportieren', 'error'); return; }
+    exportCsv(allOrders);
+  });
+
+  // ── Filter Events ────────────────────────────────────────────────────────────
+
   let searchTimer;
   document.getElementById('filter-search').addEventListener('input', () => {
     clearTimeout(searchTimer);
@@ -173,7 +232,8 @@ export async function renderOrders() {
   });
   document.getElementById('filter-status').addEventListener('change', load);
 
-  // Delegated events
+  // ── Delegated Action Events ──────────────────────────────────────────────────
+
   document.getElementById('orders-tbody').addEventListener('click', async (e) => {
     const btn = e.target.closest('[data-action]');
     if (!btn) return;
@@ -209,6 +269,15 @@ export async function renderOrders() {
       }
     }
 
+    if (action === 'email') {
+      try {
+        const order = await api.getOrder(id);
+        openMailto(order);
+      } catch (e) {
+        toast('Fehler: ' + e.message, 'error');
+      }
+    }
+
     if (action === 'delete') {
       if (!confirm('Bestellung wirklich löschen?')) return;
       try {
@@ -220,6 +289,8 @@ export async function renderOrders() {
       }
     }
   });
+
+  // ── Detail Modal ─────────────────────────────────────────────────────────────
 
   function showDetailModal(order) {
     const positions = (order.positions || []).filter(p => p.gegenstand);
@@ -282,7 +353,7 @@ export async function renderOrders() {
       ` : ''}
 
       ${order.notes ? `
-        <div style="font-size:0.9em;color:#666">
+        <div style="font-size:0.9em;color:#7d8590">
           <strong>Interne Anmerkungen:</strong><br>${esc(order.notes)}
         </div>
       ` : ''}
@@ -304,6 +375,8 @@ export async function renderOrders() {
     document.getElementById('detail-modal').classList.add('active');
   }
 
+  // ── Delivery Modal ───────────────────────────────────────────────────────────
+
   function showDeliveryModal(order) {
     const positions = (order.positions || []).filter(p => p.gegenstand);
 
@@ -313,7 +386,7 @@ export async function renderOrders() {
         <tr>
           <td style="padding:6px 8px 6px 0">
             <strong>${esc(p.gegenstand)}</strong>
-            ${p.menge || p.einheit ? `<br><small style="color:#888">${esc(p.menge || '')} ${esc(p.einheit || '')}</small>` : ''}
+            ${p.menge || p.einheit ? `<br><small style="color:#7d8590">${esc(p.menge || '')} ${esc(p.einheit || '')}</small>` : ''}
           </td>
           <td style="padding:6px 8px">
             <select class="delivery-status-select" data-index="${i}" style="width:130px">
@@ -333,7 +406,6 @@ export async function renderOrders() {
         </tr>
       `).join('');
     } else {
-      // Fallback: kein Positions-Array (alte Bestellung)
       posRows = `
         <tr>
           <td style="padding:6px 8px 6px 0"><strong>${esc(order.article_name)}</strong></td>
@@ -363,9 +435,9 @@ export async function renderOrders() {
       <table style="width:100%;margin-bottom:16px">
         <thead>
           <tr>
-            <th style="padding:4px 8px 4px 0;color:#888;font-weight:600;font-size:0.85em">Position</th>
-            <th style="padding:4px 8px;color:#888;font-weight:600;font-size:0.85em">Status</th>
-            <th style="padding:4px 0;color:#888;font-weight:600;font-size:0.85em">Menge erhalten</th>
+            <th style="padding:4px 8px 4px 0;color:#7d8590;font-weight:600;font-size:0.85em">Position</th>
+            <th style="padding:4px 8px;color:#7d8590;font-weight:600;font-size:0.85em">Status</th>
+            <th style="padding:4px 0;color:#7d8590;font-weight:600;font-size:0.85em">Menge erhalten</th>
           </tr>
         </thead>
         <tbody>${posRows}</tbody>
@@ -376,7 +448,6 @@ export async function renderOrders() {
       </div>
     `;
 
-    // Dropdown → Mengenfeld ein-/ausblenden
     document.querySelectorAll('.delivery-status-select').forEach(sel => {
       sel.addEventListener('change', () => {
         const idx = sel.dataset.index;
@@ -398,6 +469,8 @@ export async function renderOrders() {
     document.getElementById('delivery-modal').classList.add('active');
   }
 
+  // ── Modal Close Events ───────────────────────────────────────────────────────
+
   document.getElementById('close-detail-modal').addEventListener('click', () => {
     document.getElementById('detail-modal').classList.remove('active');
   });
@@ -407,6 +480,7 @@ export async function renderOrders() {
 
   document.getElementById('close-delivery-modal').addEventListener('click', closeDeliveryModal);
   document.getElementById('close-delivery-modal2').addEventListener('click', closeDeliveryModal);
+
   function closeDeliveryModal() {
     document.getElementById('delivery-modal').classList.remove('active');
     currentOrderId = null;
@@ -415,7 +489,6 @@ export async function renderOrders() {
   document.getElementById('btn-save-delivery').addEventListener('click', async () => {
     const date = document.getElementById('delivery-date').value;
     const notes = document.getElementById('delivery-notes').value;
-
     const statusSelects = document.querySelectorAll('.delivery-status-select');
     const entries = [];
 
@@ -457,6 +530,73 @@ export async function renderOrders() {
 
   load();
 }
+
+// ── CSV Export ─────────────────────────────────────────────────────────────────
+
+function exportCsv(orders) {
+  const headers = ['Datum', 'Bedarfsmelder', 'Status', 'Positionen', 'Begründung', 'Händler'];
+  const rows = orders.map(o => {
+    const pos = (o.positions || [])
+      .filter(p => p.gegenstand)
+      .map(p => [p.menge, p.einheit, p.gegenstand].filter(Boolean).join(' '))
+      .join(' | ');
+    return [
+      formatDate(o.order_date),
+      o.ordered_by_name || '',
+      statusLabel(o.status),
+      pos || o.article_name || '',
+      o.begruendung || '',
+      [o.haendler_1, o.haendler_2, o.haendler_3].filter(Boolean).join(', '),
+    ];
+  });
+
+  const csv = [headers, ...rows]
+    .map(row => row.map(cell => `"${String(cell || '').replace(/"/g, '""')}"`).join(';'))
+    .join('\n');
+
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `bestellungen_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── E-Mail (mailto:) ───────────────────────────────────────────────────────────
+
+function openMailto(order) {
+  const positions = (order.positions || [])
+    .filter(p => p.gegenstand)
+    .map(p => `  - ${p.gegenstand}${p.menge ? ' (' + p.menge + (p.einheit ? ' ' + p.einheit : '') + ')' : ''}`)
+    .join('\n') || `  - ${order.article_name || ''}`;
+
+  const haendler = [order.haendler_1, order.haendler_2, order.haendler_3].filter(Boolean);
+
+  const lines = [
+    'Beschaffungsauftrag',
+    '',
+    `Bedarfsmelder: ${order.ordered_by_name || '—'}`,
+    `Datum: ${formatDate(order.order_date)}`,
+    `Telefon: ${order.telefon || '—'}`,
+    `Lieferanschrift: ${order.lieferanschrift || '—'}`,
+    '',
+    'Positionen:',
+    positions,
+  ];
+
+  if (order.begruendung) lines.push('', `Begründung: ${order.begruendung}`);
+  if (haendler.length > 0) lines.push('', `Händler: ${haendler.join(', ')}`);
+
+  const subject = encodeURIComponent(`Beschaffungsauftrag vom ${formatDate(order.order_date)}`);
+  const body = encodeURIComponent(lines.join('\n'));
+
+  const a = document.createElement('a');
+  a.href = `mailto:?subject=${subject}&body=${body}`;
+  a.click();
+}
+
+// ── Hilfsfunktionen ────────────────────────────────────────────────────────────
 
 function esc(s) { return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function formatDate(d) { if (!d) return '—'; const part = d.split('T')[0]; const [y,m,dd] = part.split('-'); return `${dd}.${m}.${y}`; }

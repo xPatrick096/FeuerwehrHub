@@ -28,7 +28,7 @@ export async function renderArticles() {
                 <th>Bezeichnung</th>
                 <th>Kategorie</th>
                 <th>Einheit</th>
-                <th>Mindestbestand</th>
+                <th>Bestand (Ist / Soll)</th>
                 <th>Anmerkung</th>
                 <th>Aktionen</th>
               </tr>
@@ -61,9 +61,15 @@ export async function renderArticles() {
               ${units.map(u => `<option value="${esc(u.label)}">${esc(u.label)}</option>`).join('')}
             </select>
           </div>
-          <div class="form-group">
-            <label>Mindestbestand</label>
-            <input type="number" id="a-min-stock" min="0" value="0" />
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div class="form-group">
+              <label>Ist-Bestand (aktuell vorhanden)</label>
+              <input type="number" id="a-current-stock" min="0" value="0" />
+            </div>
+            <div class="form-group">
+              <label>Mindestbestand (Soll)</label>
+              <input type="number" id="a-min-stock" min="0" value="0" />
+            </div>
           </div>
           <div class="form-group">
             <label>Anmerkung</label>
@@ -89,25 +95,46 @@ export async function renderArticles() {
       return;
     }
 
-    tbody.innerHTML = articles.map(a => `
-      <tr>
-        <td><strong>${esc(a.name)}</strong></td>
-        <td>${esc(a.category) || '—'}</td>
-        <td>${esc(a.unit)}</td>
-        <td>${a.min_stock || 0}</td>
-        <td>${esc(a.notes) || '—'}</td>
-        <td>
-          <div class="btn-group">
-            <button class="btn btn--outline btn--sm" data-action="edit"
-              data-id="${a.id}" data-name="${esc(a.name)}" data-category="${esc(a.category||'')}"
-              data-unit="${esc(a.unit)}" data-stock="${a.min_stock}" data-notes="${esc(a.notes||'')}">
-              ✏️ Bearbeiten
-            </button>
-            <button class="btn btn--danger btn--sm" data-action="delete" data-id="${a.id}">🗑</button>
-          </div>
-        </td>
-      </tr>
-    `).join('');
+    tbody.innerHTML = articles.map(a => {
+      const ist  = a.current_stock ?? 0;
+      const soll = a.min_stock ?? 0;
+      const low  = soll > 0 && ist < soll;
+      const ok   = soll > 0 && ist >= soll;
+
+      let bestandHtml;
+      if (soll === 0 && ist === 0) {
+        bestandHtml = `<span style="color:#4c5462">—</span>`;
+      } else {
+        const color = low ? '#ff8a80' : ok ? '#3fb950' : '#e6edf3';
+        const icon  = low ? '⚠️ ' : ok ? '✅ ' : '';
+        bestandHtml = `<span style="color:${color};font-weight:600">${icon}${ist} / ${soll}</span>`;
+      }
+
+      return `
+        <tr>
+          <td><strong>${esc(a.name)}</strong></td>
+          <td>${esc(a.category) || '—'}</td>
+          <td>${esc(a.unit)}</td>
+          <td>${bestandHtml}</td>
+          <td>${esc(a.notes) || '—'}</td>
+          <td>
+            <div class="btn-group">
+              <button class="btn btn--outline btn--sm" data-action="edit"
+                data-id="${a.id}"
+                data-name="${esc(a.name)}"
+                data-category="${esc(a.category||'')}"
+                data-unit="${esc(a.unit)}"
+                data-current-stock="${ist}"
+                data-stock="${soll}"
+                data-notes="${esc(a.notes||'')}">
+                ✏️ Bearbeiten
+              </button>
+              <button class="btn btn--danger btn--sm" data-action="delete" data-id="${a.id}">🗑</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
   }
 
   function openModal(article = null) {
@@ -116,7 +143,8 @@ export async function renderArticles() {
     document.getElementById('a-name').value = article?.name || '';
     document.getElementById('a-category').value = article?.category || '';
     document.getElementById('a-unit').value = article?.unit || units[0]?.label || '';
-    document.getElementById('a-min-stock').value = article?.min_stock || 0;
+    document.getElementById('a-current-stock').value = article?.current_stock ?? 0;
+    document.getElementById('a-min-stock').value = article?.min_stock ?? 0;
     document.getElementById('a-notes').value = article?.notes || '';
     document.getElementById('article-modal').classList.add('active');
   }
@@ -136,12 +164,13 @@ export async function renderArticles() {
 
     if (btn.dataset.action === 'edit') {
       openModal({
-        id: btn.dataset.id,
-        name: btn.dataset.name,
-        category: btn.dataset.category,
-        unit: btn.dataset.unit,
-        min_stock: parseInt(btn.dataset.stock),
-        notes: btn.dataset.notes,
+        id:            btn.dataset.id,
+        name:          btn.dataset.name,
+        category:      btn.dataset.category,
+        unit:          btn.dataset.unit,
+        current_stock: parseInt(btn.dataset.currentStock) || 0,
+        min_stock:     parseInt(btn.dataset.stock) || 0,
+        notes:         btn.dataset.notes,
       });
     }
 
@@ -159,11 +188,12 @@ export async function renderArticles() {
 
   document.getElementById('btn-save-article').addEventListener('click', async () => {
     const body = {
-      name: document.getElementById('a-name').value.trim(),
-      category: document.getElementById('a-category').value.trim() || null,
-      unit: document.getElementById('a-unit').value,
-      min_stock: parseInt(document.getElementById('a-min-stock').value) || 0,
-      notes: document.getElementById('a-notes').value.trim() || null,
+      name:          document.getElementById('a-name').value.trim(),
+      category:      document.getElementById('a-category').value.trim() || null,
+      unit:          document.getElementById('a-unit').value,
+      current_stock: parseInt(document.getElementById('a-current-stock').value) || 0,
+      min_stock:     parseInt(document.getElementById('a-min-stock').value) || 0,
+      notes:         document.getElementById('a-notes').value.trim() || null,
     };
 
     if (!body.name) { toast('Bezeichnung eingeben', 'error'); return; }
