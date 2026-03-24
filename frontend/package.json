@@ -12,9 +12,9 @@
     "vite": "^5.2.0"
   },
   "dependencies": {
-    "pdf-lib": "^1.17.1",
     "jspdf": "^2.5.1",
     "jspdf-autotable": "^3.8.2",
+    "pdf-lib": "^1.17.1",
     "qrcode": "^1.5.4"
   }
 }
