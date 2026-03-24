@@ -577,7 +577,7 @@ async function loadRoles(me) {
                   <div class="btn-group">
                     <button class="btn btn--outline btn--sm" data-action="edit-role"
                       data-id="${r.id}" data-name="${esc(r.name)}"
-                      data-perms="${esc(JSON.stringify(r.permissions))}">Bearbeiten</button>
+                      data-perms="${JSON.stringify(r.permissions).replace(/"/g,'&quot;')}">Bearbeiten</button>
                     <button class="btn btn--danger btn--sm" data-action="delete-role"
                       data-id="${r.id}" data-name="${esc(r.name)}">Löschen</button>
                   </div>
