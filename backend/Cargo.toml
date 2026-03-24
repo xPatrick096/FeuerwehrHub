@@ -41,3 +41,6 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 rand = "0.8"
 governor = "0.6"
 dashmap = "5"
+
+# Dependency-Pins (Workaround für heck 0.4.x + unicode-segmentation 1.12+ Inkompatibilität)
+unicode-segmentation = "=1.11.0"
