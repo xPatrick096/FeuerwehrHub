@@ -7,8 +7,8 @@ use axum::{
 use crate::{
     auth::{
         handlers::{
-            change_password, confirm_totp, initial_setup, login, me, setup_totp, update_profile,
-            verify_totp,
+            change_password, confirm_totp, disable_totp, initial_setup, login, me, setup_totp,
+            update_profile, verify_totp,
         },
         middleware::{require_auth, require_partial_auth},
         rate_limit::{login_rate_limit, LoginRateLimiter},
@@ -37,6 +37,7 @@ pub fn router(state: AppState) -> Router<AppState> {
         .route("/me", get(me))
         .route("/profile", put(update_profile))
         .route("/change-password", post(change_password))
+        .route("/disable-totp", post(disable_totp))
         .route_layer(middleware::from_fn_with_state(state, require_auth));
 
     Router::new()

@@ -438,6 +438,16 @@ export async function renderAdmin() {
       document.getElementById('reset-pw-value').focus();
     }
 
+    if (e.target.matches('[data-action="reset-totp"]')) {
+      if (!confirm(`2FA für "${username}" wirklich zurücksetzen? Der Benutzer muss 2FA danach neu einrichten.`)) return;
+      try {
+        await api.adminResetTotp(id);
+        toast(`2FA für "${username}" zurückgesetzt`);
+        const roles = await api.getRoles().catch(() => []);
+        await loadUsers(me, roles);
+      } catch (e) { toast(e.message, 'error'); }
+    }
+
     if (e.target.matches('[data-action="toggle-role"]')) {
       const currentRole = e.target.dataset.role;
       const newRole = currentRole === 'admin' ? 'user' : 'admin';
@@ -653,6 +663,11 @@ async function loadUsers(me, roles = []) {
                       <button class="btn btn--outline btn--sm"
                         data-action="reset-pw" data-id="${u.id}" data-username="${esc(u.username)}">
                         PW Reset
+                      </button>` : ''}
+                    ${canReset && u.totp_enabled ? `
+                      <button class="btn btn--outline btn--sm"
+                        data-action="reset-totp" data-id="${u.id}" data-username="${esc(u.username)}">
+                        2FA Reset
                       </button>` : ''}
                     ${canEdit ? `
                       <button class="btn btn--outline btn--sm"

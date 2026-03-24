@@ -40,6 +40,7 @@ export const api = {
   me:            ()     => request('GET',  '/auth/me'),
   updateProfile: (body) => request('PUT',  '/auth/profile', body),
   changePassword:(body) => request('POST', '/auth/change-password', body),
+  disableTotp:   (body) => request('POST', '/auth/disable-totp', body),
   setup:         (body) => request('POST', '/auth/setup', body),
 
   // Bestellungen
@@ -98,6 +99,7 @@ export const api = {
   updateRole:  (id, b)  => request('PUT',    `/roles/${id}`, b),
   deleteRole:  (id)     => request('DELETE', `/roles/${id}`),
   resetPassword:  (id, body)  => request('POST',   `/admin/users/${id}/reset-password`, body),
+  adminResetTotp: (id)        => request('POST',   `/admin/users/${id}/reset-totp`),
   deleteUser:     (id)        => request('DELETE', `/admin/users/${id}`),
   getAuditLog:    ()          => request('GET',    '/admin/audit-log'),
 

@@ -300,6 +300,50 @@ pub async fn me(
     }))
 }
 
+// ── TOTP deaktivieren ────────────────────────────────────────────────────────
+
+#[derive(Deserialize)]
+pub struct DisableTotpRequest {
+    pub code: String,
+}
+
+pub async fn disable_totp(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Json(body): Json<DisableTotpRequest>,
+) -> AppResult<Json<serde_json::Value>> {
+    let user = sqlx::query!(
+        "SELECT totp_secret FROM users WHERE id = $1",
+        claims.sub
+    )
+    .fetch_optional(&state.db)
+    .await?
+    .ok_or(AppError::Unauthorized)?;
+
+    let secret = user.totp_secret.ok_or(AppError::BadRequest(
+        "2FA ist nicht eingerichtet".into(),
+    ))?;
+
+    let valid = totp::verify_code(&secret, &body.code)
+        .map_err(|e| AppError::Internal(e))?;
+
+    if !valid {
+        return Err(AppError::InvalidTotp);
+    }
+
+    sqlx::query(
+        "UPDATE users SET totp_enabled = FALSE, totp_secret = NULL WHERE id = $1"
+    )
+    .bind(claims.sub)
+    .execute(&state.db)
+    .await?;
+
+    audit::log(&state.db, Some(claims.sub), &claims.username, "TOTP_DISABLED",
+        Some("user"), Some(claims.sub), None).await;
+
+    Ok(Json(serde_json::json!({ "message": "2FA deaktiviert" })))
+}
+
 // ── Profil aktualisieren ─────────────────────────────────────────────────────
 
 #[derive(Deserialize)]

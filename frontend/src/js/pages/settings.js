@@ -88,7 +88,25 @@ export async function renderSettings() {
               <button class="btn btn--outline" id="btn-cancel-totp">Abbrechen</button>
             </div>
           </div>
-        ` : ''}
+        ` : `
+          <div id="totp-disable-area">
+            <button class="btn btn--danger" id="btn-disable-totp">2FA deaktivieren</button>
+          </div>
+          <div id="totp-disable-confirm" style="display:none;margin-top:16px">
+            <p style="font-size:13px;color:#ff8a80;margin-bottom:12px">
+              Gib deinen aktuellen Authenticator-Code ein, um 2FA zu deaktivieren:
+            </p>
+            <div class="form-group" style="max-width:200px">
+              <label>Aktueller Code</label>
+              <input type="text" id="totp-disable-code" maxlength="6" inputmode="numeric"
+                     placeholder="000000" style="text-align:center;font-size:20px;letter-spacing:6px;font-weight:700" />
+            </div>
+            <div class="btn-group" style="margin-top:12px">
+              <button class="btn btn--danger" id="btn-confirm-disable-totp">Deaktivieren bestätigen</button>
+              <button class="btn btn--outline" id="btn-cancel-disable-totp">Abbrechen</button>
+            </div>
+          </div>
+        `}
       </div>
     </div>
   `;
@@ -140,6 +158,31 @@ export async function renderSettings() {
         if (!res) return;
         localStorage.setItem('ff_token', res.token);
         toast('2FA erfolgreich aktiviert!');
+        renderSettings();
+      } catch (e) { toast(e.message || 'Ungültiger Code', 'error'); }
+    });
+  }
+
+  // 2FA Deaktivieren (nur wenn aktiv)
+  if (totp_enabled) {
+    document.getElementById('btn-disable-totp').addEventListener('click', () => {
+      document.getElementById('totp-disable-area').style.display = 'none';
+      document.getElementById('totp-disable-confirm').style.display = 'block';
+      document.getElementById('totp-disable-code').focus();
+    });
+
+    document.getElementById('btn-cancel-disable-totp').addEventListener('click', () => {
+      document.getElementById('totp-disable-area').style.display = 'block';
+      document.getElementById('totp-disable-confirm').style.display = 'none';
+      document.getElementById('totp-disable-code').value = '';
+    });
+
+    document.getElementById('btn-confirm-disable-totp').addEventListener('click', async () => {
+      const code = document.getElementById('totp-disable-code').value.trim();
+      if (code.length !== 6) { toast('6-stelligen Code eingeben', 'error'); return; }
+      try {
+        await api.disableTotp({ code });
+        toast('2FA deaktiviert');
         renderSettings();
       } catch (e) { toast(e.message || 'Ungültiger Code', 'error'); }
     });

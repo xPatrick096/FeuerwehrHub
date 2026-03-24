@@ -368,6 +368,52 @@ pub async fn update_permissions(
     Ok(Json(serde_json::json!({ "permissions": permissions })))
 }
 
+// ── Handler: 2FA zurücksetzen (Admin) ─────────────────────────────────────────
+
+pub async fn reset_totp(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+) -> AppResult<Json<serde_json::Value>> {
+    if !claims.is_admin_or_above() {
+        return Err(AppError::Forbidden);
+    }
+
+    // Niemand kann eigene 2FA so zurücksetzen (dafür gibt es /auth/disable-totp)
+    if id == claims.sub {
+        return Err(AppError::BadRequest(
+            "Eigene 2FA über Einstellungen deaktivieren".into(),
+        ));
+    }
+
+    let target = sqlx::query_as::<_, (String,)>("SELECT role FROM users WHERE id = $1")
+        .bind(id)
+        .fetch_optional(&state.db)
+        .await?
+        .ok_or(AppError::NotFound)?;
+
+    // Admin darf keine anderen Admins/Superuser anfassen
+    if !claims.is_superuser() && (target.0 == "admin" || target.0 == "superuser") {
+        return Err(AppError::Forbidden);
+    }
+
+    let result = sqlx::query(
+        "UPDATE users SET totp_enabled = FALSE, totp_secret = NULL WHERE id = $1"
+    )
+    .bind(id)
+    .execute(&state.db)
+    .await?;
+
+    if result.rows_affected() == 0 {
+        return Err(AppError::NotFound);
+    }
+
+    audit::log(&state.db, Some(claims.sub), &claims.username, "TOTP_RESET_BY_ADMIN",
+        Some("user"), Some(id), None).await;
+
+    Ok(Json(serde_json::json!({ "message": "2FA zurückgesetzt" })))
+}
+
 // ── Handler: Audit-Log abrufen ────────────────────────────────────────────────
 
 #[derive(Serialize, sqlx::FromRow)]
@@ -410,6 +456,7 @@ pub fn router(state: AppState) -> Router<AppState> {
         .route("/users/:id/permissions", put(update_permissions))
         .route("/users/:id/assign-role", put(assign_role))
         .route("/users/:id", delete(delete_user))
+        .route("/users/:id/reset-totp", post(reset_totp))
         .route("/audit-log", get(get_audit_log))
         .route_layer(middleware::from_fn_with_state(state, require_auth))
 }
