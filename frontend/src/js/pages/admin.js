@@ -769,7 +769,6 @@ const MODULE_DEFS = [
   { key: 'personal',        icon: '👥', label: 'Personal',        desc: 'Mitgliederverwaltung, Qualifikationen, Ehrungen' },
   { key: 'einsatzberichte', icon: '🚒', label: 'Einsatzberichte', desc: 'Einsatzberichte erfassen und verwalten',               soon: true },
   { key: 'fahrzeuge',       icon: '🚗', label: 'Fahrzeuge',       desc: 'TÜV-Fristen, Wartung, Geräteprüfung',                  soon: true },
-  { key: 'personal',        icon: '👥', label: 'Personal',        desc: 'Qualifikationen, Schlüssel, Pager, G26.3',              soon: true },
   { key: 'jugendfeuerwehr', icon: '🧒', label: 'Jugendfeuerwehr', desc: 'JF-Mitglieder, Termine, Wettbewerbe',                  soon: true },
 ];
 
