@@ -5,6 +5,8 @@
 FeuerwehrHub entsteht ehrenamtlich und wächst mit den Bedürfnissen der Wehr.
 Jedes Modul kann einzeln aktiviert werden — eine Wehr ohne Jugendfeuerwehr aktiviert das JF-Modul einfach nicht.
 
+> **Aktuelle Version: v1.0.0**
+
 ---
 
 ## Was kann FeuerwehrHub?
@@ -14,8 +16,8 @@ Jedes Modul kann einzeln aktiviert werden — eine Wehr ohne Jugendfeuerwehr akt
 | Modul | Beschreibung |
 |-------|-------------|
 | 🏠 **Startseite** | Ankündigungen der Wehrführung, Modul-Kacheln |
-| 🏪 **Lager** | Beschaffungsaufträge, Bestellübersicht, Artikelstamm, PDF-Export |
-| 🔒 **Benutzerverwaltung** | Rollen, 2FA (TOTP), Passwort-Reset, Audit-Log |
+| 🏪 **Lager** | Beschaffungsaufträge, Bestellübersicht, Artikelstamm, Lagerbestand Soll/Haben, PDF-Export (generisch oder Vorlage), CSV-Export, Unterschrift im PDF |
+| 🔒 **Benutzerverwaltung** | Rollen, 2FA (TOTP) mit QR-Code, 2FA selbst deaktivieren, Admin-Reset bei verlorenem Handy, Passwort-Reset, Audit-Log |
 | ⚙️ **Modulverwaltung** | Module pro Wehr aktivieren/deaktivieren im Admin-Panel |
 | 👥 **Feuerwehrrollen** | WL, ZF, GF, TF, TM, Gerätewart, JFW als anpassbare Vorlagen |
 
@@ -53,31 +55,30 @@ Rollen werden als Vorlagen mitgeliefert und können angepasst werden.
 
 ## Selbst hosten — so einfach wie möglich
 
-FeuerwehrHub läuft per Docker Compose. Kein Cloud-Account, keine Abhängigkeiten, deine Daten bleiben bei dir.
+FeuerwehrHub läuft per Docker Compose mit fertigen Images von GitHub Container Registry.
+Kein Compiler, kein Build-Schritt, kein Cloud-Account — deine Daten bleiben bei dir.
 
 ### Voraussetzungen
 
 - [Docker](https://www.docker.com/) & Docker Compose
-- PostgreSQL-Datenbank (lokal oder im Netzwerk)
+- PostgreSQL-Datenbank (lokal, im Netzwerk, oder inklusive per Standalone-Modus)
 - Optional: Reverse Proxy (z.B. nginx Proxy Manager) für eigene Domain + HTTPS
 
 ### Schnellstart
 
 **Modus A — Standalone (PostgreSQL inklusive, empfohlen für Einsteiger):**
 ```bash
-git clone https://github.com/xPatrick096/FeuerwehrHub.git
-cd FeuerwehrHub
-cp .env.example .env
-# Nur JWT_SECRET, DB_PASSWORD und FF_NAME anpassen — fertig.
+curl -o docker-compose.yml https://raw.githubusercontent.com/xPatrick096/FeuerwehrHub/main/docker-compose.yml
+curl -o .env https://raw.githubusercontent.com/xPatrick096/FeuerwehrHub/main/.env.example
+# Nur JWT_SECRET, DB_PASSWORD und FF_NAME in .env anpassen — fertig.
 docker compose --profile standalone up -d
 ```
 
 **Modus B — Externe Datenbank (eigener PostgreSQL-Server):**
 ```bash
-git clone https://github.com/xPatrick096/FeuerwehrHub.git
-cd FeuerwehrHub
-cp .env.example .env
-# DB_HOST, DB_USER, DB_PASSWORD, JWT_SECRET und FF_NAME anpassen
+curl -o docker-compose.yml https://raw.githubusercontent.com/xPatrick096/FeuerwehrHub/main/docker-compose.yml
+curl -o .env https://raw.githubusercontent.com/xPatrick096/FeuerwehrHub/main/.env.example
+# DB_HOST, DB_USER, DB_PASSWORD, JWT_SECRET und FF_NAME in .env anpassen
 docker compose up -d
 ```
 
@@ -133,6 +134,36 @@ LOCKOUT_MINUTES=15                       # Sperrdauer in Minuten
 
 ---
 
+## Updates
+
+Neue Version verfügbar? Einfach Images ziehen und neu starten — kein Build nötig:
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+Neue Versionen werden als [GitHub Releases](https://github.com/xPatrick096/FeuerwehrHub/releases) veröffentlicht.
+**Empfehlung:** Im Repo auf **Watch → Custom → Releases** klicken, um E-Mail-Benachrichtigungen zu erhalten.
+
+---
+
+## Datenbankbackup
+
+Für regelmäßige Backups empfehlen wir einen Cronjob mit `pg_dump`:
+
+```bash
+# Einmalig manuell (bei externer Datenbank):
+pg_dump -h DB_HOST -U DB_USER DB_NAME > backup_$(date +%F).sql
+
+# Oder direkt im Postgres-Container (Standalone-Modus):
+docker exec feuerwehrhub-postgres-1 pg_dump -U feuerwehrhub feuerwehrhub > backup_$(date +%F).sql
+```
+
+**Empfehlung:** Backups täglich per Cronjob erstellen und auf einem separaten Speichermedium aufbewahren.
+
+---
+
 ## Entwicklung
 
 ```bash
@@ -146,6 +177,12 @@ npm run dev
 ```
 
 Datenbankmigrationen laufen beim Start automatisch durch (`sqlx::migrate!`).
+
+### Lokal mit Docker bauen (statt GHCR-Images)
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+```
 
 ---
 

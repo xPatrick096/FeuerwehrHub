@@ -23,17 +23,13 @@ services:
 
   # ── Backend ───────────────────────────────────────────────────────────────────
   backend:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
+    image: ghcr.io/xpatrick096/feuerwehrhub-backend:latest
     restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
         required: false   # Wird nur abgewartet wenn standalone-Profil aktiv ist
     environment:
-      # DB_HOST: Standard "postgres" (Container-Name) für standalone.
-      #          Für externe DB z.B. DB_HOST=192.168.1.100 in .env setzen.
       DB_HOST:              ${DB_HOST:-postgres}
       DB_PORT:              ${DB_PORT:-5432}
       DB_NAME:              ${DB_NAME:-feuerwehrhub}
@@ -59,9 +55,7 @@ services:
 
   # ── Frontend ──────────────────────────────────────────────────────────────────
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    image: ghcr.io/xpatrick096/feuerwehrhub-frontend:latest
     restart: unless-stopped
     ports:
       - "8080:80"
