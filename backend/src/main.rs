@@ -67,6 +67,7 @@ async fn main() -> anyhow::Result<()> {
         .nest("/api/settings", routes::settings::router(state.clone()))
         .nest("/api/announcements", routes::announcements::router(state.clone()))
         .nest("/api/me",           routes::selfservice::router(state.clone()))
+        .nest("/api/personal",     routes::personal::router(state.clone()))
         .with_state(state)
         .layer(cors)
         .layer(TraceLayer::new_for_http());

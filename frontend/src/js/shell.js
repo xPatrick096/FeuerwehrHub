@@ -58,6 +58,13 @@ export function renderShell(activePage) {
             </button>
             <div class="sidebar__divider"></div>` : ''}
 
+            ${canAccess(currentUser, 'personal') && activeModules['personal'] ? `
+            <div class="sidebar__module">👥 Personal</div>
+            <button class="sidebar__item${activePage === 'personal' ? ' active' : ''}" data-page="personal">
+              <span class="sidebar__item__icon">👤</span> Mitglieder
+            </button>
+            <div class="sidebar__divider"></div>` : ''}
+
             <button class="sidebar__item${activePage === 'settings' ? ' active' : ''}" data-page="settings">
               <span class="sidebar__item__icon">⚙️</span> Einstellungen
             </button>

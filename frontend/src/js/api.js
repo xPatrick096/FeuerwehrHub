@@ -104,6 +104,23 @@ export const api = {
   deleteUser:     (id)        => request('DELETE', `/admin/users/${id}`),
   getAuditLog:    ()          => request('GET',    '/admin/audit-log'),
 
+  // Personal
+  getPersonalMembers:          ()               => request('GET',    '/personal/members'),
+  getPersonalDetails:          (id)             => request('GET',    `/personal/members/${id}/details`),
+  updatePersonalDetails:       (id, body)       => request('PUT',    `/personal/members/${id}/details`, body),
+  getPersonalQualifications:   (id)             => request('GET',    `/personal/members/${id}/qualifications`),
+  createPersonalQualification: (id, body)       => request('POST',   `/personal/members/${id}/qualifications`, body),
+  updatePersonalQualification: (id, qid, body)  => request('PUT',    `/personal/members/${id}/qualifications/${qid}`, body),
+  deletePersonalQualification: (id, qid)        => request('DELETE', `/personal/members/${id}/qualifications/${qid}`),
+  getPersonalEquipment:        (id)             => request('GET',    `/personal/members/${id}/equipment`),
+  createPersonalEquipment:     (id, body)       => request('POST',   `/personal/members/${id}/equipment`, body),
+  updatePersonalEquipment:     (id, eid, body)  => request('PUT',    `/personal/members/${id}/equipment/${eid}`, body),
+  deletePersonalEquipment:     (id, eid)        => request('DELETE', `/personal/members/${id}/equipment/${eid}`),
+  getPersonalHonors:           (id)             => request('GET',    `/personal/members/${id}/honors`),
+  createPersonalHonor:         (id, body)       => request('POST',   `/personal/members/${id}/honors`, body),
+  updatePersonalHonor:         (id, hid, body)  => request('PUT',    `/personal/members/${id}/honors/${hid}`, body),
+  deletePersonalHonor:         (id, hid)        => request('DELETE', `/personal/members/${id}/honors/${hid}`),
+
   // Mein Bereich (Selfservice)
   getMyProfile:        ()          => request('GET',    '/me/profile'),
   updateMyProfile:     (body)      => request('PUT',    '/me/profile', body),
