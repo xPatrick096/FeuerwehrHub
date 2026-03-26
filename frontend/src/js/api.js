@@ -163,4 +163,24 @@ export const api = {
   createInspection:     (vid, body)     => request('POST',   `/vehicles/${vid}/inspections`, body),
   updateInspection:     (vid, iid, body)=> request('PUT',    `/vehicles/${vid}/inspections/${iid}`, body),
   deleteInspection:     (vid, iid)      => request('DELETE', `/vehicles/${vid}/inspections/${iid}`),
+
+  // Fahrtenbuch
+  getTrips:             (vid)           => request('GET',    `/vehicles/${vid}/trips`),
+  createTrip:           (vid, body)     => request('POST',   `/vehicles/${vid}/trips`, body),
+  updateTrip:           (vid, tid, body)=> request('PUT',    `/vehicles/${vid}/trips/${tid}`, body),
+  deleteTrip:           (vid, tid)      => request('DELETE', `/vehicles/${vid}/trips/${tid}`),
+
+  // Tankprotokoll
+  getFuelings:          (vid)           => request('GET',    `/vehicles/${vid}/fuelings`),
+  createFueling:        (vid, body)     => request('POST',   `/vehicles/${vid}/fuelings`, body),
+  updateFueling:        (vid, fid, body)=> request('PUT',    `/vehicles/${vid}/fuelings/${fid}`, body),
+  deleteFueling:        (vid, fid)      => request('DELETE', `/vehicles/${vid}/fuelings/${fid}`),
+
+  // Störungsmeldungen
+  getDefects:           (vid)           => request('GET',    `/vehicles/${vid}/defects`),
+  createDefect:         (vid, body)     => request('POST',   `/vehicles/${vid}/defects`, body),
+  updateDefectStatus:   (vid, did, body)=> request('PUT',    `/vehicles/${vid}/defects/${did}/status`, body),
+  deleteDefect:         (vid, did)      => request('DELETE', `/vehicles/${vid}/defects/${did}`),
+  getDefectComments:    (vid, did)      => request('GET',    `/vehicles/${vid}/defects/${did}/comments`),
+  createDefectComment:  (vid, did, body)=> request('POST',   `/vehicles/${vid}/defects/${did}/comments`, body),
 };
