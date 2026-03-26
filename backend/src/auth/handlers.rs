@@ -249,6 +249,13 @@ struct UserProfileRow {
     assigned_role_name: Option<String>,
 }
 
+#[derive(Serialize, sqlx::FromRow)]
+pub struct FunctionEntry {
+    pub role_id:     Uuid,
+    pub name:        String,
+    pub permissions: Vec<String>,
+}
+
 #[derive(Serialize)]
 pub struct MeResponse {
     pub id: Uuid,
@@ -260,6 +267,7 @@ pub struct MeResponse {
     pub permissions: Vec<String>,
     pub assigned_role_id: Option<Uuid>,
     pub assigned_role_name: Option<String>,
+    pub functions: Vec<FunctionEntry>,
 }
 
 pub async fn me(
@@ -279,12 +287,27 @@ pub async fn me(
     .await?
     .ok_or(AppError::NotFound)?;
 
-    // Effektive Permissions = Rolle + individuelle (dedupliziert)
+    // Zusatzfunktionen laden
+    let functions = sqlx::query_as::<_, FunctionEntry>(
+        "SELECT r.id as role_id, r.name, r.permissions
+         FROM user_functions uf
+         JOIN roles r ON r.id = uf.role_id
+         WHERE uf.user_id = $1
+         ORDER BY r.name ASC"
+    )
+    .bind(claims.sub)
+    .fetch_all(&state.db)
+    .await?;
+
+    // Effektive Permissions = Dienstgrad + Funktionen + individuelle (dedupliziert)
     let mut perms = user.role_permissions.unwrap_or_default();
-    for p in &user.permissions {
-        if !perms.contains(p) {
-            perms.push(p.clone());
+    for f in &functions {
+        for p in &f.permissions {
+            if !perms.contains(p) { perms.push(p.clone()); }
         }
+    }
+    for p in &user.permissions {
+        if !perms.contains(p) { perms.push(p.clone()); }
     }
 
     Ok(Json(MeResponse {
@@ -297,6 +320,7 @@ pub async fn me(
         permissions: perms,
         assigned_role_id: user.assigned_role_id,
         assigned_role_name: user.assigned_role_name,
+        functions,
     }))
 }
 

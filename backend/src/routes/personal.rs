@@ -646,10 +646,83 @@ pub async fn export_attendance_csv(
     ))
 }
 
+// ── Personal Stats ────────────────────────────────────────────────────────────
+
+#[derive(Serialize)]
+pub struct PersonalStats {
+    pub total_members:              i64,
+    pub active_members:             i64,
+    pub qualifications_expiring_30: i64,
+    pub qualifications_expiring_90: i64,
+    pub g263_expiring_90:           i64,
+}
+
+pub async fn get_personal_stats(
+    State(state): State<AppState>,
+) -> AppResult<Json<PersonalStats>> {
+    let total_members: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM users WHERE role != 'superuser'"
+    )
+    .fetch_one(&state.db)
+    .await?;
+
+    let active_members: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM users u \
+         LEFT JOIN member_details md ON md.user_id = u.id \
+         WHERE u.role != 'superuser' \
+           AND (md.exit_date IS NULL OR md.exit_date >= CURRENT_DATE)"
+    )
+    .fetch_one(&state.db)
+    .await?;
+
+    let qualifications_expiring_30: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM qualifications q \
+         JOIN users u ON u.id = q.user_id \
+         LEFT JOIN member_details md ON md.user_id = u.id \
+         WHERE q.expires_at BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '30 days' \
+           AND u.role != 'superuser' \
+           AND (md.exit_date IS NULL OR md.exit_date >= CURRENT_DATE)"
+    )
+    .fetch_one(&state.db)
+    .await?;
+
+    let qualifications_expiring_90: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM qualifications q \
+         JOIN users u ON u.id = q.user_id \
+         LEFT JOIN member_details md ON md.user_id = u.id \
+         WHERE q.expires_at BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '90 days' \
+           AND u.role != 'superuser' \
+           AND (md.exit_date IS NULL OR md.exit_date >= CURRENT_DATE)"
+    )
+    .fetch_one(&state.db)
+    .await?;
+
+    let g263_expiring_90: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM qualifications q \
+         JOIN users u ON u.id = q.user_id \
+         LEFT JOIN member_details md ON md.user_id = u.id \
+         WHERE q.expires_at BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '90 days' \
+           AND q.name ILIKE '%G26%' \
+           AND u.role != 'superuser' \
+           AND (md.exit_date IS NULL OR md.exit_date >= CURRENT_DATE)"
+    )
+    .fetch_one(&state.db)
+    .await?;
+
+    Ok(Json(PersonalStats {
+        total_members,
+        active_members,
+        qualifications_expiring_30,
+        qualifications_expiring_90,
+        g263_expiring_90,
+    }))
+}
+
 // ── Router ────────────────────────────────────────────────────────────────────
 
 pub fn router(state: AppState) -> Router<AppState> {
     Router::new()
+        .route("/stats",                                        get(get_personal_stats))
         .route("/members",                                      get(list_members))
         .route("/members/:id/details",                          get(get_details).put(update_details))
         .route("/members/:id/qualifications",                   get(list_qualifications).post(create_qualification))

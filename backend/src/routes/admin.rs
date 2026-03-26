@@ -430,7 +430,7 @@ pub async fn update_permissions(
     }
 
     // Nur bekannte Module erlauben
-    let known: &[&str] = &["lager"];
+    let known: &[&str] = &["lager", "personal", "fahrzeuge"];
     let permissions: Vec<String> = body.permissions
         .into_iter()
         .filter(|p| known.contains(&p.as_str()))
@@ -491,6 +491,106 @@ pub async fn reset_totp(
     Ok(Json(serde_json::json!({ "message": "2FA zurückgesetzt" })))
 }
 
+// ── Handler: Zusatzfunktionen eines Users ─────────────────────────────────────
+
+#[derive(Serialize, sqlx::FromRow)]
+pub struct UserFunctionEntry {
+    pub role_id:     Uuid,
+    pub name:        String,
+    pub permissions: Vec<String>,
+}
+
+#[derive(Deserialize)]
+pub struct AssignFunctionBody {
+    pub role_id: Uuid,
+}
+
+pub async fn list_user_functions(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+) -> AppResult<Json<Vec<UserFunctionEntry>>> {
+    if !claims.is_admin_or_above() {
+        return Err(AppError::Forbidden);
+    }
+
+    let functions = sqlx::query_as::<_, UserFunctionEntry>(
+        "SELECT r.id as role_id, r.name, r.permissions
+         FROM user_functions uf
+         JOIN roles r ON r.id = uf.role_id
+         WHERE uf.user_id = $1
+         ORDER BY r.name ASC"
+    )
+    .bind(id)
+    .fetch_all(&state.db)
+    .await?;
+
+    Ok(Json(functions))
+}
+
+pub async fn assign_function(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+    Json(body): Json<AssignFunctionBody>,
+) -> AppResult<Json<serde_json::Value>> {
+    if !claims.is_admin_or_above() {
+        return Err(AppError::Forbidden);
+    }
+
+    // Nur 'funktion'-Typ Rollen dürfen zugewiesen werden
+    let role_type: Option<String> = sqlx::query_scalar(
+        "SELECT type FROM roles WHERE id = $1"
+    )
+    .bind(body.role_id)
+    .fetch_optional(&state.db)
+    .await?;
+
+    match role_type.as_deref() {
+        Some("funktion") => {}
+        Some(_) => return Err(AppError::BadRequest("Nur Zusatzfunktionen können so zugewiesen werden".into())),
+        None => return Err(AppError::NotFound),
+    }
+
+    sqlx::query(
+        "INSERT INTO user_functions (user_id, role_id, assigned_by) VALUES ($1, $2, $3)
+         ON CONFLICT (user_id, role_id) DO NOTHING"
+    )
+    .bind(id)
+    .bind(body.role_id)
+    .bind(claims.sub)
+    .execute(&state.db)
+    .await?;
+
+    audit::log(&state.db, Some(claims.sub), &claims.username, "FUNCTION_ASSIGNED",
+        Some("user"), Some(id), Some(&format!("Funktion: {}", body.role_id))).await;
+
+    Ok(Json(serde_json::json!({ "message": "Funktion zugewiesen" })))
+}
+
+pub async fn remove_function(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path((id, role_id)): Path<(Uuid, Uuid)>,
+) -> AppResult<Json<serde_json::Value>> {
+    if !claims.is_admin_or_above() {
+        return Err(AppError::Forbidden);
+    }
+
+    sqlx::query(
+        "DELETE FROM user_functions WHERE user_id = $1 AND role_id = $2"
+    )
+    .bind(id)
+    .bind(role_id)
+    .execute(&state.db)
+    .await?;
+
+    audit::log(&state.db, Some(claims.sub), &claims.username, "FUNCTION_REMOVED",
+        Some("user"), Some(id), Some(&format!("Funktion: {}", role_id))).await;
+
+    Ok(Json(serde_json::json!({ "message": "Funktion entfernt" })))
+}
+
 // ── Handler: Audit-Log abrufen ────────────────────────────────────────────────
 
 #[derive(Serialize, sqlx::FromRow)]
@@ -548,6 +648,8 @@ pub fn router(state: AppState) -> Router<AppState> {
         .route("/users/:id/assign-role", put(assign_role))
         .route("/users/:id", put(update_user).delete(delete_user))
         .route("/users/:id/reset-totp", post(reset_totp))
+        .route("/users/:id/functions", get(list_user_functions).post(assign_function))
+        .route("/users/:id/functions/:role_id", delete(remove_function))
         .route("/audit-log", get(get_audit_log))
         .route("/container-log", get(get_container_log))
         .route_layer(middleware::from_fn_with_state(state, require_auth))

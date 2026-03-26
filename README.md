@@ -17,20 +17,20 @@ Jedes Modul kann einzeln aktiviert werden — eine Wehr ohne Jugendfeuerwehr akt
 
 | Modul | Beschreibung |
 |-------|-------------|
-| 🏠 **Startseite** | Ankündigungen der Wehrführung, Modul-Kacheln |
+| 🏠 **Startseite** | Ankündigungen der Wehrführung, Modul-Kacheln, Fahrzeug- & Qualifikations-Ampel |
 | 🏪 **Lager** | Beschaffungsaufträge, Bestellübersicht, Artikelstamm, Lagerbestand Soll/Haben, PDF-Export (generisch oder Vorlage), CSV-Export, Unterschrift im PDF |
 | 👤 **Mein Bereich** | Eigenes Profil, Kontaktdaten & Notfallkontakt, Qualifikationen & Ablaufdaten (Ampel), Ausrüstung — für alle Mitglieder |
-| 👥 **Personal** | Mitgliederstamm, Qualifikationen, Ausrüstung, Ehrungen — für Wehrleiter |
+| 👥 **Personal** | Mitgliederstamm, Qualifikationen, Ausrüstung, Ehrungen, Anwesenheitstracking — für Wehrleiter |
 | 🔒 **Benutzerverwaltung** | Rollen, 2FA (TOTP) mit QR-Code, 2FA selbst deaktivieren, Admin-Reset bei verlorenem Handy, Passwort-Reset, Audit-Log |
 | ⚙️ **Modulverwaltung** | Module pro Wehr aktivieren/deaktivieren im Admin-Panel |
 | 👥 **Feuerwehrrollen** | WL, ZF, GF, TF, TM, Gerätewart, JFW als anpassbare Vorlagen |
+| 🚒 **Fahrzeuge** | Stammdaten, Fristen & Prüfungen (Ampel), Fahrtenbuch mit km-Übertrag, Tankprotokoll, Störungsmeldungen, Geräte/Beladung, Checklisten |
 
 ### In Planung
 
 | Modul | Zielgruppe |
 |-------|-----------|
 | 🚒 **Einsatzberichte** | Ab Truppführer |
-| 🚗 **Fahrzeugverwaltung** | Gerätewart — TÜV-Fristen, Wartung |
 | 🧒 **Jugendfeuerwehr** | JFW — Mitglieder, Termine, Wettbewerbe |
 | 📅 **Termine / Kalender** | Alle — Übungen, Dienstabende, iCal-Export |
 | 🏛️ **Vereinsverwaltung** | Vorstand — Beiträge, Protokolle |
@@ -39,8 +39,9 @@ Jedes Modul kann einzeln aktiviert werden — eine Wehr ohne Jugendfeuerwehr akt
 
 ## Rollensystem
 
-Jede Person hat genau eine Rolle. Höhere Rollen sehen mehr:
+Zweistufiges Rechtesystem: Dienstgrad + optionale Zusatzfunktionen.
 
+**Dienstgrade** (hierarchisch, einer pro Person):
 ```
 Admin (System)
 └── Wehrleiter
@@ -52,6 +53,7 @@ Admin (System)
       └── Jugendfeuerwehrwart
 ```
 
+**Zusatzfunktionen** ergänzen den Dienstgrad mit Modulzugriffen (z.B. Kassenwart, IT-Beauftragter).
 Rollen werden als Vorlagen mitgeliefert und können angepasst werden.
 
 ---

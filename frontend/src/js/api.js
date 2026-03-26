@@ -99,6 +99,11 @@ export const api = {
   createRole:  (body)   => request('POST',   '/roles', body),
   updateRole:  (id, b)  => request('PUT',    `/roles/${id}`, b),
   deleteRole:  (id)     => request('DELETE', `/roles/${id}`),
+
+  // Zusatzfunktionen
+  getUserFunctions: (id)        => request('GET',    `/admin/users/${id}/functions`),
+  assignFunction:   (id, body)  => request('POST',   `/admin/users/${id}/functions`, body),
+  removeFunction:   (id, roleId)=> request('DELETE', `/admin/users/${id}/functions/${roleId}`),
   resetPassword:  (id, body)  => request('POST',   `/admin/users/${id}/reset-password`, body),
   adminResetTotp: (id)        => request('POST',   `/admin/users/${id}/reset-totp`),
   deleteUser:     (id)        => request('DELETE', `/admin/users/${id}`),
@@ -133,6 +138,9 @@ export const api = {
   updateAnnouncement:  (id, body)  => request('PUT',    `/announcements/${id}`, body),
   deleteAnnouncement:  (id)        => request('DELETE', `/announcements/${id}`),
 
+  // Personal Stats
+  getPersonalStats:    ()             => request('GET',    '/personal/stats'),
+
   // Anwesenheit
   getAttendance:       (id)           => request('GET',    `/personal/members/${id}/attendance`),
   createAttendance:    (id, body)     => request('POST',   `/personal/members/${id}/attendance`, body),
@@ -143,4 +151,54 @@ export const api = {
   // Admin
   getContainerLog:     ()             => request('GET',    '/admin/container-log'),
   setupStatus:         ()             => fetch('/api/auth/setup-status').then(r => r.json()),
+
+  // Fahrzeuge
+  getVehicleStats:      ()              => request('GET',    '/vehicles/stats'),
+  getVehicles:          ()              => request('GET',    '/vehicles'),
+  getVehicle:           (id)            => request('GET',    `/vehicles/${id}`),
+  createVehicle:        (body)          => request('POST',   '/vehicles', body),
+  updateVehicle:        (id, body)      => request('PUT',    `/vehicles/${id}`, body),
+  deleteVehicle:        (id)            => request('DELETE', `/vehicles/${id}`),
+  getInspections:       (vid)           => request('GET',    `/vehicles/${vid}/inspections`),
+  createInspection:     (vid, body)     => request('POST',   `/vehicles/${vid}/inspections`, body),
+  updateInspection:     (vid, iid, body)=> request('PUT',    `/vehicles/${vid}/inspections/${iid}`, body),
+  deleteInspection:     (vid, iid)      => request('DELETE', `/vehicles/${vid}/inspections/${iid}`),
+
+  // Fahrtenbuch
+  getTrips:             (vid)           => request('GET',    `/vehicles/${vid}/trips`),
+  createTrip:           (vid, body)     => request('POST',   `/vehicles/${vid}/trips`, body),
+  updateTrip:           (vid, tid, body)=> request('PUT',    `/vehicles/${vid}/trips/${tid}`, body),
+  deleteTrip:           (vid, tid)      => request('DELETE', `/vehicles/${vid}/trips/${tid}`),
+
+  // Tankprotokoll
+  getFuelings:          (vid)           => request('GET',    `/vehicles/${vid}/fuelings`),
+  createFueling:        (vid, body)     => request('POST',   `/vehicles/${vid}/fuelings`, body),
+  updateFueling:        (vid, fid, body)=> request('PUT',    `/vehicles/${vid}/fuelings/${fid}`, body),
+  deleteFueling:        (vid, fid)      => request('DELETE', `/vehicles/${vid}/fuelings/${fid}`),
+
+  // Störungsmeldungen
+  getDefects:           (vid)           => request('GET',    `/vehicles/${vid}/defects`),
+  createDefect:         (vid, body)     => request('POST',   `/vehicles/${vid}/defects`, body),
+  updateDefectStatus:   (vid, did, body)=> request('PUT',    `/vehicles/${vid}/defects/${did}/status`, body),
+  deleteDefect:         (vid, did)      => request('DELETE', `/vehicles/${vid}/defects/${did}`),
+  getDefectComments:    (vid, did)      => request('GET',    `/vehicles/${vid}/defects/${did}/comments`),
+  createDefectComment:  (vid, did, body)=> request('POST',   `/vehicles/${vid}/defects/${did}/comments`, body),
+
+  // Geräte / Beladung
+  getEquipment:         (vid)           => request('GET',    `/vehicles/${vid}/equipment`),
+  createEquipment:      (vid, body)     => request('POST',   `/vehicles/${vid}/equipment`, body),
+  updateEquipment:      (vid, eid, body)=> request('PUT',    `/vehicles/${vid}/equipment/${eid}`, body),
+  deleteEquipment:      (vid, eid)      => request('DELETE', `/vehicles/${vid}/equipment/${eid}`),
+
+  // Checklisten-Vorlagen
+  getTemplates:         (vid)           => request('GET',    `/vehicles/${vid}/checklist-templates`),
+  createTemplate:       (vid, body)     => request('POST',   `/vehicles/${vid}/checklist-templates`, body),
+  deleteTemplate:       (vid, tid)      => request('DELETE', `/vehicles/${vid}/checklist-templates/${tid}`),
+
+  // Checklisten (ausgefüllt)
+  getChecklists:        (vid)           => request('GET',    `/vehicles/${vid}/checklists`),
+  createChecklist:      (vid, body)     => request('POST',   `/vehicles/${vid}/checklists`, body),
+  getChecklist:         (vid, cid)      => request('GET',    `/vehicles/${vid}/checklists/${cid}`),
+  deleteChecklist:      (vid, cid)      => request('DELETE', `/vehicles/${vid}/checklists/${cid}`),
+  defectsFromChecklist: (vid, body)     => request('POST',   `/vehicles/${vid}/defects-from-checklist`, body),
 };

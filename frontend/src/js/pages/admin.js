@@ -230,6 +230,13 @@ export async function renderAdmin() {
             <input type="text" id="role-name" maxlength="64" placeholder="z.B. Lagerverwalter" autocomplete="off" />
           </div>
           <div class="form-group">
+            <label>Typ</label>
+            <select id="role-type" style="width:100%">
+              <option value="dienstgrad">Dienstgrad (z.B. Truppführer, Gruppenführer)</option>
+              <option value="funktion">Zusatzfunktion (z.B. Gerätewart, Lagerverwalter)</option>
+            </select>
+          </div>
+          <div class="form-group">
             <label>Module</label>
             <div id="role-perm-checks" style="display:flex;flex-direction:column;gap:8px;margin-top:4px"></div>
           </div>
@@ -264,6 +271,26 @@ export async function renderAdmin() {
         <div class="modal__footer">
           <button class="btn btn--primary" id="btn-submit-edit-user">Speichern</button>
           <button class="btn btn--outline" id="btn-cancel-edit-user">Abbrechen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Zusatzfunktionen verwalten -->
+    <div id="modal-functions" class="modal" style="display:none">
+      <div class="modal__backdrop"></div>
+      <div class="modal__box">
+        <div class="modal__header">
+          <h3>Zusatzfunktionen — <span id="modal-functions-username"></span></h3>
+          <button class="modal__close" id="btn-close-functions">✕</button>
+        </div>
+        <div class="modal__body">
+          <p style="font-size:13px;color:#7d8590;margin-bottom:16px">
+            Zusatzfunktionen erweitern die Modulberechtigungen des Benutzers additiv.
+          </p>
+          <div id="functions-checks" style="display:flex;flex-direction:column;gap:10px"></div>
+        </div>
+        <div class="modal__footer">
+          <button class="btn btn--outline" id="btn-close-functions-footer">Schließen</button>
         </div>
       </div>
     </div>
@@ -556,6 +583,10 @@ export async function renderAdmin() {
         await loadUsers(me, roles);
       } catch (e) { toast(e.message, 'error'); }
     }
+
+    if (e.target.matches('[data-action="manage-functions"]')) {
+      await openFunctionsModal(id, username);
+    }
   });
 
   // Rolle-Dropdown Änderungen (delegiert)
@@ -570,6 +601,60 @@ export async function renderAdmin() {
       toast(err.message, 'error');
     }
   });
+}
+
+async function openFunctionsModal(userId, username) {
+  const modal    = document.getElementById('modal-functions');
+  const checksEl = document.getElementById('functions-checks');
+  document.getElementById('modal-functions-username').textContent = username;
+  checksEl.innerHTML = '<p style="color:#7d8590;font-size:13px">Lade...</p>';
+  modal.style.display = 'flex';
+
+  const [allRoles, userFunctions] = await Promise.all([
+    api.getRoles().catch(() => []),
+    api.getUserFunctions(userId).catch(() => []),
+  ]);
+
+  const funktionen = allRoles.filter(r => r.type === 'funktion');
+  const assignedIds = userFunctions.map(f => f.role_id);
+
+  if (!funktionen.length) {
+    checksEl.innerHTML = '<p style="color:#7d8590;font-size:13px">Keine Zusatzfunktionen angelegt.</p>';
+  } else {
+    checksEl.innerHTML = funktionen.map(f => `
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:8px;border:1px solid #21273d;border-radius:8px">
+        <input type="checkbox" class="fn-check" data-role-id="${f.id}"
+          ${assignedIds.includes(f.id) ? 'checked' : ''} />
+        <span>
+          <strong style="font-size:13px">${esc(f.name)}</strong>
+          ${f.permissions.length ? `<span style="font-size:11px;color:#7d8590;margin-left:6px">→ ${f.permissions.join(', ')}</span>` : ''}
+        </span>
+      </label>
+    `).join('');
+
+    checksEl.querySelectorAll('.fn-check').forEach(cb => {
+      cb.addEventListener('change', async () => {
+        const roleId = cb.dataset.roleId;
+        try {
+          if (cb.checked) {
+            await api.assignFunction(userId, { role_id: roleId });
+            toast('Funktion zugewiesen');
+          } else {
+            await api.removeFunction(userId, roleId);
+            toast('Funktion entfernt');
+          }
+        } catch (e) {
+          cb.checked = !cb.checked; // revert
+          toast(e.message, 'error');
+        }
+      });
+    });
+  }
+
+  const close = () => { modal.style.display = 'none'; };
+  document.getElementById('btn-close-functions').onclick = close;
+  document.getElementById('btn-close-functions-footer').onclick = close;
+  modal.querySelector('.modal__backdrop').onclick = close;
 }
 
 async function loadRoles(me) {
@@ -589,6 +674,7 @@ async function loadRoles(me) {
           <thead>
             <tr>
               <th>Rollenname</th>
+              <th>Typ</th>
               <th>Module</th>
               <th>Aktionen</th>
             </tr>
@@ -597,11 +683,18 @@ async function loadRoles(me) {
             ${roles.map(r => `
               <tr>
                 <td><strong>${esc(r.name)}</strong></td>
+                <td>
+                  <span style="font-size:11px;padding:2px 8px;border-radius:10px;
+                    background:${r.type === 'funktion' ? 'rgba(240,165,0,0.15)' : 'rgba(63,185,80,0.15)'};
+                    color:${r.type === 'funktion' ? '#f0a500' : '#3fb950'}">
+                    ${r.type === 'funktion' ? 'Zusatzfunktion' : 'Dienstgrad'}
+                  </span>
+                </td>
                 <td>${r.permissions.length ? r.permissions.map(p => MODULE_LABELS[p] || p).join(', ') : '<span style="color:#aaa">keine</span>'}</td>
                 <td>
                   <div class="btn-group">
                     <button class="btn btn--outline btn--sm" data-action="edit-role"
-                      data-id="${r.id}" data-name="${esc(r.name)}"
+                      data-id="${r.id}" data-name="${esc(r.name)}" data-type="${r.type}"
                       data-perms="${JSON.stringify(r.permissions).replace(/"/g,'&quot;')}">Bearbeiten</button>
                     <button class="btn btn--danger btn--sm" data-action="delete-role"
                       data-id="${r.id}" data-name="${esc(r.name)}">Löschen</button>
@@ -620,6 +713,7 @@ async function loadRoles(me) {
         const perms = JSON.parse(btn.dataset.perms || '[]');
         document.getElementById('modal-role-title').textContent = 'Rolle bearbeiten';
         document.getElementById('role-name').value = btn.dataset.name;
+        document.getElementById('role-type').value = btn.dataset.type || 'dienstgrad';
         buildPermCheckboxes(perms);
         document.getElementById('modal-role').style.display = 'flex';
       });
@@ -653,12 +747,14 @@ async function loadRoles(me) {
     editTarget = null;
     document.getElementById('modal-role').style.display = 'none';
     document.getElementById('role-name').value = '';
+    document.getElementById('role-type').value = 'dienstgrad';
   };
 
   document.getElementById('btn-new-role').addEventListener('click', () => {
     editTarget = null;
     document.getElementById('modal-role-title').textContent = 'Rolle anlegen';
     document.getElementById('role-name').value = '';
+    document.getElementById('role-type').value = 'dienstgrad';
     buildPermCheckboxes();
     document.getElementById('modal-role').style.display = 'flex';
   });
@@ -671,13 +767,14 @@ async function loadRoles(me) {
     if (!name) { toast('Rollenname eingeben', 'error'); return; }
     const permissions = [...document.querySelectorAll('#role-perm-checks input:checked')]
       .map(cb => cb.value);
+    const type = document.getElementById('role-type').value;
 
     try {
       if (editTarget) {
-        await api.updateRole(editTarget, { name, permissions });
+        await api.updateRole(editTarget, { name, permissions, type });
         toast('Rolle gespeichert');
       } else {
-        await api.createRole({ name, permissions });
+        await api.createRole({ name, permissions, type });
         toast(`Rolle "${name}" angelegt`);
       }
       closeModal();
@@ -698,9 +795,7 @@ async function loadUsers(me, roles = []) {
       return;
     }
 
-    const roleOptions = roles.map(r =>
-      `<option value="${r.id}">${esc(r.name)}</option>`
-    ).join('');
+    const dienstgrade = roles.filter(r => r.type === 'dienstgrad');
 
     wrap.innerHTML = `
       <table class="table">
@@ -708,7 +803,8 @@ async function loadUsers(me, roles = []) {
           <tr>
             <th>Benutzername</th>
             <th>Systemrolle</th>
-            <th>Zugewiesene Rolle</th>
+            <th>Dienstgrad</th>
+            <th>Funktionen</th>
             <th>2FA</th>
             <th>Erstellt</th>
             <th>Aktionen</th>
@@ -726,8 +822,8 @@ async function loadUsers(me, roles = []) {
             const roleDropdown = isPrivileged
               ? `<span style="font-size:11px;color:#888">alle (Systemrolle)</span>`
               : `<select class="user-role-select" data-user-id="${u.id}" style="font-size:13px">
-                   <option value="">— keine Rolle —</option>
-                   ${roles.map(r =>
+                   <option value="">— kein Dienstgrad —</option>
+                   ${dienstgrade.map(r =>
                      `<option value="${r.id}" ${u.role_id === r.id ? 'selected' : ''}>${esc(r.name)}</option>`
                    ).join('')}
                  </select>`;
@@ -742,6 +838,14 @@ async function loadUsers(me, roles = []) {
                   <span class="badge badge--${u.role}">${ROLE_LABELS[u.role] || u.role}</span>
                 </td>
                 <td>${roleDropdown}</td>
+                <td>
+                  ${!isPrivileged
+                    ? `<button class="btn btn--outline btn--sm" data-action="manage-functions"
+                         data-id="${u.id}" data-username="${esc(u.username)}">
+                         Funktionen
+                       </button>`
+                    : '<span style="font-size:11px;color:#888">alle</span>'}
+                </td>
                 <td style="text-align:center">${u.totp_enabled ? '✅' : '—'}</td>
                 <td style="font-size:12px;color:#666">
                   ${new Date(u.created_at).toLocaleDateString('de-DE')}
@@ -792,7 +896,7 @@ const MODULE_DEFS = [
   { key: 'lager',           icon: '🏪', label: 'Lager',           desc: 'Beschaffungsaufträge, Bestellübersicht, Artikelstamm' },
   { key: 'personal',        icon: '👥', label: 'Personal',        desc: 'Mitgliederverwaltung, Qualifikationen, Ehrungen' },
   { key: 'einsatzberichte', icon: '🚒', label: 'Einsatzberichte', desc: 'Einsatzberichte erfassen und verwalten',               soon: true },
-  { key: 'fahrzeuge',       icon: '🚗', label: 'Fahrzeuge',       desc: 'TÜV-Fristen, Wartung, Geräteprüfung',                  soon: true },
+  { key: 'fahrzeuge',       icon: '🚗', label: 'Fahrzeuge',       desc: 'Stammdaten, Fristen &amp; Prüfungen, Einsatzstatus' },
   { key: 'jugendfeuerwehr', icon: '🧒', label: 'Jugendfeuerwehr', desc: 'JF-Mitglieder, Termine, Wettbewerbe',                  soon: true },
 ];
 
