@@ -151,4 +151,16 @@ export const api = {
   // Admin
   getContainerLog:     ()             => request('GET',    '/admin/container-log'),
   setupStatus:         ()             => fetch('/api/auth/setup-status').then(r => r.json()),
+
+  // Fahrzeuge
+  getVehicleStats:      ()              => request('GET',    '/vehicles/stats'),
+  getVehicles:          ()              => request('GET',    '/vehicles/'),
+  getVehicle:           (id)            => request('GET',    `/vehicles/${id}`),
+  createVehicle:        (body)          => request('POST',   '/vehicles/', body),
+  updateVehicle:        (id, body)      => request('PUT',    `/vehicles/${id}`, body),
+  deleteVehicle:        (id)            => request('DELETE', `/vehicles/${id}`),
+  getInspections:       (vid)           => request('GET',    `/vehicles/${vid}/inspections`),
+  createInspection:     (vid, body)     => request('POST',   `/vehicles/${vid}/inspections`, body),
+  updateInspection:     (vid, iid, body)=> request('PUT',    `/vehicles/${vid}/inspections/${iid}`, body),
+  deleteInspection:     (vid, iid)      => request('DELETE', `/vehicles/${vid}/inspections/${iid}`),
 };

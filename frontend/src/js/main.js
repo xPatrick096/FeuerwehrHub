@@ -9,6 +9,7 @@ import { renderSettings } from './pages/settings.js';
 import { renderAdmin } from './pages/admin.js';
 import { renderMyArea } from './pages/my-area.js';
 import { renderPersonal } from './pages/personal.js';
+import { renderVehicles } from './pages/vehicles.js';
 
 // Routen registrieren
 registerRoute('#/login',     renderLogin);
@@ -16,6 +17,7 @@ registerRoute('#/setup',     renderSetup);
 registerRoute('#/',          renderHome);
 registerRoute('#/my-area',   renderMyArea);
 registerRoute('#/personal',  renderPersonal, 'personal');
+registerRoute('#/vehicles',  renderVehicles, 'fahrzeuge');
 registerRoute('#/orders',    renderOrders,    'lager');
 registerRoute('#/new-order', renderNewOrder,  'lager');
 registerRoute('#/articles',  renderArticles,  'lager');
