@@ -150,6 +150,121 @@ export async function renderVehicles() {
       </div>
     </div>
 
+    <!-- Modal: Gerät anlegen / bearbeiten -->
+    <div id="modal-equipment" class="modal" style="display:none">
+      <div class="modal__backdrop"></div>
+      <div class="modal__box">
+        <div class="modal__header">
+          <h3 id="modal-equipment-title">Gerät anlegen</h3>
+          <button class="modal__close" id="btn-close-equipment-modal">✕</button>
+        </div>
+        <div class="modal__body" style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px">
+          <div class="form-group" style="grid-column:1/-1">
+            <label>Bezeichnung <span style="color:#e63022">*</span></label>
+            <input type="text" id="eq-name" maxlength="200" placeholder="z.B. Hydraulisches Rettungsgerät" />
+          </div>
+          <div class="form-group">
+            <label>Seriennummer</label>
+            <input type="text" id="eq-serial" maxlength="100" />
+          </div>
+          <div class="form-group">
+            <label>Hersteller</label>
+            <input type="text" id="eq-manufacturer" maxlength="100" />
+          </div>
+          <div class="form-group">
+            <label>Baujahr</label>
+            <input type="number" id="eq-year" min="1900" max="2100" />
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select id="eq-status">
+              <option value="ok">In Ordnung</option>
+              <option value="defekt">Defekt</option>
+              <option value="ausgebaut">Ausgebaut</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Letzte Prüfung</label>
+            <input type="date" id="eq-last" />
+          </div>
+          <div class="form-group">
+            <label>Nächste Prüfung</label>
+            <input type="date" id="eq-next" />
+          </div>
+          <div class="form-group">
+            <label>Prüfintervall (Monate)</label>
+            <input type="number" id="eq-interval" min="1" max="120" />
+          </div>
+          <div class="form-group" style="grid-column:1/-1">
+            <label>Notiz</label>
+            <input type="text" id="eq-notes" maxlength="500" />
+          </div>
+        </div>
+        <div class="modal__footer">
+          <button class="btn btn--primary" id="btn-submit-equipment">Speichern</button>
+          <button class="btn btn--outline" id="btn-cancel-equipment">Abbrechen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Checklisten-Vorlage anlegen -->
+    <div id="modal-template" class="modal" style="display:none">
+      <div class="modal__backdrop"></div>
+      <div class="modal__box" style="max-width:560px;width:100%">
+        <div class="modal__header">
+          <h3>Vorlage anlegen</h3>
+          <button class="modal__close" id="btn-close-template-modal">✕</button>
+        </div>
+        <div class="modal__body">
+          <div class="form-group">
+            <label>Name <span style="color:#e63022">*</span></label>
+            <input type="text" id="tpl-name" maxlength="200" placeholder="z.B. Tagesdienstcheck" />
+          </div>
+          <div class="form-group">
+            <label>Turnus</label>
+            <select id="tpl-interval">
+              <option value="manuell">Manuell</option>
+              <option value="taeglich">Täglich</option>
+              <option value="woechentlich">Wöchentlich</option>
+              <option value="monatlich">Monatlich</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Prüfpunkte</label>
+            <div id="tpl-items-wrap" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px"></div>
+            <button type="button" class="btn btn--outline btn--sm" id="btn-add-tpl-item">+ Punkt hinzufügen</button>
+          </div>
+        </div>
+        <div class="modal__footer">
+          <button class="btn btn--primary" id="btn-submit-template">Vorlage speichern</button>
+          <button class="btn btn--outline" id="btn-cancel-template">Abbrechen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Checkliste ausfüllen -->
+    <div id="modal-fill-checklist" class="modal" style="display:none">
+      <div class="modal__backdrop"></div>
+      <div class="modal__box" style="max-width:560px;width:100%">
+        <div class="modal__header">
+          <h3 id="modal-fill-title">Checkliste ausfüllen</h3>
+          <button class="modal__close" id="btn-close-fill-modal">✕</button>
+        </div>
+        <div class="modal__body">
+          <div id="fill-items-wrap"></div>
+          <div class="form-group" style="margin-top:12px">
+            <label>Gesamtnotiz</label>
+            <textarea id="fill-notes" rows="2"
+              style="width:100%;resize:vertical;padding:8px;border:1px solid #21273d;border-radius:8px;font-size:14px;background:#0d1117;color:#e6edf3"></textarea>
+          </div>
+        </div>
+        <div class="modal__footer">
+          <button class="btn btn--primary" id="btn-submit-fill">Checkliste speichern</button>
+          <button class="btn btn--outline" id="btn-cancel-fill">Abbrechen</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Modal: Fahrt anlegen / bearbeiten -->
     <div id="modal-trip" class="modal" style="display:none">
       <div class="modal__backdrop"></div>
@@ -502,10 +617,12 @@ async function openVehicleDetail(id, vehicles, isAdmin) {
       </div>
 
       <!-- Tabs -->
-      <div style="display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid #21273d;padding-bottom:0">
+      <div style="display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid #21273d;padding-bottom:0;flex-wrap:wrap">
         <button class="v-tab active" data-tab="uebersicht"  style="padding:8px 16px;background:none;border:none;color:#e6edf3;font-size:13px;font-weight:600;cursor:pointer;border-bottom:2px solid #e63022;margin-bottom:-1px;font-family:inherit">Übersicht</button>
         <button class="v-tab"        data-tab="fahrtenbuch" style="padding:8px 16px;background:none;border:none;color:#7d8590;font-size:13px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;font-family:inherit">Fahrtenbuch</button>
         <button class="v-tab"        data-tab="stoerungen"  style="padding:8px 16px;background:none;border:none;color:#7d8590;font-size:13px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;font-family:inherit">Störungen</button>
+        <button class="v-tab"        data-tab="geraete"     style="padding:8px 16px;background:none;border:none;color:#7d8590;font-size:13px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;font-family:inherit">Geräte</button>
+        <button class="v-tab"        data-tab="checklisten" style="padding:8px 16px;background:none;border:none;color:#7d8590;font-size:13px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;font-family:inherit">Checklisten</button>
       </div>
 
       <div id="tab-uebersicht">
@@ -568,6 +685,34 @@ async function openVehicleDetail(id, vehicles, isAdmin) {
           <div id="defects-wrap"><p style="color:#7d8590;font-size:13px;padding:16px">Lade...</p></div>
         </div>
       </div>
+
+      <div id="tab-geraete" style="display:none">
+        <div class="card">
+          <div class="card__header" style="display:flex;justify-content:space-between;align-items:center">
+            <span>Beladung & Ausrüstung</span>
+            ${isAdmin ? `<button class="btn btn--primary btn--sm" id="btn-new-equipment">+ Gerät</button>` : ''}
+          </div>
+          <div id="equipment-wrap"><p style="color:#7d8590;font-size:13px;padding:16px">Lade...</p></div>
+        </div>
+      </div>
+
+      <div id="tab-checklisten" style="display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start">
+          <div class="card">
+            <div class="card__header" style="display:flex;justify-content:space-between;align-items:center">
+              <span>Vorlagen</span>
+              ${isAdmin ? `<button class="btn btn--primary btn--sm" id="btn-new-template">+ Vorlage</button>` : ''}
+            </div>
+            <div id="templates-wrap"><p style="color:#7d8590;font-size:13px;padding:16px">Lade...</p></div>
+          </div>
+          <div class="card">
+            <div class="card__header" style="display:flex;justify-content:space-between;align-items:center">
+              <span>Historie</span>
+            </div>
+            <div id="checklists-wrap"><p style="color:#7d8590;font-size:13px;padding:16px">Lade...</p></div>
+          </div>
+        </div>
+      </div>
     `;
 
     // Tab-Logik
@@ -607,6 +752,15 @@ async function openVehicleDetail(id, vehicles, isAdmin) {
       loadDefects(id, isAdmin);
     }, { once: true });
 
+    document.querySelector('[data-tab="geraete"]').addEventListener('click', () => {
+      loadEquipment(id, isAdmin);
+    }, { once: true });
+
+    document.querySelector('[data-tab="checklisten"]').addEventListener('click', () => {
+      loadTemplates(id, isAdmin);
+      loadChecklists(id, isAdmin);
+    }, { once: true });
+
     if (isAdmin) {
       document.getElementById('btn-edit-vehicle').addEventListener('click', () => openVehicleModal(v));
       document.getElementById('btn-delete-vehicle').addEventListener('click', () => deleteVehicle(id, isAdmin));
@@ -614,10 +768,14 @@ async function openVehicleDetail(id, vehicles, isAdmin) {
       document.getElementById('btn-new-trip').addEventListener('click', () => openTripModal(null, id, isAdmin));
       document.getElementById('btn-new-fueling').addEventListener('click', () => openFuelingModal(null, id, isAdmin));
       document.getElementById('btn-new-defect').addEventListener('click', () => openDefectModal(id, isAdmin));
+      document.getElementById('btn-new-equipment')?.addEventListener('click', () => openEquipmentModal(null, id, isAdmin));
+      document.getElementById('btn-new-template')?.addEventListener('click', () => openTemplateModal(id, isAdmin));
       setupInspectionModal(id, isAdmin);
       setupTripModal(id, isAdmin);
       setupFuelingModal(id, isAdmin);
       setupDefectModal(id, isAdmin);
+      setupEquipmentModal(id, isAdmin);
+      setupTemplateModal(id, isAdmin);
     }
 
   } catch (e) {
@@ -917,6 +1075,14 @@ async function loadTrips(vehicleId, isAdmin) {
       <tbody>${rows}</tbody>
     </table>`;
     styleGenericRows('trip-row');
+
+    // Letzten km_end als Standard-km_start für neue Fahrt vorbelegen
+    const lastKmEnd = trips[0]?.km_end ?? null;
+    const newTripBtn = document.getElementById('btn-new-trip');
+    if (newTripBtn) {
+      newTripBtn.onclick = () => openTripModal(null, vehicleId, isAdmin, lastKmEnd);
+    }
+
     if (isAdmin) {
       wrap.querySelectorAll('[data-action="del-trip"]').forEach(btn => {
         btn.addEventListener('click', async () => {
@@ -1016,12 +1182,12 @@ function setupTripModal(vehicleId, isAdmin) {
   });
 }
 
-function openTripModal(t, vehicleId, isAdmin) {
+function openTripModal(t, vehicleId, isAdmin, defaultKmStart = null) {
   editTripId = t?.id || null;
   document.getElementById('trip-date').value     = t?.trip_date    || new Date().toISOString().slice(0,10);
   document.getElementById('trip-driver').value   = t?.driver       || '';
   document.getElementById('trip-reason').value   = t?.reason       || 'sonstiges';
-  document.getElementById('trip-km-start').value = t?.km_start     ?? '';
+  document.getElementById('trip-km-start').value = t?.km_start     ?? defaultKmStart ?? '';
   document.getElementById('trip-km-end').value   = t?.km_end       ?? '';
   document.getElementById('trip-notes').value    = t?.notes        || '';
   document.getElementById('modal-trip').style.display = 'flex';
@@ -1227,6 +1393,351 @@ async function openCommentsModal(vehicleId, defectId, isAdmin) {
     } catch (e) { toast(e.message, 'error'); }
   });
 }
+
+// ── Geräte / Beladungsliste ────────────────────────────────────────────────────
+
+const EQ_STATUS_LABELS = { ok: 'In Ordnung', defekt: 'Defekt', ausgebaut: 'Ausgebaut' };
+const EQ_STATUS_COLORS = { ok: '#3fb950', defekt: '#e63022', ausgebaut: '#7d8590' };
+
+async function loadEquipment(vehicleId, isAdmin) {
+  const wrap = document.getElementById('equipment-wrap');
+  if (!wrap) return;
+  try {
+    const items = await api.getEquipment(vehicleId);
+    if (!items.length) {
+      wrap.innerHTML = `<div style="padding:16px;color:#7d8590;font-size:13px">Keine Geräte eingetragen.</div>`;
+      return;
+    }
+    const rows = items.map(e => {
+      const sc = EQ_STATUS_COLORS[e.status] || '#7d8590';
+      const sl = EQ_STATUS_LABELS[e.status] || e.status;
+      return `<tr class="eq-row">
+        <td style="padding:9px 16px;color:#e6edf3;font-weight:500">${esc(e.name)}</td>
+        <td style="padding:9px 16px;color:#7d8590">${esc(e.serial_number || '–')}</td>
+        <td style="padding:9px 16px;color:#7d8590">${esc(e.manufacturer || '–')}</td>
+        <td style="padding:9px 16px">${ampelDot(e.next_inspection)}</td>
+        <td style="padding:9px 16px;color:#7d8590">${e.next_inspection ? formatDate(e.next_inspection) : '–'}</td>
+        <td style="padding:9px 16px"><span style="color:${sc};font-size:12px;font-weight:600">${sl}</span></td>
+        ${isAdmin ? `<td style="padding:9px 16px">
+          <div class="btn-group">
+            <button class="btn btn--outline btn--sm" data-action="edit-eq" data-id="${e.id}">Bearb.</button>
+            <button class="btn btn--danger btn--sm"  data-action="del-eq"  data-id="${e.id}">Löschen</button>
+          </div></td>` : '<td></td>'}
+      </tr>`;
+    }).join('');
+    wrap.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead><tr style="background:#0d1117">
+        <th style="padding:9px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;text-align:left">Bezeichnung</th>
+        <th style="padding:9px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;text-align:left">Seriennummer</th>
+        <th style="padding:9px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;text-align:left">Hersteller</th>
+        <th style="padding:9px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;width:28px"></th>
+        <th style="padding:9px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;text-align:left">Nächste Prüfung</th>
+        <th style="padding:9px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;text-align:left">Status</th>
+        <th style="border-bottom:1px solid #21273d"></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+    styleGenericRows('eq-row');
+    if (isAdmin) {
+      wrap.querySelectorAll('[data-action="del-eq"]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('Gerät löschen?')) return;
+          try { await api.deleteEquipment(vehicleId, btn.dataset.id); toast('Gerät gelöscht'); loadEquipment(vehicleId, isAdmin); }
+          catch (e) { toast(e.message, 'error'); }
+        });
+      });
+      wrap.querySelectorAll('[data-action="edit-eq"]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const all = await api.getEquipment(vehicleId);
+          openEquipmentModal(all.find(e => e.id === btn.dataset.id), vehicleId, isAdmin);
+        });
+      });
+    }
+  } catch (e) { wrap.innerHTML = `<p style="color:#ff8a80;padding:16px">${esc(e.message)}</p>`; }
+}
+
+let editEquipmentId = null;
+
+function setupEquipmentModal(vehicleId, isAdmin) {
+  const close = () => { document.getElementById('modal-equipment').style.display = 'none'; editEquipmentId = null; };
+  document.getElementById('btn-close-equipment-modal').addEventListener('click', close);
+  document.getElementById('btn-cancel-equipment').addEventListener('click', close);
+  document.getElementById('btn-submit-equipment').addEventListener('click', async () => {
+    const name = document.getElementById('eq-name').value.trim();
+    if (!name) { toast('Bezeichnung eingeben', 'error'); return; }
+    const body = {
+      name,
+      serial_number:   nvl('eq-serial'),
+      manufacturer:    nvl('eq-manufacturer'),
+      year_built:      num('eq-year'),
+      status:          document.getElementById('eq-status').value,
+      last_inspection: document.getElementById('eq-last').value || null,
+      next_inspection: document.getElementById('eq-next').value || null,
+      interval_months: num('eq-interval'),
+      notes:           nvl('eq-notes'),
+    };
+    try {
+      if (editEquipmentId) { await api.updateEquipment(vehicleId, editEquipmentId, body); toast('Gerät gespeichert'); }
+      else                 { await api.createEquipment(vehicleId, body);                  toast('Gerät angelegt'); }
+      close();
+      loadEquipment(vehicleId, isAdmin);
+    } catch (e) { toast(e.message, 'error'); }
+  });
+}
+
+function openEquipmentModal(e, vehicleId, isAdmin) {
+  editEquipmentId = e?.id || null;
+  document.getElementById('modal-equipment-title').textContent = e ? 'Gerät bearbeiten' : 'Gerät anlegen';
+  document.getElementById('eq-name').value         = e?.name             || '';
+  document.getElementById('eq-serial').value       = e?.serial_number    || '';
+  document.getElementById('eq-manufacturer').value = e?.manufacturer     || '';
+  document.getElementById('eq-year').value         = e?.year_built       ?? '';
+  document.getElementById('eq-status').value       = e?.status           || 'ok';
+  document.getElementById('eq-last').value         = e?.last_inspection  || '';
+  document.getElementById('eq-next').value         = e?.next_inspection  || '';
+  document.getElementById('eq-interval').value     = e?.interval_months  ?? '';
+  document.getElementById('eq-notes').value        = e?.notes            || '';
+  document.getElementById('modal-equipment').style.display = 'flex';
+}
+
+// ── Checklisten ────────────────────────────────────────────────────────────────
+
+const INTERVAL_LABELS = { taeglich: 'Täglich', woechentlich: 'Wöchentlich', monatlich: 'Monatlich', manuell: 'Manuell' };
+
+async function loadTemplates(vehicleId, isAdmin) {
+  const wrap = document.getElementById('templates-wrap');
+  if (!wrap) return;
+  try {
+    const templates = await api.getTemplates(vehicleId);
+    if (!templates.length) {
+      wrap.innerHTML = `<div style="padding:16px;color:#7d8590;font-size:13px">Keine Vorlagen.</div>`;
+      return;
+    }
+    wrap.innerHTML = templates.map(t => `
+      <div style="padding:12px 16px;border-bottom:1px solid #21273d;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:13px;font-weight:600;color:#e6edf3">${esc(t.name)}</div>
+          <div style="font-size:11px;color:#7d8590;margin-top:2px">
+            ${INTERVAL_LABELS[t.interval] || t.interval} · ${t.items.length} Punkte
+          </div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn--primary btn--sm" data-action="fill-tpl" data-id="${t.id}">Ausfüllen</button>
+          ${isAdmin ? `<button class="btn btn--danger btn--sm" data-action="del-tpl" data-id="${t.id}">Löschen</button>` : ''}
+        </div>
+      </div>`).join('');
+
+    wrap.querySelectorAll('[data-action="fill-tpl"]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tpl = templates.find(t => t.id === btn.dataset.id);
+        if (tpl) openFillModal(tpl, vehicleId, isAdmin);
+      });
+    });
+    if (isAdmin) {
+      wrap.querySelectorAll('[data-action="del-tpl"]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('Vorlage löschen? Alle ausgefüllten Checklisten dieser Vorlage werden ebenfalls gelöscht.')) return;
+          try { await api.deleteTemplate(vehicleId, btn.dataset.id); toast('Vorlage gelöscht'); loadTemplates(vehicleId, isAdmin); }
+          catch (e) { toast(e.message, 'error'); }
+        });
+      });
+    }
+  } catch (e) { wrap.innerHTML = `<p style="color:#ff8a80;padding:16px">${esc(e.message)}</p>`; }
+}
+
+async function loadChecklists(vehicleId, isAdmin) {
+  const wrap = document.getElementById('checklists-wrap');
+  if (!wrap) return;
+  try {
+    const list = await api.getChecklists(vehicleId);
+    if (!list.length) {
+      wrap.innerHTML = `<div style="padding:16px;color:#7d8590;font-size:13px">Noch keine ausgefüllten Checklisten.</div>`;
+      return;
+    }
+    wrap.innerHTML = list.map(c => {
+      const mangel = c.mangel_count > 0;
+      return `<div style="padding:12px 16px;border-bottom:1px solid #21273d;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:13px;font-weight:600;color:#e6edf3">${esc(c.template_name || '–')}</div>
+          <div style="font-size:11px;color:#7d8590;margin-top:2px">
+            ${formatDateTime(c.filled_at)} · ${esc(c.filled_name || 'Unbekannt')}
+            · <span style="color:#3fb950">${c.ok_count} OK</span>
+            ${mangel ? `· <span style="color:#e63022">${c.mangel_count} Mängel</span>` : ''}
+          </div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn--outline btn--sm" data-action="view-cl" data-id="${c.id}">Detail</button>
+          ${isAdmin ? `<button class="btn btn--danger btn--sm" data-action="del-cl" data-id="${c.id}">Löschen</button>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+
+    wrap.querySelectorAll('[data-action="view-cl"]').forEach(btn => {
+      btn.addEventListener('click', () => openChecklistDetail(vehicleId, btn.dataset.id, isAdmin));
+    });
+    if (isAdmin) {
+      wrap.querySelectorAll('[data-action="del-cl"]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('Checkliste löschen?')) return;
+          try { await api.deleteChecklist(vehicleId, btn.dataset.id); toast('Gelöscht'); loadChecklists(vehicleId, isAdmin); }
+          catch (e) { toast(e.message, 'error'); }
+        });
+      });
+    }
+  } catch (e) { wrap.innerHTML = `<p style="color:#ff8a80;padding:16px">${esc(e.message)}</p>`; }
+}
+
+function setupTemplateModal(vehicleId, isAdmin) {
+  const close = () => {
+    document.getElementById('modal-template').style.display = 'none';
+    document.getElementById('tpl-items-wrap').innerHTML = '';
+  };
+  document.getElementById('btn-close-template-modal').addEventListener('click', close);
+  document.getElementById('btn-cancel-template').addEventListener('click', close);
+
+  document.getElementById('btn-add-tpl-item').addEventListener('click', () => {
+    const wrap = document.getElementById('tpl-items-wrap');
+    const idx = wrap.children.length;
+    const div = document.createElement('div');
+    div.style.cssText = 'display:flex;gap:6px;align-items:center';
+    div.innerHTML = `
+      <input type="text" class="tpl-item-input" maxlength="200"
+        placeholder="Prüfpunkt ${idx + 1}"
+        style="flex:1;background:#0d1117;border:1px solid #21273d;color:#e6edf3;padding:6px 10px;border-radius:6px;font-size:13px" />
+      <button type="button" style="background:none;border:none;color:#e63022;cursor:pointer;font-size:16px;padding:4px">✕</button>`;
+    div.querySelector('button').addEventListener('click', () => div.remove());
+    wrap.appendChild(div);
+    div.querySelector('input').focus();
+  });
+
+  document.getElementById('btn-submit-template').addEventListener('click', async () => {
+    const name = document.getElementById('tpl-name').value.trim();
+    if (!name) { toast('Name eingeben', 'error'); return; }
+    const items = [...document.querySelectorAll('.tpl-item-input')]
+      .map(i => i.value.trim()).filter(Boolean);
+    if (!items.length) { toast('Mindestens einen Prüfpunkt eingeben', 'error'); return; }
+    const body = { name, interval: document.getElementById('tpl-interval').value, items };
+    try {
+      await api.createTemplate(vehicleId, body);
+      toast('Vorlage gespeichert');
+      close();
+      loadTemplates(vehicleId, isAdmin);
+    } catch (e) { toast(e.message, 'error'); }
+  });
+}
+
+function openTemplateModal(vehicleId, isAdmin) {
+  document.getElementById('tpl-name').value = '';
+  document.getElementById('tpl-interval').value = 'manuell';
+  document.getElementById('tpl-items-wrap').innerHTML = '';
+  document.getElementById('modal-template').style.display = 'flex';
+}
+
+// Checkliste ausfüllen
+let fillTemplateData = null;
+let fillVehicleId = null;
+
+function openFillModal(template, vehicleId, isAdmin) {
+  fillTemplateData = template;
+  fillVehicleId = vehicleId;
+  document.getElementById('modal-fill-title').textContent = `${template.name} ausfüllen`;
+  document.getElementById('fill-notes').value = '';
+
+  const wrap = document.getElementById('fill-items-wrap');
+  wrap.innerHTML = template.items.map((item, i) => `
+    <div style="padding:10px 0;border-bottom:1px solid #21273d">
+      <div style="font-size:13px;color:#e6edf3;margin-bottom:6px">${esc(item.label)}</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px;color:#3fb950">
+          <input type="radio" name="item-${i}" value="ok" checked /> OK
+        </label>
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px;color:#e63022">
+          <input type="radio" name="item-${i}" value="mangel" /> Mangel
+        </label>
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px;color:#7d8590">
+          <input type="radio" name="item-${i}" value="nicht_geprueft" /> Nicht geprüft
+        </label>
+        <input type="text" class="fill-note-${i}" maxlength="300" placeholder="Notiz..."
+          style="flex:1;min-width:120px;background:#0d1117;border:1px solid #21273d;color:#e6edf3;padding:4px 8px;border-radius:6px;font-size:12px" />
+      </div>
+    </div>`).join('');
+
+  document.getElementById('modal-fill-checklist').style.display = 'flex';
+}
+
+async function openChecklistDetail(vehicleId, checklistId, isAdmin) {
+  const detail = await api.getChecklist(vehicleId, checklistId);
+  const mangels = detail.entries.filter(e => e.result === 'mangel');
+
+  document.getElementById('modal-fill-title').textContent = `${detail.template_name || 'Checkliste'} — Ergebnis`;
+  const wrap = document.getElementById('fill-items-wrap');
+  wrap.innerHTML = detail.entries.map(e => {
+    const color = e.result === 'ok' ? '#3fb950' : e.result === 'mangel' ? '#e63022' : '#7d8590';
+    const label = e.result === 'ok' ? '✓ OK' : e.result === 'mangel' ? '✗ Mangel' : '– Nicht geprüft';
+    return `<div style="padding:8px 0;border-bottom:1px solid #21273d;display:flex;justify-content:space-between;align-items:center;font-size:13px">
+      <span style="color:#e6edf3">${esc(e.item_label)}</span>
+      <span style="color:${color};font-weight:600;font-size:12px">${label}${e.note ? ` — ${esc(e.note)}` : ''}</span>
+    </div>`;
+  }).join('');
+
+  document.getElementById('fill-notes').value = detail.notes || '';
+  document.getElementById('fill-notes').disabled = true;
+  document.getElementById('modal-fill-checklist').style.display = 'flex';
+
+  // "Als Störungsmeldung" Button für Mängel
+  const submitBtn = document.getElementById('btn-submit-fill');
+  if (mangels.length && isAdmin) {
+    submitBtn.textContent = `${mangels.length} Mängel als Störungen melden`;
+    submitBtn.style.background = '#e63022';
+    submitBtn.onclick = async () => {
+      try {
+        const res = await api.defectsFromChecklist(vehicleId, {
+          checklist_id: checklistId,
+          entry_ids: mangels.map(e => e.id),
+        });
+        toast(`${res.created} Störungsmeldung(en) angelegt`);
+        submitBtn.style.display = 'none';
+      } catch (e) { toast(e.message, 'error'); }
+    };
+  } else {
+    submitBtn.style.display = 'none';
+  }
+
+  document.getElementById('btn-cancel-fill').onclick = () => {
+    document.getElementById('modal-fill-checklist').style.display = 'none';
+    document.getElementById('fill-notes').disabled = false;
+    submitBtn.style.display = '';
+    submitBtn.textContent = 'Checkliste speichern';
+    submitBtn.style.background = '';
+    submitBtn.onclick = null;
+  };
+  document.getElementById('btn-close-fill-modal').onclick =
+    document.getElementById('btn-cancel-fill').onclick;
+}
+
+// Submit Checkliste ausfüllen einmalig registrieren
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('btn-submit-fill')?.addEventListener('click', async function handler() {
+    if (!fillTemplateData || !fillVehicleId) return;
+    const entries = fillTemplateData.items.map((item, i) => ({
+      item_id:    item.id,
+      item_label: item.label,
+      result:     document.querySelector(`[name="item-${i}"]:checked`)?.value || 'nicht_geprueft',
+      note:       document.querySelector(`.fill-note-${i}`)?.value?.trim() || null,
+    }));
+    const body = {
+      template_id: fillTemplateData.id,
+      notes: nvl('fill-notes'),
+      entries,
+    };
+    try {
+      await api.createChecklist(fillVehicleId, body);
+      toast('Checkliste gespeichert');
+      document.getElementById('modal-fill-checklist').style.display = 'none';
+      loadChecklists(fillVehicleId, true);
+    } catch (e) { toast(e.message, 'error'); }
+  });
+});
 
 function styleGenericRows(cls) {
   document.querySelectorAll('.' + cls).forEach((tr, i) => {

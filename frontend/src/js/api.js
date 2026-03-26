@@ -183,4 +183,22 @@ export const api = {
   deleteDefect:         (vid, did)      => request('DELETE', `/vehicles/${vid}/defects/${did}`),
   getDefectComments:    (vid, did)      => request('GET',    `/vehicles/${vid}/defects/${did}/comments`),
   createDefectComment:  (vid, did, body)=> request('POST',   `/vehicles/${vid}/defects/${did}/comments`, body),
+
+  // Geräte / Beladung
+  getEquipment:         (vid)           => request('GET',    `/vehicles/${vid}/equipment`),
+  createEquipment:      (vid, body)     => request('POST',   `/vehicles/${vid}/equipment`, body),
+  updateEquipment:      (vid, eid, body)=> request('PUT',    `/vehicles/${vid}/equipment/${eid}`, body),
+  deleteEquipment:      (vid, eid)      => request('DELETE', `/vehicles/${vid}/equipment/${eid}`),
+
+  // Checklisten-Vorlagen
+  getTemplates:         (vid)           => request('GET',    `/vehicles/${vid}/checklist-templates`),
+  createTemplate:       (vid, body)     => request('POST',   `/vehicles/${vid}/checklist-templates`, body),
+  deleteTemplate:       (vid, tid)      => request('DELETE', `/vehicles/${vid}/checklist-templates/${tid}`),
+
+  // Checklisten (ausgefüllt)
+  getChecklists:        (vid)           => request('GET',    `/vehicles/${vid}/checklists`),
+  createChecklist:      (vid, body)     => request('POST',   `/vehicles/${vid}/checklists`, body),
+  getChecklist:         (vid, cid)      => request('GET',    `/vehicles/${vid}/checklists/${cid}`),
+  deleteChecklist:      (vid, cid)      => request('DELETE', `/vehicles/${vid}/checklists/${cid}`),
+  defectsFromChecklist: (vid, body)     => request('POST',   `/vehicles/${vid}/defects-from-checklist`, body),
 };

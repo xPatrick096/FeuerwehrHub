@@ -911,6 +911,423 @@ fn validate_fuel_type(t: Option<&str>) -> AppResult<&'static str> {
 
 // ── Router ────────────────────────────────────────────────────────────────────
 
+// ── Geräte / Beladungsliste ───────────────────────────────────────────────────
+
+#[derive(Serialize, sqlx::FromRow)]
+pub struct VehicleEquipment {
+    pub id:               Uuid,
+    pub vehicle_id:       Uuid,
+    pub name:             String,
+    pub serial_number:    Option<String>,
+    pub manufacturer:     Option<String>,
+    pub year_built:       Option<i32>,
+    pub last_inspection:  Option<NaiveDate>,
+    pub next_inspection:  Option<NaiveDate>,
+    pub interval_months:  Option<i32>,
+    pub status:           String,
+    pub notes:            Option<String>,
+    pub created_at:       DateTime<Utc>,
+}
+
+#[derive(Deserialize)]
+pub struct EquipmentBody {
+    pub name:             String,
+    pub serial_number:    Option<String>,
+    pub manufacturer:     Option<String>,
+    pub year_built:       Option<i32>,
+    pub last_inspection:  Option<NaiveDate>,
+    pub next_inspection:  Option<NaiveDate>,
+    pub interval_months:  Option<i32>,
+    pub status:           Option<String>,
+    pub notes:            Option<String>,
+}
+
+pub async fn list_equipment(
+    State(state): State<AppState>,
+    Path(vehicle_id): Path<Uuid>,
+) -> AppResult<Json<Vec<VehicleEquipment>>> {
+    let rows = sqlx::query_as::<_, VehicleEquipment>(
+        "SELECT id, vehicle_id, name, serial_number, manufacturer, year_built,
+                last_inspection, next_inspection, interval_months, status, notes, created_at
+         FROM vehicle_equipment WHERE vehicle_id = $1 ORDER BY name ASC"
+    )
+    .bind(vehicle_id)
+    .fetch_all(&state.db)
+    .await?;
+    Ok(Json(rows))
+}
+
+pub async fn create_equipment(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(vehicle_id): Path<Uuid>,
+    Json(body): Json<EquipmentBody>,
+) -> AppResult<Json<VehicleEquipment>> {
+    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+    let name = body.name.trim().to_string();
+    if name.is_empty() { return Err(AppError::BadRequest("Bezeichnung darf nicht leer sein".into())); }
+    let status = validate_equipment_status(body.status.as_deref())?;
+    let row = sqlx::query_as::<_, VehicleEquipment>(
+        "INSERT INTO vehicle_equipment
+            (vehicle_id, name, serial_number, manufacturer, year_built,
+             last_inspection, next_inspection, interval_months, status, notes)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+         RETURNING id, vehicle_id, name, serial_number, manufacturer, year_built,
+                   last_inspection, next_inspection, interval_months, status, notes, created_at"
+    )
+    .bind(vehicle_id).bind(&name).bind(&body.serial_number).bind(&body.manufacturer)
+    .bind(body.year_built).bind(body.last_inspection).bind(body.next_inspection)
+    .bind(body.interval_months).bind(status).bind(&body.notes)
+    .fetch_one(&state.db).await?;
+    Ok(Json(row))
+}
+
+pub async fn update_equipment(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path((vehicle_id, eid)): Path<(Uuid, Uuid)>,
+    Json(body): Json<EquipmentBody>,
+) -> AppResult<Json<VehicleEquipment>> {
+    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+    let name = body.name.trim().to_string();
+    if name.is_empty() { return Err(AppError::BadRequest("Bezeichnung darf nicht leer sein".into())); }
+    let status = validate_equipment_status(body.status.as_deref())?;
+    let row = sqlx::query_as::<_, VehicleEquipment>(
+        "UPDATE vehicle_equipment SET name=$1, serial_number=$2, manufacturer=$3, year_built=$4,
+             last_inspection=$5, next_inspection=$6, interval_months=$7, status=$8, notes=$9, updated_at=NOW()
+         WHERE id=$10 AND vehicle_id=$11
+         RETURNING id, vehicle_id, name, serial_number, manufacturer, year_built,
+                   last_inspection, next_inspection, interval_months, status, notes, created_at"
+    )
+    .bind(&name).bind(&body.serial_number).bind(&body.manufacturer).bind(body.year_built)
+    .bind(body.last_inspection).bind(body.next_inspection).bind(body.interval_months)
+    .bind(status).bind(&body.notes).bind(eid).bind(vehicle_id)
+    .fetch_optional(&state.db).await?.ok_or(AppError::NotFound)?;
+    Ok(Json(row))
+}
+
+pub async fn delete_equipment(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path((vehicle_id, eid)): Path<(Uuid, Uuid)>,
+) -> AppResult<Json<serde_json::Value>> {
+    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+    let r = sqlx::query("DELETE FROM vehicle_equipment WHERE id=$1 AND vehicle_id=$2")
+        .bind(eid).bind(vehicle_id).execute(&state.db).await?;
+    if r.rows_affected() == 0 { return Err(AppError::NotFound); }
+    Ok(Json(serde_json::json!({ "message": "Gerät gelöscht" })))
+}
+
+fn validate_equipment_status(s: Option<&str>) -> AppResult<&'static str> {
+    Ok(match s.unwrap_or("ok") {
+        "ok"        => "ok",
+        "defekt"    => "defekt",
+        "ausgebaut" => "ausgebaut",
+        _           => return Err(AppError::BadRequest("Ungültiger Gerätestatus".into())),
+    })
+}
+
+// ── Checklisten-Vorlagen ──────────────────────────────────────────────────────
+
+#[derive(Serialize, sqlx::FromRow)]
+pub struct ChecklistTemplate {
+    pub id:         Uuid,
+    pub vehicle_id: Uuid,
+    pub name:       String,
+    pub interval:   String,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Serialize, sqlx::FromRow)]
+pub struct ChecklistItem {
+    pub id:          Uuid,
+    pub template_id: Uuid,
+    pub position:    i32,
+    pub label:       String,
+}
+
+#[derive(Serialize)]
+pub struct ChecklistTemplateDetail {
+    #[serde(flatten)]
+    pub template: ChecklistTemplate,
+    pub items:    Vec<ChecklistItem>,
+}
+
+#[derive(Deserialize)]
+pub struct TemplateBody {
+    pub name:     String,
+    pub interval: Option<String>,
+    pub items:    Vec<String>,
+}
+
+pub async fn list_templates(
+    State(state): State<AppState>,
+    Path(vehicle_id): Path<Uuid>,
+) -> AppResult<Json<Vec<ChecklistTemplateDetail>>> {
+    let templates = sqlx::query_as::<_, ChecklistTemplate>(
+        "SELECT id, vehicle_id, name, interval, created_at
+         FROM vehicle_checklist_templates WHERE vehicle_id = $1 ORDER BY name ASC"
+    )
+    .bind(vehicle_id).fetch_all(&state.db).await?;
+
+    let mut result = Vec::new();
+    for t in templates {
+        let items = sqlx::query_as::<_, ChecklistItem>(
+            "SELECT id, template_id, position, label
+             FROM vehicle_checklist_items WHERE template_id = $1 ORDER BY position ASC"
+        )
+        .bind(t.id).fetch_all(&state.db).await?;
+        result.push(ChecklistTemplateDetail { template: t, items });
+    }
+    Ok(Json(result))
+}
+
+pub async fn create_template(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(vehicle_id): Path<Uuid>,
+    Json(body): Json<TemplateBody>,
+) -> AppResult<Json<ChecklistTemplateDetail>> {
+    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+    let name = body.name.trim().to_string();
+    if name.is_empty() { return Err(AppError::BadRequest("Name darf nicht leer sein".into())); }
+    let interval = validate_interval(body.interval.as_deref())?;
+
+    let template = sqlx::query_as::<_, ChecklistTemplate>(
+        "INSERT INTO vehicle_checklist_templates (vehicle_id, name, interval, created_by)
+         VALUES ($1,$2,$3,$4)
+         RETURNING id, vehicle_id, name, interval, created_at"
+    )
+    .bind(vehicle_id).bind(&name).bind(interval).bind(claims.sub)
+    .fetch_one(&state.db).await?;
+
+    let mut items = Vec::new();
+    for (i, label) in body.items.iter().enumerate() {
+        let label = label.trim().to_string();
+        if label.is_empty() { continue; }
+        let item = sqlx::query_as::<_, ChecklistItem>(
+            "INSERT INTO vehicle_checklist_items (template_id, position, label)
+             VALUES ($1,$2,$3) RETURNING id, template_id, position, label"
+        )
+        .bind(template.id).bind(i as i32).bind(&label)
+        .fetch_one(&state.db).await?;
+        items.push(item);
+    }
+    Ok(Json(ChecklistTemplateDetail { template, items }))
+}
+
+pub async fn delete_template(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path((vehicle_id, tid)): Path<(Uuid, Uuid)>,
+) -> AppResult<Json<serde_json::Value>> {
+    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+    let r = sqlx::query(
+        "DELETE FROM vehicle_checklist_templates WHERE id=$1 AND vehicle_id=$2"
+    )
+    .bind(tid).bind(vehicle_id).execute(&state.db).await?;
+    if r.rows_affected() == 0 { return Err(AppError::NotFound); }
+    Ok(Json(serde_json::json!({ "message": "Vorlage gelöscht" })))
+}
+
+fn validate_interval(s: Option<&str>) -> AppResult<&'static str> {
+    Ok(match s.unwrap_or("manuell") {
+        "taeglich"     => "taeglich",
+        "woechentlich" => "woechentlich",
+        "monatlich"    => "monatlich",
+        "manuell"      => "manuell",
+        _              => return Err(AppError::BadRequest("Ungültiger Turnus".into())),
+    })
+}
+
+// ── Checklisten (ausgefüllt) ──────────────────────────────────────────────────
+
+#[derive(Serialize, sqlx::FromRow)]
+pub struct Checklist {
+    pub id:          Uuid,
+    pub template_id: Uuid,
+    pub vehicle_id:  Uuid,
+    pub template_name: Option<String>,
+    pub filled_name: Option<String>,
+    pub notes:       Option<String>,
+    pub filled_at:   DateTime<Utc>,
+    pub ok_count:    Option<i64>,
+    pub mangel_count:Option<i64>,
+}
+
+#[derive(Serialize, sqlx::FromRow)]
+pub struct ChecklistEntry {
+    pub id:          Uuid,
+    pub checklist_id:Uuid,
+    pub item_id:     Uuid,
+    pub item_label:  String,
+    pub result:      String,
+    pub note:        Option<String>,
+}
+
+#[derive(Serialize)]
+pub struct ChecklistDetail {
+    #[serde(flatten)]
+    pub checklist: Checklist,
+    pub entries:   Vec<ChecklistEntry>,
+}
+
+#[derive(Deserialize)]
+pub struct ChecklistEntryInput {
+    pub item_id:    Uuid,
+    pub item_label: String,
+    pub result:     String,
+    pub note:       Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct ChecklistBody {
+    pub template_id: Uuid,
+    pub notes:       Option<String>,
+    pub entries:     Vec<ChecklistEntryInput>,
+}
+
+pub async fn list_checklists(
+    State(state): State<AppState>,
+    Path(vehicle_id): Path<Uuid>,
+) -> AppResult<Json<Vec<Checklist>>> {
+    let rows = sqlx::query_as::<_, Checklist>(
+        "SELECT c.id, c.template_id, c.vehicle_id,
+                t.name as template_name,
+                COALESCE(u.display_name, c.filled_name) as filled_name,
+                c.notes, c.filled_at,
+                COUNT(CASE WHEN e.result='ok'     THEN 1 END) as ok_count,
+                COUNT(CASE WHEN e.result='mangel' THEN 1 END) as mangel_count
+         FROM vehicle_checklists c
+         JOIN vehicle_checklist_templates t ON t.id = c.template_id
+         LEFT JOIN users u ON u.id = c.filled_by
+         LEFT JOIN vehicle_checklist_entries e ON e.checklist_id = c.id
+         WHERE c.vehicle_id = $1
+         GROUP BY c.id, t.name, u.display_name
+         ORDER BY c.filled_at DESC"
+    )
+    .bind(vehicle_id).fetch_all(&state.db).await?;
+    Ok(Json(rows))
+}
+
+pub async fn create_checklist(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(vehicle_id): Path<Uuid>,
+    Json(body): Json<ChecklistBody>,
+) -> AppResult<Json<ChecklistDetail>> {
+    let checklist = sqlx::query_as::<_, Checklist>(
+        "INSERT INTO vehicle_checklists (template_id, vehicle_id, filled_by, notes)
+         VALUES ($1,$2,$3,$4)
+         RETURNING id, template_id, vehicle_id,
+           (SELECT name FROM vehicle_checklist_templates WHERE id=$1) as template_name,
+           (SELECT display_name FROM users WHERE id=$3) as filled_name,
+           notes, filled_at, 0::bigint as ok_count, 0::bigint as mangel_count"
+    )
+    .bind(body.template_id).bind(vehicle_id).bind(claims.sub).bind(&body.notes)
+    .fetch_one(&state.db).await?;
+
+    let mut entries = Vec::new();
+    for e in &body.entries {
+        let result = match e.result.as_str() {
+            "ok" | "mangel" | "nicht_geprueft" => e.result.as_str(),
+            _ => "nicht_geprueft",
+        };
+        let entry = sqlx::query_as::<_, ChecklistEntry>(
+            "INSERT INTO vehicle_checklist_entries (checklist_id, item_id, item_label, result, note)
+             VALUES ($1,$2,$3,$4,$5)
+             RETURNING id, checklist_id, item_id, item_label, result, note"
+        )
+        .bind(checklist.id).bind(e.item_id).bind(&e.item_label).bind(result).bind(&e.note)
+        .fetch_one(&state.db).await?;
+        entries.push(entry);
+    }
+
+    // Mängel → automatisch Störungsmeldungen wenn gewünscht (via separate Route)
+    Ok(Json(ChecklistDetail { checklist, entries }))
+}
+
+pub async fn get_checklist(
+    State(state): State<AppState>,
+    Path((vehicle_id, cid)): Path<(Uuid, Uuid)>,
+) -> AppResult<Json<ChecklistDetail>> {
+    let checklist = sqlx::query_as::<_, Checklist>(
+        "SELECT c.id, c.template_id, c.vehicle_id,
+                t.name as template_name,
+                COALESCE(u.display_name, c.filled_name) as filled_name,
+                c.notes, c.filled_at,
+                COUNT(CASE WHEN e.result='ok'     THEN 1 END) as ok_count,
+                COUNT(CASE WHEN e.result='mangel' THEN 1 END) as mangel_count
+         FROM vehicle_checklists c
+         JOIN vehicle_checklist_templates t ON t.id = c.template_id
+         LEFT JOIN users u ON u.id = c.filled_by
+         LEFT JOIN vehicle_checklist_entries e ON e.checklist_id = c.id
+         WHERE c.id=$1 AND c.vehicle_id=$2
+         GROUP BY c.id, t.name, u.display_name"
+    )
+    .bind(cid).bind(vehicle_id).fetch_optional(&state.db).await?.ok_or(AppError::NotFound)?;
+
+    let entries = sqlx::query_as::<_, ChecklistEntry>(
+        "SELECT id, checklist_id, item_id, item_label, result, note
+         FROM vehicle_checklist_entries WHERE checklist_id=$1 ORDER BY id ASC"
+    )
+    .bind(cid).fetch_all(&state.db).await?;
+
+    Ok(Json(ChecklistDetail { checklist, entries }))
+}
+
+pub async fn delete_checklist(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path((vehicle_id, cid)): Path<(Uuid, Uuid)>,
+) -> AppResult<Json<serde_json::Value>> {
+    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+    let r = sqlx::query("DELETE FROM vehicle_checklists WHERE id=$1 AND vehicle_id=$2")
+        .bind(cid).bind(vehicle_id).execute(&state.db).await?;
+    if r.rows_affected() == 0 { return Err(AppError::NotFound); }
+    Ok(Json(serde_json::json!({ "message": "Checkliste gelöscht" })))
+}
+
+// Mängel aus Checkliste → Störungsmeldung
+#[derive(Deserialize)]
+pub struct DefectFromChecklistBody {
+    pub checklist_id: Uuid,
+    pub entry_ids:    Vec<Uuid>,
+}
+
+pub async fn defects_from_checklist(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(vehicle_id): Path<Uuid>,
+    Json(body): Json<DefectFromChecklistBody>,
+) -> AppResult<Json<serde_json::Value>> {
+    let entries = sqlx::query_as::<_, ChecklistEntry>(
+        "SELECT id, checklist_id, item_id, item_label, result, note
+         FROM vehicle_checklist_entries
+         WHERE checklist_id=$1 AND id = ANY($2)"
+    )
+    .bind(body.checklist_id)
+    .bind(&body.entry_ids)
+    .fetch_all(&state.db)
+    .await?;
+
+    for entry in &entries {
+        sqlx::query(
+            "INSERT INTO vehicle_defects (vehicle_id, title, description, priority, reported_by)
+             VALUES ($1,$2,$3,'mittel',$4)"
+        )
+        .bind(vehicle_id)
+        .bind(format!("Mangel: {}", entry.item_label))
+        .bind(&entry.note)
+        .bind(claims.sub)
+        .execute(&state.db).await?;
+    }
+
+    Ok(Json(serde_json::json!({ "created": entries.len() })))
+}
+
+// ── Router ────────────────────────────────────────────────────────────────────
+
 pub fn router(state: AppState) -> Router<AppState> {
     Router::new()
         .route("/stats",                                    get(get_vehicle_stats))
@@ -926,6 +1343,13 @@ pub fn router(state: AppState) -> Router<AppState> {
         .route("/:id/defects/:did/status",                  put(update_defect_status))
         .route("/:id/defects/:did",                         delete(delete_defect))
         .route("/:id/defects/:did/comments",                get(list_comments).post(create_comment))
+        .route("/:id/equipment",                            get(list_equipment).post(create_equipment))
+        .route("/:id/equipment/:eid",                       put(update_equipment).delete(delete_equipment))
+        .route("/:id/checklist-templates",                  get(list_templates).post(create_template))
+        .route("/:id/checklist-templates/:tid",             delete(delete_template))
+        .route("/:id/checklists",                           get(list_checklists).post(create_checklist))
+        .route("/:id/checklists/:cid",                      get(get_checklist).delete(delete_checklist))
+        .route("/:id/defects-from-checklist",               post(defects_from_checklist))
         .route_layer(middleware::from_fn_with_state(state.clone(), require_module("fahrzeuge")))
         .route_layer(middleware::from_fn_with_state(state, require_auth))
 }
