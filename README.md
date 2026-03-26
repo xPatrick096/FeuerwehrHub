@@ -7,7 +7,10 @@ Jedes Modul kann einzeln aktiviert werden — eine Wehr ohne Jugendfeuerwehr akt
 
 > **Aktuelle Version: v1.0.0**
 
+[![Ko-Fi](https://img.shields.io/badge/Ko--Fi-Unterst%C3%BCtzen-FF5E5B?style=flat&logo=ko-fi&logoColor=white)](https://ko-fi.com/xpatrick096)
+
 ---
+
 
 ## Was kann FeuerwehrHub?
 
