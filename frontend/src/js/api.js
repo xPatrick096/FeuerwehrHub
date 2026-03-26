@@ -154,9 +154,9 @@ export const api = {
 
   // Fahrzeuge
   getVehicleStats:      ()              => request('GET',    '/vehicles/stats'),
-  getVehicles:          ()              => request('GET',    '/vehicles/'),
+  getVehicles:          ()              => request('GET',    '/vehicles'),
   getVehicle:           (id)            => request('GET',    `/vehicles/${id}`),
-  createVehicle:        (body)          => request('POST',   '/vehicles/', body),
+  createVehicle:        (body)          => request('POST',   '/vehicles', body),
   updateVehicle:        (id, body)      => request('PUT',    `/vehicles/${id}`, body),
   deleteVehicle:        (id)            => request('DELETE', `/vehicles/${id}`),
   getInspections:       (vid)           => request('GET',    `/vehicles/${vid}/inspections`),
