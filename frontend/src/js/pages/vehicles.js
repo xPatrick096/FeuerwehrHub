@@ -49,7 +49,7 @@ export async function renderVehicles() {
         <div class="modal__body" style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px">
           <div class="form-group" style="grid-column:1/-1">
             <label>Name <span style="color:#e63022">*</span></label>
-            <input type="text" id="v-name" placeholder="z.B. HLF Böhlitz-Ehrenberg" maxlength="200" />
+            <input type="text" id="v-name" placeholder="z.B. HLF 20" maxlength="200" />
           </div>
           <div class="form-group">
             <label>Kurzname</label>
@@ -93,18 +93,19 @@ export async function renderVehicles() {
             <label>Fahrgestell-Nr.</label>
             <input type="text" id="v-chassis" maxlength="100" />
           </div>
-          <div class="form-group" style="display:flex;gap:8px;align-items:flex-end">
-            <div style="flex:1">
-              <label>Stärke Führung</label>
-              <input type="number" id="v-str-lead" value="0" min="0" max="99" />
-            </div>
-            <div style="flex:1">
-              <label>Unterführung</label>
-              <input type="number" id="v-str-sub" value="0" min="0" max="99" />
-            </div>
-            <div style="flex:1">
-              <label>Mannschaft</label>
-              <input type="number" id="v-str-crew" value="0" min="0" max="99" />
+          <div class="form-group" style="grid-column:1/-1">
+            <label>Besatzungsstärke
+              <span style="font-size:11px;color:#7d8590;font-weight:400;margin-left:6px">Führung / Unterführung / Mannschaft (z.B. 0/1/8)</span>
+            </label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="number" id="v-str-lead" value="0" min="0" max="99"
+                style="width:70px;text-align:center" title="Führung" />
+              <span style="color:#7d8590;font-size:18px;font-weight:300">/</span>
+              <input type="number" id="v-str-sub" value="0" min="0" max="99"
+                style="width:70px;text-align:center" title="Unterführung" />
+              <span style="color:#7d8590;font-size:18px;font-weight:300">/</span>
+              <input type="number" id="v-str-crew" value="0" min="0" max="99"
+                style="width:70px;text-align:center" title="Mannschaft" />
             </div>
           </div>
           <div class="form-group">
