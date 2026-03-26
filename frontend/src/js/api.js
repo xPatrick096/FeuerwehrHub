@@ -133,6 +133,9 @@ export const api = {
   updateAnnouncement:  (id, body)  => request('PUT',    `/announcements/${id}`, body),
   deleteAnnouncement:  (id)        => request('DELETE', `/announcements/${id}`),
 
+  // Personal Stats
+  getPersonalStats:    ()             => request('GET',    '/personal/stats'),
+
   // Anwesenheit
   getAttendance:       (id)           => request('GET',    `/personal/members/${id}/attendance`),
   createAttendance:    (id, body)     => request('POST',   `/personal/members/${id}/attendance`, body),

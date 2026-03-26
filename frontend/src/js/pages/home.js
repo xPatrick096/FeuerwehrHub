@@ -32,6 +32,16 @@ export async function renderHome() {
       <div class="dashboard-grid" id="module-cards"></div>
     </div>
 
+    <div id="personal-widget" style="display:none;margin-top:32px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h3 style="margin:0;font-size:15px;font-weight:600;color:#e6edf3">👥 Personal — Übersicht</h3>
+        <a href="#/personal" style="font-size:12px;color:#7d8590;text-decoration:none">Alle anzeigen →</a>
+      </div>
+      <div id="personal-widget-content">
+        <p style="color:#7d8590;font-size:13px">Lade...</p>
+      </div>
+    </div>
+
     ${isAdmin ? `
     <!-- Modal: Ankündigung erstellen/bearbeiten -->
     <div id="modal-announcement" class="modal" style="display:none">
@@ -70,6 +80,11 @@ export async function renderHome() {
 
   await loadAnnouncements(user, isAdmin);
   renderModuleCards(user, settings?.modules || {});
+
+  const modules = settings?.modules || {};
+  if (modules.personal === true && canAccess(user, 'personal')) {
+    loadPersonalWidget();
+  }
 
   if (isAdmin) {
     setupAnnouncementModal(user);
@@ -254,6 +269,41 @@ function renderModuleCards(user, modules) {
       window.location.hash = card.dataset.page;
     });
   });
+}
+
+// ── Personal-Widget ───────────────────────────────────────────────────────────
+
+async function loadPersonalWidget() {
+  const widget  = document.getElementById('personal-widget');
+  const content = document.getElementById('personal-widget-content');
+  if (!widget || !content) return;
+
+  widget.style.display = 'block';
+
+  try {
+    const s = await api.getPersonalStats();
+
+    const tile = (value, label, color) => `
+      <div style="background:#161b27;border:1px solid #21273d;border-radius:10px;padding:14px 18px;min-width:120px;flex:1">
+        <div style="font-size:22px;font-weight:800;color:${color};letter-spacing:-0.02em">${value}</div>
+        <div style="font-size:11px;color:#7d8590;margin-top:2px">${label}</div>
+      </div>`;
+
+    const warn30Color  = s.qualifications_expiring_30 > 0 ? '#e63022' : '#3fb950';
+    const warn90Color  = s.qualifications_expiring_90 > 0 ? '#f0a500' : '#3fb950';
+    const g263Color    = s.g263_expiring_90           > 0 ? '#f0a500' : '#3fb950';
+
+    content.innerHTML = `
+      <div style="display:flex;flex-wrap:wrap;gap:10px">
+        ${tile(s.active_members,             'Aktive Mitglieder',         '#e6edf3')}
+        ${tile(s.total_members,              'Gesamt',                    '#7d8590')}
+        ${tile(s.qualifications_expiring_30, 'Quali. ablaufend (30 Tage)', warn30Color)}
+        ${tile(s.qualifications_expiring_90, 'Quali. ablaufend (90 Tage)', warn90Color)}
+        ${tile(s.g263_expiring_90,           'G26.3 ablaufend (90 Tage)', g263Color)}
+      </div>`;
+  } catch (_) {
+    widget.style.display = 'none';
+  }
 }
 
 // ── Hilfsfunktionen ───────────────────────────────────────────────────────────
