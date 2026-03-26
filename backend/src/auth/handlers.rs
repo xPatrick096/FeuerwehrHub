@@ -372,6 +372,17 @@ pub async fn update_profile(
     Ok(Json(serde_json::json!({ "message": "Profil gespeichert" })))
 }
 
+// ── Setup-Status (öffentlich) ────────────────────────────────────────────────
+
+pub async fn setup_status(
+    State(state): State<AppState>,
+) -> AppResult<Json<serde_json::Value>> {
+    let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM users")
+        .fetch_one(&state.db)
+        .await?;
+    Ok(Json(serde_json::json!({ "setup_needed": count == 0 })))
+}
+
 // ── Setup (erster Admin-Account) ─────────────────────────────────────────────
 
 #[derive(Deserialize)]

@@ -132,4 +132,15 @@ export const api = {
   createAnnouncement:  (body)      => request('POST',   '/announcements', body),
   updateAnnouncement:  (id, body)  => request('PUT',    `/announcements/${id}`, body),
   deleteAnnouncement:  (id)        => request('DELETE', `/announcements/${id}`),
+
+  // Anwesenheit
+  getAttendance:       (id)           => request('GET',    `/personal/members/${id}/attendance`),
+  createAttendance:    (id, body)     => request('POST',   `/personal/members/${id}/attendance`, body),
+  updateAttendance:    (id, aid, body)=> request('PUT',    `/personal/members/${id}/attendance/${aid}`, body),
+  deleteAttendance:    (id, aid)      => request('DELETE', `/personal/members/${id}/attendance/${aid}`),
+  getAttendanceStats:  (id)           => request('GET',    `/personal/members/${id}/attendance/stats`),
+
+  // Admin
+  getContainerLog:     ()             => request('GET',    '/admin/container-log'),
+  setupStatus:         ()             => fetch('/api/auth/setup-status').then(r => r.json()),
 };

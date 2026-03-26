@@ -2,6 +2,7 @@ mod audit;
 mod auth;
 mod config;
 mod errors;
+mod log_buffer;
 mod routes;
 
 use axum::{
@@ -16,20 +17,25 @@ use tower_http::{
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use config::Config;
+use log_buffer::{LogBuffer, LogBufferLayer};
 
 #[derive(Clone)]
 pub struct AppState {
     pub db: PgPool,
     pub config: Config,
+    pub log_buffer: LogBuffer,
 }
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    let log_buffer = LogBuffer::new();
+
     tracing_subscriber::registry()
         .with(tracing_subscriber::EnvFilter::new(
             std::env::var("RUST_LOG").unwrap_or_else(|_| "info".into()),
         ))
         .with(tracing_subscriber::fmt::layer())
+        .with(LogBufferLayer::new(log_buffer.clone()))
         .init();
 
     let config = Config::from_env()?;
@@ -44,6 +50,7 @@ async fn main() -> anyhow::Result<()> {
     let state = AppState {
         db: pool,
         config: config.clone(),
+        log_buffer,
     };
 
     let origin: HeaderValue = config.frontend_url

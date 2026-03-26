@@ -34,12 +34,19 @@ export async function renderAdmin() {
       </div>
     </div>
 
+    <div id="update-banner" style="display:none;background:#1a2a1a;border:1px solid #3fb950;border-radius:8px;padding:10px 16px;margin-bottom:16px;font-size:13px;color:#3fb950;display:flex;align-items:center;gap:10px">
+      <span>⬆️</span>
+      <span id="update-banner-text"></span>
+      <a id="update-banner-link" href="#" target="_blank" style="margin-left:auto;color:#3fb950;font-weight:600;text-decoration:underline">Releases ansehen</a>
+    </div>
+
     <div class="tab-bar">
       <button class="tab-btn tab-btn--active" data-tab="users">Benutzer</button>
       <button class="tab-btn" data-tab="roles">Rollen</button>
       <button class="tab-btn" data-tab="modules">Module</button>
       <button class="tab-btn" data-tab="config">Konfiguration</button>
       <button class="tab-btn" data-tab="audit">Audit-Log</button>
+      <button class="tab-btn" data-tab="container-log">Container-Log</button>
     </div>
 
     <div id="tab-users" class="tab-panel">
@@ -165,6 +172,18 @@ export async function renderAdmin() {
       </div>
     </div>
 
+    <div id="tab-container-log" class="tab-panel" style="display:none">
+      <div class="card">
+        <div class="card__header" style="display:flex;justify-content:space-between;align-items:center">
+          <span>Container-Log</span>
+          <button class="btn btn--outline btn--sm" id="btn-refresh-container-log">Aktualisieren</button>
+        </div>
+        <div class="card__body" id="container-log-wrap">
+          <pre id="container-log-content" style="font-family:monospace;font-size:12px;line-height:1.5;max-height:600px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;background:#0d1117;padding:12px;border-radius:6px;color:#c9d1d9">Lade...</pre>
+        </div>
+      </div>
+    </div>
+
     <!-- Modal: Neuer Benutzer -->
     <div id="modal-new-user" class="modal" style="display:none">
       <div class="modal__backdrop"></div>
@@ -281,6 +300,7 @@ export async function renderAdmin() {
       document.getElementById(`tab-${btn.dataset.tab}`).style.display = 'block';
       if (btn.dataset.tab === 'audit') loadAuditLog();
       if (btn.dataset.tab === 'modules') loadModules();
+      if (btn.dataset.tab === 'container-log') loadContainerLog();
     });
   });
 
@@ -401,6 +421,10 @@ export async function renderAdmin() {
   await loadRoles(me);
 
   document.getElementById('btn-refresh-audit').addEventListener('click', loadAuditLog);
+  document.getElementById('btn-refresh-container-log').addEventListener('click', loadContainerLog);
+
+  // Update-Check im Hintergrund
+  checkForUpdate();
 
   // Modal: Neuer Benutzer
   let resetTarget = null;
@@ -882,4 +906,50 @@ async function loadAuditLog() {
 
 function esc(s) {
   return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// ── Container-Log ─────────────────────────────────────────────────────────────
+
+async function loadContainerLog() {
+  const pre = document.getElementById('container-log-content');
+  if (!pre) return;
+  pre.textContent = 'Lade...';
+  try {
+    const data = await api.getContainerLog();
+    const lines = data?.lines || [];
+    if (!lines.length) {
+      pre.textContent = 'Noch keine Log-Einträge vorhanden.';
+      return;
+    }
+    pre.textContent = lines.join('\n');
+    pre.scrollTop = pre.scrollHeight;
+  } catch (e) {
+    pre.textContent = `Fehler: ${e.message}`;
+  }
+}
+
+// ── Update-Check ──────────────────────────────────────────────────────────────
+
+const CURRENT_VERSION = '0.1.0';
+const GITHUB_REPO     = 'xpatrick096/FeuerwehrHub';
+
+async function checkForUpdate() {
+  try {
+    const res = await fetch(
+      `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`,
+      { headers: { Accept: 'application/vnd.github+json' } }
+    );
+    if (!res.ok) return;
+    const data = await res.json();
+    const latest = (data.tag_name || '').replace(/^v/, '');
+    if (latest && latest !== CURRENT_VERSION) {
+      const banner = document.getElementById('update-banner');
+      const text   = document.getElementById('update-banner-text');
+      const link   = document.getElementById('update-banner-link');
+      if (!banner) return;
+      text.textContent = `Update verfügbar: v${latest} (aktuell v${CURRENT_VERSION})`;
+      link.href = data.html_url || `https://github.com/${GITHUB_REPO}/releases`;
+      banner.style.display = 'flex';
+    }
+  } catch (_) { /* GitHub nicht erreichbar — ignorieren */ }
 }

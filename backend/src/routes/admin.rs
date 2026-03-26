@@ -523,6 +523,20 @@ pub async fn get_audit_log(
     Ok(Json(entries))
 }
 
+// ── Handler: Container-Log abrufen ───────────────────────────────────────────
+
+pub async fn get_container_log(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+) -> AppResult<Json<serde_json::Value>> {
+    if !claims.is_admin_or_above() {
+        return Err(AppError::Forbidden);
+    }
+
+    let lines = state.log_buffer.get_lines();
+    Ok(Json(serde_json::json!({ "lines": lines })))
+}
+
 // ── Router ────────────────────────────────────────────────────────────────────
 
 pub fn router(state: AppState) -> Router<AppState> {
@@ -535,5 +549,6 @@ pub fn router(state: AppState) -> Router<AppState> {
         .route("/users/:id", put(update_user).delete(delete_user))
         .route("/users/:id/reset-totp", post(reset_totp))
         .route("/audit-log", get(get_audit_log))
+        .route("/container-log", get(get_container_log))
         .route_layer(middleware::from_fn_with_state(state, require_auth))
 }

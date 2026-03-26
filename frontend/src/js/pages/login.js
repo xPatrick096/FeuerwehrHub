@@ -3,7 +3,16 @@ import { toast } from '../toast.js';
 import { navigate } from '../router.js';
 import { getLoginLogo } from '../logo.js';
 
-export function renderLogin() {
+export async function renderLogin() {
+  // Automatisch zu Setup weiterleiten wenn noch kein User existiert
+  try {
+    const status = await fetch('/api/auth/setup-status').then(r => r.json());
+    if (status?.setup_needed) {
+      window.location.hash = '#/setup';
+      return;
+    }
+  } catch (_) { /* ignorieren, normaler Login-Flow */ }
+
   const app = document.getElementById('app');
 
   app.innerHTML = `

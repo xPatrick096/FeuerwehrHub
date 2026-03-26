@@ -114,12 +114,13 @@ async function openMember(userId, members) {
   const member = members.find(m => m.id === userId);
 
   try {
-    const [details, qualifications, equipment, honors, settings] = await Promise.all([
+    const [details, qualifications, equipment, honors, settings, attendance] = await Promise.all([
       api.getPersonalDetails(userId),
       api.getPersonalQualifications(userId),
       api.getPersonalEquipment(userId),
       api.getPersonalHonors(userId),
       api.getSettings(),
+      api.getAttendance(userId),
     ]);
     const warnDays = settings?.qualification_warn_days ?? 90;
 
@@ -133,16 +134,18 @@ async function openMember(userId, members) {
       </div>
 
       <div class="tab-bar" style="display:flex;gap:4px;margin-bottom:24px;border-bottom:1px solid #21273d;padding-bottom:0">
-        <button class="ptab-btn active" data-tab="pstamm"  style="${tabStyle(true)}">📋 Stammdaten</button>
-        <button class="ptab-btn"        data-tab="pquali"  style="${tabStyle(false)}">🎓 Qualifikationen</button>
-        <button class="ptab-btn"        data-tab="pequip"  style="${tabStyle(false)}">🔧 Ausrüstung</button>
-        <button class="ptab-btn"        data-tab="phonors" style="${tabStyle(false)}">🏅 Ehrungen</button>
+        <button class="ptab-btn active" data-tab="pstamm"      style="${tabStyle(true)}">📋 Stammdaten</button>
+        <button class="ptab-btn"        data-tab="pquali"       style="${tabStyle(false)}">🎓 Qualifikationen</button>
+        <button class="ptab-btn"        data-tab="pequip"       style="${tabStyle(false)}">🔧 Ausrüstung</button>
+        <button class="ptab-btn"        data-tab="phonors"      style="${tabStyle(false)}">🏅 Ehrungen</button>
+        <button class="ptab-btn"        data-tab="panwesenheit" style="${tabStyle(false)}">📅 Anwesenheit</button>
       </div>
 
       <div id="ptab-pstamm"></div>
-      <div id="ptab-pquali"  style="display:none"></div>
-      <div id="ptab-pequip"  style="display:none"></div>
-      <div id="ptab-phonors" style="display:none"></div>
+      <div id="ptab-pquali"       style="display:none"></div>
+      <div id="ptab-pequip"       style="display:none"></div>
+      <div id="ptab-phonors"      style="display:none"></div>
+      <div id="ptab-panwesenheit" style="display:none"></div>
     `;
 
     document.getElementById('btn-back-personal').addEventListener('click', loadMemberList);
@@ -160,6 +163,7 @@ async function openMember(userId, members) {
     renderQualifikationen(userId, qualifications, warnDays);
     renderAusruestung(userId, equipment);
     renderEhrungen(userId, honors);
+    renderAnwesenheit(userId, attendance, member);
 
   } catch (e) {
     detailWrap.innerHTML = `<p style="color:#ff8a80">${esc(e.message)}</p>`;
@@ -676,4 +680,176 @@ function formatDate(d) {
 
 function esc(s) {
   return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// ── Tab: Anwesenheit ──────────────────────────────────────────────────────────
+
+const ATTENDANCE_LABELS = {
+  present: { label: 'Anwesend',     color: '#3fb950' },
+  absent:  { label: 'Abwesend',     color: '#ff8a80' },
+  excused: { label: 'Entschuldigt', color: '#d29922' },
+};
+
+function renderAnwesenheit(userId, attendance, member) {
+  const wrap = document.getElementById('ptab-panwesenheit');
+  if (!wrap) return;
+
+  const memberName = member?.display_name || member?.username || '';
+
+  const renderTable = (entries) => {
+    if (!entries.length) return '<p style="color:#7d8590;font-size:13px;padding:16px">Noch keine Einträge vorhanden.</p>';
+    return `
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead><tr style="background:#0d1117">
+          <th style="padding:10px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;text-align:left">Datum</th>
+          <th style="padding:10px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;text-align:left">Status</th>
+          <th style="padding:10px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;text-align:left">Notiz</th>
+          <th style="padding:10px 16px;border-bottom:1px solid #21273d"></th>
+        </tr></thead>
+        <tbody>
+          ${entries.map(e => {
+            const s = ATTENDANCE_LABELS[e.status] || { label: e.status, color: '#7d8590' };
+            return `
+              <tr data-aid="${e.id}" style="border-bottom:1px solid #21273d">
+                <td style="padding:10px 16px">${formatDate(e.service_date)}</td>
+                <td style="padding:10px 16px;color:${s.color};font-weight:600">${s.label}</td>
+                <td style="padding:10px 16px;color:#7d8590">${esc(e.notes || '–')}</td>
+                <td style="padding:10px 16px">
+                  <div class="btn-group">
+                    <button class="btn btn--danger btn--sm" data-action="delete-attendance" data-aid="${e.id}">Löschen</button>
+                  </div>
+                </td>
+              </tr>`;
+          }).join('')}
+        </tbody>
+      </table>`;
+  };
+
+  // Statistik berechnen
+  const calcStats = (entries) => {
+    const total   = entries.length;
+    const present = entries.filter(e => e.status === 'present').length;
+    const absent  = entries.filter(e => e.status === 'absent').length;
+    const excused = entries.filter(e => e.status === 'excused').length;
+    const pct = total > 0 ? Math.round((present / total) * 100) : 0;
+    return { total, present, absent, excused, pct };
+  };
+
+  const renderStats = (entries) => {
+    const s = calcStats(entries);
+    return `
+      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px">
+        <div style="background:#0d1117;border:1px solid #21273d;border-radius:8px;padding:12px 20px;text-align:center;min-width:80px">
+          <div style="font-size:22px;font-weight:700">${s.total}</div>
+          <div style="font-size:11px;color:#7d8590">Gesamt</div>
+        </div>
+        <div style="background:#0d1117;border:1px solid #21273d;border-radius:8px;padding:12px 20px;text-align:center;min-width:80px">
+          <div style="font-size:22px;font-weight:700;color:#3fb950">${s.present}</div>
+          <div style="font-size:11px;color:#7d8590">Anwesend</div>
+        </div>
+        <div style="background:#0d1117;border:1px solid #21273d;border-radius:8px;padding:12px 20px;text-align:center;min-width:80px">
+          <div style="font-size:22px;font-weight:700;color:#ff8a80">${s.absent}</div>
+          <div style="font-size:11px;color:#7d8590">Abwesend</div>
+        </div>
+        <div style="background:#0d1117;border:1px solid #21273d;border-radius:8px;padding:12px 20px;text-align:center;min-width:80px">
+          <div style="font-size:22px;font-weight:700;color:#d29922">${s.excused}</div>
+          <div style="font-size:11px;color:#7d8590">Entschuldigt</div>
+        </div>
+        <div style="background:#0d1117;border:1px solid #21273d;border-radius:8px;padding:12px 20px;text-align:center;min-width:80px">
+          <div style="font-size:22px;font-weight:700;color:#58a6ff">${s.pct}%</div>
+          <div style="font-size:11px;color:#7d8590">Quote</div>
+        </div>
+      </div>`;
+  };
+
+  let currentEntries = [...attendance];
+
+  const rebuild = () => {
+    document.getElementById('attendance-stats').innerHTML = renderStats(currentEntries);
+    document.getElementById('attendance-list').innerHTML  = renderTable(currentEntries);
+    bindDeleteActions();
+  };
+
+  wrap.innerHTML = `
+    <div class="card">
+      <div class="card__header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <span>Dienstbeteiligung</span>
+        <div class="btn-group">
+          <a class="btn btn--outline btn--sm" href="/api/personal/members/${userId}/attendance/export"
+             download="anwesenheit_${esc(memberName)}.csv">CSV Export</a>
+          <button class="btn btn--primary btn--sm" id="btn-add-attendance">+ Eintrag hinzufügen</button>
+        </div>
+      </div>
+      <div class="card__body">
+        <div id="attendance-stats">${renderStats(currentEntries)}</div>
+
+        <div id="add-attendance-form" style="display:none;background:#0d1117;border:1px solid #21273d;border-radius:8px;padding:16px;margin-bottom:16px">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Datum</label>
+              <input type="date" id="att-date" value="${new Date().toISOString().slice(0,10)}" />
+            </div>
+            <div class="form-group">
+              <label>Status</label>
+              <select id="att-status" style="background:#161b27;border:1px solid #21273d;color:#e6edf3;padding:8px;border-radius:6px;width:100%;font-size:13px">
+                <option value="present">Anwesend</option>
+                <option value="absent">Abwesend</option>
+                <option value="excused">Entschuldigt</option>
+              </select>
+            </div>
+            <div class="form-group form-group--full">
+              <label>Notiz (optional)</label>
+              <input type="text" id="att-notes" maxlength="200" placeholder="z.B. Urlaubsabwesenheit" />
+            </div>
+          </div>
+          <div class="btn-group" style="margin-top:8px">
+            <button class="btn btn--primary btn--sm" id="btn-save-attendance">Speichern</button>
+            <button class="btn btn--outline btn--sm" id="btn-cancel-attendance">Abbrechen</button>
+          </div>
+        </div>
+
+        <div id="attendance-list">${renderTable(currentEntries)}</div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('btn-add-attendance').addEventListener('click', () => {
+    document.getElementById('add-attendance-form').style.display = 'block';
+    document.getElementById('att-date').focus();
+  });
+
+  document.getElementById('btn-cancel-attendance').addEventListener('click', () => {
+    document.getElementById('add-attendance-form').style.display = 'none';
+  });
+
+  document.getElementById('btn-save-attendance').addEventListener('click', async () => {
+    const date   = document.getElementById('att-date').value;
+    const status = document.getElementById('att-status').value;
+    const notes  = document.getElementById('att-notes').value.trim();
+    if (!date) { toast('Datum angeben', 'error'); return; }
+    try {
+      const entry = await api.createAttendance(userId, { service_date: date, status, notes: notes || null });
+      currentEntries.unshift(entry);
+      rebuild();
+      document.getElementById('add-attendance-form').style.display = 'none';
+      document.getElementById('att-notes').value = '';
+      toast('Eintrag gespeichert');
+    } catch (e) { toast(e.message, 'error'); }
+  });
+
+  function bindDeleteActions() {
+    document.querySelectorAll('[data-action="delete-attendance"]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Eintrag löschen?')) return;
+        try {
+          await api.deleteAttendance(userId, btn.dataset.aid);
+          currentEntries = currentEntries.filter(e => e.id !== btn.dataset.aid);
+          rebuild();
+          toast('Gelöscht');
+        } catch (e) { toast(e.message, 'error'); }
+      });
+    });
+  }
+
+  bindDeleteActions();
 }

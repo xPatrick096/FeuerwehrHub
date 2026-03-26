@@ -1,11 +1,9 @@
 services:
 
-  # ── Datenbank (optional, nur mit --profile standalone) ────────────────────────
-  # Starte mit: docker compose --profile standalone up -d
-  # Für externe Datenbank: DB_HOST in .env setzen und diesen Block ignorieren.
+  # ── Datenbank ─────────────────────────────────────────────────────────────────
+  # Für externe Datenbank: postgres-Service hier entfernen und DB_HOST in .env setzen.
   postgres:
     image: postgres:17-alpine
-    profiles: ["standalone"]
     restart: unless-stopped
     environment:
       POSTGRES_DB:       ${DB_NAME:-feuerwehrhub}
@@ -28,7 +26,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-        required: false   # Wird nur abgewartet wenn standalone-Profil aktiv ist
     environment:
       DB_HOST:              ${DB_HOST:-postgres}
       DB_PORT:              ${DB_PORT:-5432}

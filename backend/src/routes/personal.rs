@@ -1,6 +1,7 @@
 use axum::{
     extract::{Path, State},
     middleware,
+    response::IntoResponse,
     routing::{delete, get, post, put},
     Extension, Json, Router,
 };
@@ -460,6 +461,191 @@ pub async fn delete_honor(
     Ok(Json(serde_json::json!({ "message": "Ehrung gelöscht" })))
 }
 
+// ── Anwesenheit ───────────────────────────────────────────────────────────────
+
+#[derive(Serialize, sqlx::FromRow)]
+pub struct AttendanceEntry {
+    pub id:           Uuid,
+    pub user_id:      Uuid,
+    pub service_date: NaiveDate,
+    pub status:       String,
+    pub notes:        Option<String>,
+    pub created_by_id: Option<Uuid>,
+    pub created_at:   DateTime<Utc>,
+}
+
+#[derive(Deserialize)]
+pub struct AttendanceBody {
+    pub service_date: NaiveDate,
+    pub status:       String,
+    pub notes:        Option<String>,
+}
+
+#[derive(Serialize)]
+pub struct AttendanceStats {
+    pub total:   i64,
+    pub present: i64,
+    pub absent:  i64,
+    pub excused: i64,
+}
+
+pub async fn list_attendance(
+    State(state): State<AppState>,
+    Path(user_id): Path<Uuid>,
+) -> AppResult<Json<Vec<AttendanceEntry>>> {
+    let entries = sqlx::query_as::<_, AttendanceEntry>(
+        "SELECT id, user_id, service_date, status, notes, created_by_id, created_at
+         FROM service_attendance WHERE user_id = $1
+         ORDER BY service_date DESC"
+    )
+    .bind(user_id)
+    .fetch_all(&state.db)
+    .await?;
+    Ok(Json(entries))
+}
+
+pub async fn create_attendance(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(user_id): Path<Uuid>,
+    Json(body): Json<AttendanceBody>,
+) -> AppResult<Json<AttendanceEntry>> {
+    let allowed = ["present", "absent", "excused"];
+    if !allowed.contains(&body.status.as_str()) {
+        return Err(AppError::BadRequest("Ungültiger Status".into()));
+    }
+
+    let entry = sqlx::query_as::<_, AttendanceEntry>(
+        "INSERT INTO service_attendance (user_id, service_date, status, notes, created_by_id)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING id, user_id, service_date, status, notes, created_by_id, created_at"
+    )
+    .bind(user_id)
+    .bind(body.service_date)
+    .bind(&body.status)
+    .bind(body.notes.as_deref().map(str::trim).filter(|s| !s.is_empty()))
+    .bind(claims.sub)
+    .fetch_one(&state.db)
+    .await?;
+
+    Ok(Json(entry))
+}
+
+pub async fn update_attendance(
+    State(state): State<AppState>,
+    Path((user_id, entry_id)): Path<(Uuid, Uuid)>,
+    Json(body): Json<AttendanceBody>,
+) -> AppResult<Json<AttendanceEntry>> {
+    let allowed = ["present", "absent", "excused"];
+    if !allowed.contains(&body.status.as_str()) {
+        return Err(AppError::BadRequest("Ungültiger Status".into()));
+    }
+
+    let entry = sqlx::query_as::<_, AttendanceEntry>(
+        "UPDATE service_attendance
+         SET service_date = $1, status = $2, notes = $3
+         WHERE id = $4 AND user_id = $5
+         RETURNING id, user_id, service_date, status, notes, created_by_id, created_at"
+    )
+    .bind(body.service_date)
+    .bind(&body.status)
+    .bind(body.notes.as_deref().map(str::trim).filter(|s| !s.is_empty()))
+    .bind(entry_id)
+    .bind(user_id)
+    .fetch_optional(&state.db)
+    .await?
+    .ok_or(AppError::NotFound)?;
+
+    Ok(Json(entry))
+}
+
+pub async fn delete_attendance(
+    State(state): State<AppState>,
+    Path((user_id, entry_id)): Path<(Uuid, Uuid)>,
+) -> AppResult<Json<serde_json::Value>> {
+    let result = sqlx::query(
+        "DELETE FROM service_attendance WHERE id = $1 AND user_id = $2"
+    )
+    .bind(entry_id)
+    .bind(user_id)
+    .execute(&state.db)
+    .await?;
+
+    if result.rows_affected() == 0 {
+        return Err(AppError::NotFound);
+    }
+    Ok(Json(serde_json::json!({ "message": "Eintrag gelöscht" })))
+}
+
+pub async fn get_attendance_stats(
+    State(state): State<AppState>,
+    Path(user_id): Path<Uuid>,
+) -> AppResult<Json<AttendanceStats>> {
+    let total: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM service_attendance WHERE user_id = $1"
+    )
+    .bind(user_id)
+    .fetch_one(&state.db)
+    .await?;
+
+    let present: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM service_attendance WHERE user_id = $1 AND status = 'present'"
+    )
+    .bind(user_id)
+    .fetch_one(&state.db)
+    .await?;
+
+    let absent: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM service_attendance WHERE user_id = $1 AND status = 'absent'"
+    )
+    .bind(user_id)
+    .fetch_one(&state.db)
+    .await?;
+
+    let excused: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM service_attendance WHERE user_id = $1 AND status = 'excused'"
+    )
+    .bind(user_id)
+    .fetch_one(&state.db)
+    .await?;
+
+    Ok(Json(AttendanceStats { total, present, absent, excused }))
+}
+
+pub async fn export_attendance_csv(
+    State(state): State<AppState>,
+    Path(user_id): Path<Uuid>,
+) -> AppResult<impl IntoResponse> {
+    let entries = sqlx::query_as::<_, AttendanceEntry>(
+        "SELECT id, user_id, service_date, status, notes, created_by_id, created_at
+         FROM service_attendance WHERE user_id = $1
+         ORDER BY service_date ASC"
+    )
+    .bind(user_id)
+    .fetch_all(&state.db)
+    .await?;
+
+    let mut csv = String::from("Datum,Status,Notizen\n");
+    for e in &entries {
+        let status_label = match e.status.as_str() {
+            "present" => "Anwesend",
+            "absent"  => "Abwesend",
+            "excused" => "Entschuldigt",
+            _         => &e.status,
+        };
+        let notes = e.notes.as_deref().unwrap_or("").replace('"', "\"\"");
+        csv.push_str(&format!("{},{},\"{}\"\n", e.service_date, status_label, notes));
+    }
+
+    Ok((
+        [
+            ("Content-Type", "text/csv; charset=utf-8"),
+            ("Content-Disposition", "attachment; filename=\"anwesenheit.csv\""),
+        ],
+        csv,
+    ))
+}
+
 // ── Router ────────────────────────────────────────────────────────────────────
 
 pub fn router(state: AppState) -> Router<AppState> {
@@ -472,6 +658,10 @@ pub fn router(state: AppState) -> Router<AppState> {
         .route("/members/:id/equipment/:eid",                   put(update_equipment).delete(delete_equipment))
         .route("/members/:id/honors",                           get(list_honors).post(create_honor))
         .route("/members/:id/honors/:hid",                      put(update_honor).delete(delete_honor))
+        .route("/members/:id/attendance",                       get(list_attendance).post(create_attendance))
+        .route("/members/:id/attendance/:aid",                  put(update_attendance).delete(delete_attendance))
+        .route("/members/:id/attendance/stats",                 get(get_attendance_stats))
+        .route("/members/:id/attendance/export",                get(export_attendance_csv))
         .route_layer(middleware::from_fn_with_state(state.clone(), require_module("personal")))
         .route_layer(middleware::from_fn_with_state(state, require_auth))
 }
