@@ -11,7 +11,6 @@ Jedes Modul kann einzeln aktiviert werden — eine Wehr ohne Jugendfeuerwehr akt
 
 ---
 
-
 ## Was kann FeuerwehrHub?
 
 ### Heute verfügbar
@@ -200,6 +199,15 @@ MIT License — siehe [LICENSE](LICENSE)
 
 Issues und Pull Requests sind willkommen.
 Dieses Projekt entsteht ehrenamtlich — für Feuerwehren, von Feuerwehrmenschen.
+
+---
+
+## Unterstützen ☕
+
+FeuerwehrHub ist ein privates Open-Source-Projekt, das in der Freizeit entsteht — für Feuerwehren, von einem Feuerwehrmitglied.
+Wer das Projekt unterstützen möchte, kann das gerne über Ko-Fi tun:
+
+[![Ko-Fi](https://img.shields.io/badge/Ko--Fi-Unterst%C3%BCtzen-FF5E5B?style=flat&logo=ko-fi&logoColor=white)](https://ko-fi.com/xpatrick096)
 
 ---
 
