@@ -56,8 +56,8 @@ export async function renderVehicles() {
             <input type="text" id="v-short-name" placeholder="z.B. HLF" maxlength="50" />
           </div>
           <div class="form-group">
-            <label>OPTA</label>
-            <input type="text" id="v-opta" placeholder="z.B. 65.49.1" maxlength="50" />
+            <label>Funkkenner</label>
+            <input type="text" id="v-opta" maxlength="50" />
           </div>
           <div class="form-group">
             <label>Einsatzmitteltyp</label>
@@ -75,7 +75,7 @@ export async function renderVehicles() {
           </div>
           <div class="form-group">
             <label>Kennzeichen</label>
-            <input type="text" id="v-license-plate" placeholder="z.B. L-FF 1234" maxlength="20" />
+            <input type="text" id="v-license-plate" maxlength="20" />
           </div>
           <div class="form-group">
             <label>Hersteller</label>
