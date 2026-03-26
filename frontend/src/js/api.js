@@ -99,6 +99,11 @@ export const api = {
   createRole:  (body)   => request('POST',   '/roles', body),
   updateRole:  (id, b)  => request('PUT',    `/roles/${id}`, b),
   deleteRole:  (id)     => request('DELETE', `/roles/${id}`),
+
+  // Zusatzfunktionen
+  getUserFunctions: (id)        => request('GET',    `/admin/users/${id}/functions`),
+  assignFunction:   (id, body)  => request('POST',   `/admin/users/${id}/functions`, body),
+  removeFunction:   (id, roleId)=> request('DELETE', `/admin/users/${id}/functions/${roleId}`),
   resetPassword:  (id, body)  => request('POST',   `/admin/users/${id}/reset-password`, body),
   adminResetTotp: (id)        => request('POST',   `/admin/users/${id}/reset-totp`),
   deleteUser:     (id)        => request('DELETE', `/admin/users/${id}`),

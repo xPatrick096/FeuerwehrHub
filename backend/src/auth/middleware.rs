@@ -109,11 +109,16 @@ async fn check_module(state: &AppState, claims: &Claims, module: &str) -> Result
 
     let has_perm: bool = sqlx::query_scalar(
         "SELECT $1 = ANY(
-            COALESCE(u.permissions, '{}') || COALESCE(r.permissions, '{}')
-         )
-         FROM users u
-         LEFT JOIN roles r ON r.id = u.role_id
-         WHERE u.id = $2"
+            SELECT unnest(COALESCE(u.permissions, '{}') || COALESCE(r.permissions, '{}'))
+            FROM users u
+            LEFT JOIN roles r ON r.id = u.role_id
+            WHERE u.id = $2
+            UNION
+            SELECT unnest(fr.permissions)
+            FROM user_functions uf
+            JOIN roles fr ON fr.id = uf.role_id
+            WHERE uf.user_id = $2
+         )"
     )
     .bind(module)
     .bind(claims.sub)

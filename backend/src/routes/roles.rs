@@ -22,6 +22,7 @@ pub struct Role {
     pub id:          Uuid,
     pub name:        String,
     pub permissions: Vec<String>,
+    pub r#type:      String,
     pub created_at:  DateTime<Utc>,
 }
 
@@ -29,6 +30,7 @@ pub struct Role {
 pub struct RoleBody {
     pub name:        String,
     pub permissions: Vec<String>,
+    pub r#type:      Option<String>,
 }
 
 // ── Alle Rollen auflisten ─────────────────────────────────────────────────────
@@ -42,7 +44,7 @@ pub async fn list_roles(
     }
 
     let roles = sqlx::query_as::<_, Role>(
-        "SELECT id, name, permissions, created_at FROM roles ORDER BY name ASC"
+        "SELECT id, name, permissions, type, created_at FROM roles ORDER BY type ASC, name ASC"
     )
     .fetch_all(&state.db)
     .await?;
@@ -67,13 +69,18 @@ pub async fn create_role(
     }
 
     let permissions = filter_permissions(body.permissions);
+    let role_type = match body.r#type.as_deref() {
+        Some("funktion") => "funktion",
+        _ => "dienstgrad",
+    };
 
     let role = sqlx::query_as::<_, Role>(
-        "INSERT INTO roles (name, permissions) VALUES ($1, $2)
-         RETURNING id, name, permissions, created_at"
+        "INSERT INTO roles (name, permissions, type) VALUES ($1, $2, $3)
+         RETURNING id, name, permissions, type, created_at"
     )
     .bind(&name)
     .bind(&permissions)
+    .bind(role_type)
     .fetch_one(&state.db)
     .await
     .map_err(|e| {
@@ -105,13 +112,18 @@ pub async fn update_role(
     }
 
     let permissions = filter_permissions(body.permissions);
+    let role_type = match body.r#type.as_deref() {
+        Some("funktion") => "funktion",
+        _ => "dienstgrad",
+    };
 
     let role = sqlx::query_as::<_, Role>(
-        "UPDATE roles SET name = $1, permissions = $2 WHERE id = $3
-         RETURNING id, name, permissions, created_at"
+        "UPDATE roles SET name = $1, permissions = $2, type = $3 WHERE id = $4
+         RETURNING id, name, permissions, type, created_at"
     )
     .bind(&name)
     .bind(&permissions)
+    .bind(role_type)
     .bind(id)
     .fetch_optional(&state.db)
     .await?
@@ -131,7 +143,7 @@ pub async fn delete_role(
         return Err(AppError::Forbidden);
     }
 
-    // Zugewiesene Benutzer prüfen
+    // Zugewiesene Benutzer prüfen (Dienstgrad + Zusatzfunktion)
     let count: i64 = sqlx::query_scalar(
         "SELECT COUNT(*) FROM users WHERE role_id = $1"
     )
@@ -139,9 +151,17 @@ pub async fn delete_role(
     .fetch_one(&state.db)
     .await?;
 
-    if count > 0 {
+    let func_count: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM user_functions WHERE role_id = $1"
+    )
+    .bind(id)
+    .fetch_one(&state.db)
+    .await?;
+
+    let total = count + func_count;
+    if total > 0 {
         return Err(AppError::BadRequest(format!(
-            "Rolle wird noch von {} Benutzer(n) verwendet", count
+            "Rolle wird noch von {} Benutzer(n) verwendet", total
         )));
     }
 
