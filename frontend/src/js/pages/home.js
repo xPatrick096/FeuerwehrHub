@@ -82,7 +82,8 @@ export async function renderHome() {
   renderModuleCards(user, settings?.modules || {});
 
   const modules = settings?.modules || {};
-  if (modules.personal === true && canAccess(user, 'personal')) {
+  const isAdmin = user?.role === 'admin' || user?.role === 'superuser';
+  if (isAdmin || (modules.personal === true && canAccess(user, 'personal'))) {
     loadPersonalWidget();
   }
 
