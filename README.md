@@ -7,6 +7,7 @@ Jedes Modul kann einzeln aktiviert werden — eine Wehr ohne Jugendfeuerwehr akt
 
 > **Aktuelle Version: v1.1.0**
 
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Ko-Fi](https://img.shields.io/badge/Ko--Fi-Unterst%C3%BCtzen-FF5E5B?style=flat&logo=ko-fi&logoColor=white)](https://ko-fi.com/xpatrick096)
 
 ---
@@ -193,7 +194,17 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
 
 ## Lizenz
 
-MIT License — siehe [LICENSE](LICENSE)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+
+FeuerwehrHub steht unter der **GNU Affero General Public License v3 (AGPL v3)** — siehe [LICENSE](LICENSE).
+
+**Was das bedeutet:**
+- Kostenlose Nutzung und Selbst-Hosting für alle ✅
+- Änderungen am Code müssen ebenfalls unter AGPL v3 veröffentlicht werden ✅
+- Wer FeuerwehrHub als Dienst anbietet, muss den vollständigen Quellcode offenlegen ✅
+- Eine Umbenennung und der Verkauf als eigenes Produkt ist **nicht erlaubt** ❌
+
+&copy; 2026 Patrick Faust
 
 ---
 
