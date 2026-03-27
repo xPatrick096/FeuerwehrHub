@@ -1,6 +1,7 @@
 import { api } from '../api.js';
 import { toast } from '../toast.js';
 import { renderShell, setShellInfo } from '../shell.js';
+import { esc } from '../utils.js';
 
 const ROLE_LABELS = {
   superuser: '⭐ Superuser',
@@ -1008,9 +1009,6 @@ async function loadAuditLog() {
   }
 }
 
-function esc(s) {
-  return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
 
 // ── Container-Log ─────────────────────────────────────────────────────────────
 

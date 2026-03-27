@@ -1,6 +1,7 @@
 import { api } from '../api.js';
 import { toast } from '../toast.js';
 import { renderShell, setShellInfo } from '../shell.js';
+import { esc } from '../utils.js';
 
 export async function renderArticles() {
   const [settings, user, units] = await Promise.all([
@@ -216,4 +217,3 @@ export async function renderArticles() {
   load();
 }
 
-function esc(s) { return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }

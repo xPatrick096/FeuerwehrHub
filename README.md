@@ -5,7 +5,7 @@
 FeuerwehrHub entsteht ehrenamtlich und wächst mit den Bedürfnissen der Wehr.
 Jedes Modul kann einzeln aktiviert werden — eine Wehr ohne Jugendfeuerwehr aktiviert das JF-Modul einfach nicht.
 
-> **Aktuelle Version: v1.0.0**
+> **Aktuelle Version: v1.1.0**
 
 [![Ko-Fi](https://img.shields.io/badge/Ko--Fi-Unterst%C3%BCtzen-FF5E5B?style=flat&logo=ko-fi&logoColor=white)](https://ko-fi.com/xpatrick096)
 

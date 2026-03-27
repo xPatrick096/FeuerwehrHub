@@ -1,6 +1,7 @@
 import { api } from '../api.js';
 import { toast } from '../toast.js';
 import { renderShell, setShellInfo } from '../shell.js';
+import { esc } from '../utils.js';
 
 export async function renderSettings() {
   const [settings, user] = await Promise.all([api.getSettings(), api.me()]);
@@ -209,4 +210,3 @@ export async function renderSettings() {
   });
 }
 
-function esc(s) { return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }

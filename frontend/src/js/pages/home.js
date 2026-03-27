@@ -1,6 +1,7 @@
 import { api } from '../api.js';
 import { toast } from '../toast.js';
 import { renderShell, setShellInfo, canAccess } from '../shell.js';
+import { esc } from '../utils.js';
 
 export async function renderHome() {
   const [settings, user] = await Promise.all([api.getSettings(), api.me()]);
@@ -356,9 +357,6 @@ async function loadPersonalWidget() {
 
 // ── Hilfsfunktionen ───────────────────────────────────────────────────────────
 
-function esc(s) {
-  return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
 
 function formatDate(iso) {
   return new Date(iso).toLocaleDateString('de-DE', {
