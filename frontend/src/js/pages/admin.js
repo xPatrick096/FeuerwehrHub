@@ -1032,7 +1032,7 @@ async function loadContainerLog() {
 
 // ── Update-Check ──────────────────────────────────────────────────────────────
 
-const CURRENT_VERSION = '0.1.0';
+const CURRENT_VERSION = __APP_VERSION__;
 const GITHUB_REPO     = 'xpatrick096/FeuerwehrHub';
 
 async function checkForUpdate() {
