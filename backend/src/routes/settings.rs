@@ -3,7 +3,7 @@ use axum::{
     http::{header, StatusCode},
     middleware,
     response::{IntoResponse, Response},
-    routing::{get, post, put},
+    routing::{delete, get, post, put},
     Extension, Json, Router,
 };
 use serde::{Deserialize, Serialize};
@@ -215,11 +215,35 @@ pub async fn upload_pdf(
     Err(AppError::BadRequest("Keine PDF-Datei im Request gefunden".into()))
 }
 
+// ── PDF-Vorlage löschen (nur Admin/Superuser) ─────────────────────────────────
+pub async fn delete_pdf(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+) -> AppResult<Json<serde_json::Value>> {
+    if !claims.is_admin_or_above() {
+        return Err(AppError::Forbidden);
+    }
+
+    let path = Path::new(&state.config.data_dir).join("beschaffungsauftrag.pdf");
+    if !path.exists() {
+        return Err(AppError::NotFound);
+    }
+
+    fs::remove_file(&path)
+        .await
+        .map_err(|e| AppError::Internal(e.into()))?;
+
+    audit::log(&state.db, Some(claims.sub), &claims.username, "PDF_DELETED",
+        Some("settings"), None, None).await;
+
+    Ok(Json(serde_json::json!({"ok": true})))
+}
+
 pub fn router(state: AppState) -> Router<AppState> {
     let protected = Router::new()
         .route("/", get(get_settings).put(update_settings))
         .route("/modules", put(update_modules))
-        .route("/pdf", post(upload_pdf))
+        .route("/pdf", post(upload_pdf).delete(delete_pdf))
         .route_layer(middleware::from_fn_with_state(state.clone(), require_auth));
 
     Router::new()
