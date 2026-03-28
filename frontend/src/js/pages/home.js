@@ -43,6 +43,16 @@ export async function renderHome() {
       </div>
     </div>
 
+    <div id="incident-widget" style="display:none;margin-top:32px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h3 style="margin:0;font-size:15px;font-weight:600;color:#e6edf3">🚨 Einsatzberichte — Übersicht</h3>
+        <a href="#/incidents" style="font-size:12px;color:#7d8590;text-decoration:none">Alle anzeigen →</a>
+      </div>
+      <div id="incident-widget-content">
+        <p style="color:#7d8590;font-size:13px">Lade...</p>
+      </div>
+    </div>
+
     <div id="personal-widget" style="display:none;margin-top:32px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <h3 style="margin:0;font-size:15px;font-weight:600;color:#e6edf3">👥 Personal — Übersicht</h3>
@@ -98,6 +108,9 @@ export async function renderHome() {
   }
   if (isAdmin || (modules.personal === true && canAccess(user, 'personal'))) {
     loadPersonalWidget();
+  }
+  if (isAdmin || (modules.einsatzberichte === true && canAccess(user, 'einsatzberichte'))) {
+    loadIncidentWidget();
   }
 
   if (isAdmin) {
@@ -240,7 +253,7 @@ function renderModuleCards(user, modules) {
 
   const allModules = [
     { key: 'lager',           icon: '🏪', label: 'Lager',           desc: 'Bestellungen, Artikelstamm',          page: '#/orders', implemented: true },
-    { key: 'einsatzberichte', icon: '🚒', label: 'Einsatzberichte', desc: 'Berichte erfassen & verwalten',        page: null,       implemented: false },
+    { key: 'einsatzberichte', icon: '🚨', label: 'Einsatzberichte', desc: 'Berichte erfassen & verwalten',        page: '#/incidents', implemented: true },
     { key: 'fahrzeuge',       icon: '🚗', label: 'Fahrzeuge',       desc: 'Stammdaten, Fristen, Wartung',          page: '#/vehicles', implemented: true },
     { key: 'personal',        icon: '👥', label: 'Personal',        desc: 'Mitglieder, Qualifikationen, Ehrungen', page: '#/personal', implemented: true },
     { key: 'jugendfeuerwehr', icon: '🧒', label: 'Jugendfeuerwehr', desc: 'JF-Mitglieder, Termine',               page: null,       implemented: false },
@@ -349,6 +362,40 @@ async function loadPersonalWidget() {
         ${tile(s.qualifications_expiring_30, 'Quali. ablaufend (30 Tage)', warn30Color)}
         ${tile(s.qualifications_expiring_90, 'Quali. ablaufend (90 Tage)', warn90Color)}
         ${tile(s.g263_expiring_90,           'G26.3 ablaufend (90 Tage)', g263Color)}
+      </div>`;
+  } catch (_) {
+    widget.style.display = 'none';
+  }
+}
+
+// ── Einsatz-Widget ────────────────────────────────────────────────────────────
+
+async function loadIncidentWidget() {
+  const widget  = document.getElementById('incident-widget');
+  const content = document.getElementById('incident-widget-content');
+  if (!widget || !content) return;
+
+  widget.style.display = 'block';
+
+  try {
+    const s = await api.getIncidentStats();
+
+    const tile = (value, label, color) => `
+      <div style="background:#161b27;border:1px solid #21273d;border-radius:10px;padding:14px 18px;min-width:100px;flex:1">
+        <div style="font-size:22px;font-weight:800;color:${color};letter-spacing:-0.02em">${value}</div>
+        <div style="font-size:11px;color:#7d8590;margin-top:2px">${label}</div>
+      </div>`;
+
+    const entwurfColor = s.entwurf > 0 ? '#f0a500' : '#3fb950';
+
+    content.innerHTML = `
+      <div style="display:flex;flex-wrap:wrap;gap:10px">
+        ${tile(s.total,     `Einsätze ${s.year}`, '#e6edf3')}
+        ${tile(s.brand,     'Brand',              '#e63022')}
+        ${tile(s.thl,       'THL',                '#f0a500')}
+        ${tile(s.fehlalarm, 'Fehlalarm',          '#7d8590')}
+        ${tile(s.sonstiges, 'Sonstiges',          '#7d8590')}
+        ${tile(s.entwurf,   'Entwürfe offen',     entwurfColor)}
       </div>`;
   } catch (_) {
     widget.style.display = 'none';

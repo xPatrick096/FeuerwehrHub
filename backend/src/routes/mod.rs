@@ -3,6 +3,7 @@ pub mod announcements;
 pub mod articles;
 pub mod auth;
 pub mod incident_types;
+pub mod incidents;
 pub mod orders;
 pub mod personal;
 pub mod roles;

@@ -247,6 +247,7 @@ struct UserProfileRow {
     role_permissions: Option<Vec<String>>,
     assigned_role_id: Option<Uuid>,
     assigned_role_name: Option<String>,
+    role_level: Option<i32>,
 }
 
 #[derive(Serialize, sqlx::FromRow)]
@@ -267,6 +268,7 @@ pub struct MeResponse {
     pub permissions: Vec<String>,
     pub assigned_role_id: Option<Uuid>,
     pub assigned_role_name: Option<String>,
+    pub role_level: Option<i32>,
     pub functions: Vec<FunctionEntry>,
 }
 
@@ -277,7 +279,8 @@ pub async fn me(
     let user = sqlx::query_as::<_, UserProfileRow>(
         "SELECT u.id, u.username, u.is_admin, u.role, u.totp_enabled, u.display_name,
                 u.permissions, r.permissions as role_permissions,
-                u.role_id as assigned_role_id, r.name as assigned_role_name
+                u.role_id as assigned_role_id, r.name as assigned_role_name,
+                r.level as role_level
          FROM users u
          LEFT JOIN roles r ON r.id = u.role_id
          WHERE u.id = $1"
@@ -320,6 +323,7 @@ pub async fn me(
         permissions: perms,
         assigned_role_id: user.assigned_role_id,
         assigned_role_name: user.assigned_role_name,
+        role_level: user.role_level,
         functions,
     }))
 }
