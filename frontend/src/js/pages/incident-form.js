@@ -64,15 +64,27 @@ export const RESOURCES = [
 
 // ── Tab-HTML (wiederverwendbar in Modal und als Seite) ────────────────────────
 
-export function buildTabsHTML(tabContainerStyle = '') {
-  const tabs = ['Basisdaten', 'Flags', 'Kräfte & Schäden', 'Bericht', 'Einsatzmittel', 'Polizei'];
+export function buildTabsHTML(tabContainerStyle = '', opts = {}) {
+  const { showVehicles = false, showPersonnel = false, showAttachments = false } = opts;
+  const allTabs = [
+    { idx: 0, label: 'Basisdaten'       },
+    { idx: 1, label: 'Flags'            },
+    { idx: 2, label: 'Kräfte & Schäden' },
+    { idx: 3, label: 'Bericht'          },
+    { idx: 4, label: 'Einsatzmittel'    },
+    { idx: 5, label: 'Polizei'          },
+    { idx: 6, label: '🚒 Fahrzeuge',   show: showVehicles    },
+    { idx: 7, label: '👥 Personal',    show: showPersonnel   },
+    { idx: 8, label: '📎 Anhänge',     show: showAttachments },
+  ];
+  const visibleTabs = allTabs.filter(t => t.show !== false);
   return `
     <div class="incident-tabs" style="display:flex;gap:2px;background:#0d1117;border-bottom:1px solid #21273d;overflow-x:auto;${tabContainerStyle}">
-      ${tabs.map((t, i) => `
-        <button class="incident-tab" data-tab="${i}"
+      ${visibleTabs.map(t => `
+        <button class="incident-tab" data-tab="${t.idx}"
           style="padding:10px 16px;background:none;border:none;border-bottom:2px solid transparent;
                  color:#7d8590;cursor:pointer;font-size:13px;white-space:nowrap;font-weight:400">
-          ${t}
+          ${t.label}
         </button>`).join('')}
     </div>
     ${buildPanelsHTML()}
@@ -278,6 +290,27 @@ function buildPanelsHTML() {
         </div>
       </div>
     </div>
+
+    <!-- Tab 6: Fahrzeuge (Phase B) -->
+    <div class="incident-tab-panel" data-panel="6" style="display:none;padding:20px 0">
+      <div id="incident-vehicles-wrap">
+        <p style="color:#7d8590;font-size:13px">Lade...</p>
+      </div>
+    </div>
+
+    <!-- Tab 7: Personal (Phase B) -->
+    <div class="incident-tab-panel" data-panel="7" style="display:none;padding:20px 0">
+      <div id="incident-personnel-wrap">
+        <p style="color:#7d8590;font-size:13px">Lade...</p>
+      </div>
+    </div>
+
+    <!-- Tab 8: Anhänge (Phase C) -->
+    <div class="incident-tab-panel" data-panel="8" style="display:none;padding:20px 0">
+      <div id="incident-attachments-wrap">
+        <p style="color:#7d8590;font-size:13px">Lade...</p>
+      </div>
+    </div>
   `;
 }
 
@@ -291,14 +324,14 @@ export function setupTabs(scope = document) {
 }
 
 export function switchTab(idx, scope = document) {
-  scope.querySelectorAll('.incident-tab').forEach((btn, i) => {
-    const active = i === idx;
+  scope.querySelectorAll('.incident-tab').forEach(btn => {
+    const active = +btn.dataset.tab === idx;
     btn.style.color             = active ? '#e6edf3' : '#7d8590';
     btn.style.borderBottomColor = active ? '#e63022' : 'transparent';
     btn.style.fontWeight        = active ? '600' : '400';
   });
-  scope.querySelectorAll('.incident-tab-panel').forEach((panel, i) => {
-    panel.style.display = i === idx ? 'block' : 'none';
+  scope.querySelectorAll('.incident-tab-panel').forEach(panel => {
+    panel.style.display = +panel.dataset.panel === idx ? 'block' : 'none';
   });
 }
 

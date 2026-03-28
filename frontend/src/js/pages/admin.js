@@ -67,6 +67,7 @@ export async function renderAdmin() {
       <button class="tab-btn tab-btn--active" data-tab="users">Benutzer</button>
       <button class="tab-btn" data-tab="roles">Rollen</button>
       <button class="tab-btn" data-tab="modules">Module</button>
+      <button class="tab-btn" data-tab="einsatzarten">Einsatzarten</button>
       <button class="tab-btn" data-tab="config">Konfiguration</button>
       <button class="tab-btn" data-tab="audit">Audit-Log</button>
       <button class="tab-btn" data-tab="container-log">Container-Log</button>
@@ -101,6 +102,51 @@ export async function renderAdmin() {
           <p>Lade...</p>
         </div>
       </div>
+    </div>
+
+    <div id="tab-einsatzarten" class="tab-panel" style="display:none">
+      <div class="card">
+        <div class="card__header" style="display:flex;justify-content:space-between;align-items:center">
+          <span>Einsatzarten / Stichwortverzeichnis</span>
+          <button class="btn btn--primary btn--sm" id="btn-new-einsatzart">+ Neue Einsatzart</button>
+        </div>
+        <div class="card__body" style="padding:0">
+          <div id="einsatzarten-add-form" style="display:none;padding:16px;background:#161b27;border-bottom:1px solid #21273d">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end">
+              <div class="form-group" style="margin:0">
+                <label style="font-size:12px">Schlüssel <span style="color:#e63022">*</span>
+                  <span style="color:#7d8590;font-weight:400">(unveränderlich)</span></label>
+                <input type="text" id="ea-key" placeholder="z.B. TH2_BOOT" style="text-transform:uppercase" />
+              </div>
+              <div class="form-group" style="margin:0">
+                <label style="font-size:12px">Bezeichnung <span style="color:#e63022">*</span></label>
+                <input type="text" id="ea-label" placeholder="z.B. TH2 – Boot in Not" />
+              </div>
+              <div class="form-group" style="margin:0">
+                <label style="font-size:12px">Kategorie <span style="color:#e63022">*</span></label>
+                <select id="ea-category">
+                  <option value="brand">Brand</option>
+                  <option value="thl">THL</option>
+                  <option value="gefahrgut">Gefahrgut</option>
+                  <option value="fehlalarm">Fehlalarm</option>
+                  <option value="sonstiges">Sonstiges</option>
+                </select>
+              </div>
+              <div style="display:flex;gap:6px">
+                <button class="btn btn--primary btn--sm" id="ea-btn-submit">Anlegen</button>
+                <button class="btn btn--outline btn--sm" id="ea-btn-cancel">✕</button>
+              </div>
+            </div>
+          </div>
+          <div id="einsatzarten-list">
+            <p style="color:#7d8590;font-size:13px;padding:16px">Lade...</p>
+          </div>
+        </div>
+      </div>
+      <p style="font-size:12px;color:#7d8590;margin-top:8px;padding:0 4px">
+        Der Schlüssel (Key) ist nach dem Anlegen nicht mehr änderbar, da er in gespeicherten Einsatzberichten als Snapshot hinterlegt wird.
+        Die Bezeichnung kann jederzeit angepasst werden.
+      </p>
     </div>
 
     <div id="tab-config" class="tab-panel" style="display:none">
@@ -349,9 +395,10 @@ export async function renderAdmin() {
       btn.classList.add('tab-btn--active');
       content.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none');
       document.getElementById(`tab-${btn.dataset.tab}`).style.display = 'block';
-      if (btn.dataset.tab === 'audit') loadAuditLog();
-      if (btn.dataset.tab === 'modules') loadModules();
+      if (btn.dataset.tab === 'audit')        loadAuditLog();
+      if (btn.dataset.tab === 'modules')      loadModules();
       if (btn.dataset.tab === 'container-log') loadContainerLog();
+      if (btn.dataset.tab === 'einsatzarten') loadEinsatzarten();
     });
   });
 
@@ -1067,6 +1114,171 @@ async function loadContainerLog() {
   } catch (e) {
     pre.textContent = `Fehler: ${e.message}`;
   }
+}
+
+// ── Einsatzarten ─────────────────────────────────────────────────────────────
+
+const CAT_LABELS_EA = { brand: 'Brand', thl: 'THL', gefahrgut: 'Gefahrgut', fehlalarm: 'Fehlalarm', sonstiges: 'Sonstiges' };
+const CAT_COLORS_EA = { brand: '#e63022', thl: '#f0a500', gefahrgut: '#8957e5', fehlalarm: '#7d8590', sonstiges: '#3fb950' };
+
+async function loadEinsatzarten() {
+  const list = document.getElementById('einsatzarten-list');
+  if (!list) return;
+  list.innerHTML = `<p style="color:#7d8590;font-size:13px;padding:16px">Lade...</p>`;
+
+  let types;
+  try {
+    types = await api.getIncidentTypes();
+  } catch (e) {
+    list.innerHTML = `<p style="color:#ff8a80;font-size:13px;padding:16px">Fehler: ${esc(e.message)}</p>`;
+    return;
+  }
+
+  // Nach Kategorie gruppieren
+  const grouped = {};
+  for (const cat of Object.keys(CAT_LABELS_EA)) grouped[cat] = [];
+  types.forEach(t => { if (grouped[t.category]) grouped[t.category].push(t); });
+
+  list.innerHTML = Object.entries(grouped).map(([cat, items]) => {
+    if (!items.length) return '';
+    const color = CAT_COLORS_EA[cat] || '#7d8590';
+    return `
+      <div style="border-bottom:1px solid #21273d">
+        <div style="padding:10px 16px;background:#0d1117;font-size:11px;font-weight:700;
+          color:${color};text-transform:uppercase;letter-spacing:.08em">
+          ${CAT_LABELS_EA[cat]}
+        </div>
+        ${items.map(t => `
+          <div class="ea-row" data-id="${t.id}" style="display:flex;align-items:center;gap:12px;
+            padding:10px 16px;border-top:1px solid #21273d;
+            opacity:${t.active ? 1 : 0.5}">
+            <div style="flex:0 0 140px;font-family:monospace;font-size:12px;
+              color:#7d8590;background:#161b27;padding:3px 8px;border-radius:4px">
+              ${esc(t.key)}
+            </div>
+            <div style="flex:1;font-size:13px;font-weight:500" id="ea-label-${t.id}">
+              ${esc(t.label)}
+            </div>
+            <div style="font-size:11px;color:#7d8590;flex:0 0 80px;text-align:center">
+              ${t.used_count > 0 ? `${t.used_count} Bericht${t.used_count !== 1 ? 'e' : ''}` : '—'}
+            </div>
+            <div style="display:flex;gap:6px;flex-shrink:0">
+              <button class="btn btn--outline btn--sm" data-action="ea-edit" data-id="${t.id}"
+                data-label="${esc(t.label)}" data-cat="${t.category}" data-sort="${t.sort_order}">
+                Bearbeiten
+              </button>
+              <button class="btn btn--outline btn--sm" data-action="ea-toggle" data-id="${t.id}"
+                style="color:${t.active ? '#f0a500' : '#3fb950'}">
+                ${t.active ? 'Deakt.' : 'Aktiv.'}
+              </button>
+              <button class="btn btn--danger btn--sm" data-action="ea-delete" data-id="${t.id}"
+                data-key="${esc(t.key)}" data-count="${t.used_count}"
+                ${t.used_count > 0 ? 'title="Dieser Typ wird in Einsatzberichten verwendet"' : ''}>
+                Löschen
+              </button>
+            </div>
+          </div>`).join('')}
+      </div>`;
+  }).join('');
+
+  // Add-Formular
+  document.getElementById('btn-new-einsatzart').onclick = () => {
+    document.getElementById('einsatzarten-add-form').style.display = 'block';
+    document.getElementById('btn-new-einsatzart').style.display = 'none';
+    document.getElementById('ea-key').focus();
+  };
+  document.getElementById('ea-btn-cancel').onclick = () => {
+    document.getElementById('einsatzarten-add-form').style.display = 'none';
+    document.getElementById('btn-new-einsatzart').style.display = '';
+  };
+  document.getElementById('ea-btn-submit').onclick = async () => {
+    const key   = document.getElementById('ea-key').value.trim().toUpperCase();
+    const label = document.getElementById('ea-label').value.trim();
+    const cat   = document.getElementById('ea-category').value;
+    if (!key || !label) { toast('Schlüssel und Bezeichnung sind Pflichtfelder', 'error'); return; }
+    try {
+      await api.createIncidentType({ key, label, category: cat, sort_order: 50 });
+      toast('Einsatzart angelegt');
+      document.getElementById('ea-key').value = '';
+      document.getElementById('ea-label').value = '';
+      document.getElementById('einsatzarten-add-form').style.display = 'none';
+      document.getElementById('btn-new-einsatzart').style.display = '';
+      loadEinsatzarten();
+    } catch (e) { toast(e.message, 'error'); }
+  };
+
+  // Edit inline
+  list.querySelectorAll('[data-action="ea-edit"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id    = btn.dataset.id;
+      const row   = document.querySelector(`.ea-row[data-id="${id}"]`);
+      const labelDiv = document.getElementById(`ea-label-${id}`);
+      if (!labelDiv) return;
+
+      // Inline-Editor aufklappen
+      labelDiv.innerHTML = `
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="text" id="ea-edit-label-${id}" value="${esc(btn.dataset.label)}"
+            style="flex:1;font-size:13px" />
+          <select id="ea-edit-cat-${id}" style="font-size:12px">
+            ${Object.entries(CAT_LABELS_EA).map(([k, v]) =>
+              `<option value="${k}" ${btn.dataset.cat === k ? 'selected' : ''}>${v}</option>`
+            ).join('')}
+          </select>
+          <input type="number" id="ea-edit-sort-${id}" value="${btn.dataset.sort}"
+            style="width:60px;font-size:12px" placeholder="Sort" />
+          <button class="btn btn--primary btn--sm" id="ea-save-${id}">✓</button>
+          <button class="btn btn--outline btn--sm" id="ea-discard-${id}">✕</button>
+        </div>`;
+
+      document.getElementById(`ea-discard-${id}`).onclick = () => loadEinsatzarten();
+      document.getElementById(`ea-save-${id}`).onclick = async () => {
+        const newLabel = document.getElementById(`ea-edit-label-${id}`).value.trim();
+        const newCat   = document.getElementById(`ea-edit-cat-${id}`).value;
+        const newSort  = +document.getElementById(`ea-edit-sort-${id}`).value || 50;
+        if (!newLabel) { toast('Bezeichnung darf nicht leer sein', 'error'); return; }
+        try {
+          await api.updateIncidentType(id, {
+            key: btn.dataset.key || '', label: newLabel, category: newCat, sort_order: newSort,
+          });
+          toast('Gespeichert');
+          loadEinsatzarten();
+        } catch (e) { toast(e.message, 'error'); }
+      };
+    });
+  });
+
+  // Toggle aktiv/inaktiv
+  list.querySelectorAll('[data-action="ea-toggle"]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const t = types.find(x => x.id === btn.dataset.id);
+      if (!t) return;
+      try {
+        await api.updateIncidentType(t.id, {
+          key: t.key, label: t.label, category: t.category, sort_order: t.sort_order,
+          active: !t.active,
+        });
+        toast(t.active ? 'Deaktiviert' : 'Aktiviert');
+        loadEinsatzarten();
+      } catch (e) { toast(e.message, 'error'); }
+    });
+  });
+
+  // Löschen
+  list.querySelectorAll('[data-action="ea-delete"]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const count = +btn.dataset.count;
+      const msg = count > 0
+        ? `Einsatzart "${btn.dataset.key}" wirklich löschen?\n\nAchtung: ${count} Einsatzbericht${count !== 1 ? 'e verwenden' : ' verwendet'} diesen Typ. Die Berichte bleiben erhalten, der Typ erscheint aber nicht mehr in Auswertungen.`
+        : `Einsatzart "${btn.dataset.key}" wirklich löschen?`;
+      if (!confirm(msg)) return;
+      try {
+        await api.deleteIncidentType(btn.dataset.id);
+        toast('Gelöscht');
+        loadEinsatzarten();
+      } catch (e) { toast(e.message, 'error'); }
+    });
+  });
 }
 
 // ── Update-Check & In-App-Update ─────────────────────────────────────────────

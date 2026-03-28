@@ -1729,6 +1729,44 @@ function openFillModal(template, vehicleId, isAdmin) {
       </div>
     </div>`).join('');
 
+  const close = () => {
+    document.getElementById('modal-fill-checklist').style.display = 'none';
+  };
+  document.getElementById('btn-close-fill-modal').onclick = close;
+  document.getElementById('btn-cancel-fill').onclick = close;
+
+  const submitOld = document.getElementById('btn-submit-fill');
+  const submitBtn = submitOld.cloneNode(true);
+  submitOld.parentNode.replaceChild(submitBtn, submitOld);
+  submitBtn.textContent = 'Checkliste speichern';
+  submitBtn.style.background = '';
+  submitBtn.style.display = '';
+  submitBtn.onclick = async () => {
+    if (!fillTemplateData || !fillVehicleId) return;
+    submitBtn.disabled = true;
+    const entries = fillTemplateData.items.map((item, i) => ({
+      item_id:    item.id,
+      item_label: item.label,
+      result:     document.querySelector(`[name="item-${i}"]:checked`)?.value || 'nicht_geprueft',
+      note:       document.querySelector(`.fill-note-${i}`)?.value?.trim() || null,
+    }));
+    const body = {
+      template_id: fillTemplateData.id,
+      notes: document.getElementById('fill-notes')?.value?.trim() || null,
+      entries,
+    };
+    try {
+      await api.createChecklist(fillVehicleId, body);
+      toast('Checkliste gespeichert');
+      close();
+      loadChecklists(fillVehicleId, true);
+    } catch (e) {
+      toast(e.message, 'error');
+    } finally {
+      submitBtn.disabled = false;
+    }
+  };
+
   document.getElementById('modal-fill-checklist').style.display = 'flex';
 }
 
@@ -1782,29 +1820,6 @@ async function openChecklistDetail(vehicleId, checklistId, isAdmin) {
     document.getElementById('btn-cancel-fill').onclick;
 }
 
-// Submit Checkliste ausfüllen einmalig registrieren
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('btn-submit-fill')?.addEventListener('click', async function handler() {
-    if (!fillTemplateData || !fillVehicleId) return;
-    const entries = fillTemplateData.items.map((item, i) => ({
-      item_id:    item.id,
-      item_label: item.label,
-      result:     document.querySelector(`[name="item-${i}"]:checked`)?.value || 'nicht_geprueft',
-      note:       document.querySelector(`.fill-note-${i}`)?.value?.trim() || null,
-    }));
-    const body = {
-      template_id: fillTemplateData.id,
-      notes: nvl('fill-notes'),
-      entries,
-    };
-    try {
-      await api.createChecklist(fillVehicleId, body);
-      toast('Checkliste gespeichert');
-      document.getElementById('modal-fill-checklist').style.display = 'none';
-      loadChecklists(fillVehicleId, true);
-    } catch (e) { toast(e.message, 'error'); }
-  });
-});
 
 function styleGenericRows(cls) {
   document.querySelectorAll('.' + cls).forEach((tr, i) => {

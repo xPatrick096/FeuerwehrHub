@@ -8,11 +8,13 @@ import {
   buildTabsHTML, buildTypeDropdown, buildTypeFilter,
   buildResourcesGrid, setupTabs, fillForm, setFormReadonly,
 } from './incident-form.js';
+import { loadVehiclesTab, loadPersonnelTab, loadAttachmentsTab } from './incident-tabs.js';
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
 let _user    = null;
 let _types   = [];
+let _mods    = {};
 let _filters = { year: new Date().getFullYear(), type_key: '', status: '', page: 1 };
 let _editId  = null;
 
@@ -23,6 +25,7 @@ export async function renderIncidents() {
   setShellInfo(settings?.ff_name, user, settings?.modules);
   renderShell('incidents');
   _user = user;
+  _mods = settings?.modules || {};
 
   const isAdmin   = user?.role === 'admin' || user?.role === 'superuser';
   const roleLevel = user?.role_level ?? 0;
@@ -58,7 +61,7 @@ export async function renderIncidents() {
           <button class="modal__close" id="btn-close-modal">✕</button>
         </div>
         <div style="flex-shrink:0">
-          ${buildTabsHTML('padding:0 24px')}
+          ${buildTabsHTML('padding:0 24px', { showVehicles: !!_mods.fahrzeuge, showPersonnel: !!_mods.personal, showAttachments: true })}
         </div>
         <div class="modal__body" style="overflow-y:auto;flex:1" id="modal-body-scroll">
           <!-- Tab-Panels werden via buildTabsHTML injiziert, aber im Modal überschreiben wir den Wrapper -->
@@ -244,6 +247,11 @@ async function _openModal(id, viewOnly) {
     buildTypeDropdown(document.getElementById('ir-type'), _types, r.incident_type_key);
     buildResourcesGrid('resources-grid', r.resources, viewOnly);
     setFormReadonly(viewOnly, document.getElementById('modal-incident'));
+
+    // Phase B: Fahrzeuge & Personal laden (immer readonly im Modal)
+    if (_mods.fahrzeuge)  loadVehiclesTab(id, true);
+    if (_mods.personal)   loadPersonnelTab(id, true);
+    loadAttachmentsTab(id, true);
 
     const canRelease = (isAdmin || roleLevel >= GF_LEVEL) && r.status === 'entwurf';
     const canArchive = (isAdmin || roleLevel >= GF_LEVEL) && r.status === 'freigegeben';

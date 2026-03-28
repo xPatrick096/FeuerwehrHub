@@ -8,6 +8,7 @@ import {
   buildTabsHTML, buildTypeDropdown, buildResourcesGrid,
   setupTabs, fillForm, collectBody,
 } from './incident-form.js';
+import { loadVehiclesTab, loadPersonnelTab, loadAttachmentsTab } from './incident-tabs.js';
 
 let _incidentId = null;
 let _incident   = null;
@@ -19,6 +20,7 @@ export async function renderEditIncident() {
   const [settings, user, types] = await Promise.all([
     api.getSettings(), api.me(), api.getIncidentTypes().catch(() => []),
   ]);
+  const mods = settings?.modules || {};
   setShellInfo(settings?.ff_name, user, settings?.modules);
   renderShell('incidents');
 
@@ -68,7 +70,7 @@ export async function renderEditIncident() {
 
     <div class="card">
       <div class="card__body" style="padding:0">
-        ${buildTabsHTML('padding:0 24px')}
+        ${buildTabsHTML('padding:0 24px', { showVehicles: !!mods.fahrzeuge, showPersonnel: !!mods.personal, showAttachments: true })}
       </div>
     </div>
 
@@ -100,6 +102,11 @@ export async function renderEditIncident() {
   buildTypeDropdown(document.getElementById('ir-type'), types, report.incident_type_key);
   buildResourcesGrid('resources-grid', report.resources, false);
   setupTabs();
+
+  // Phase B: Fahrzeuge & Personal laden
+  if (mods.fahrzeuge)  loadVehiclesTab(_incidentId, false);
+  if (mods.personal)   loadPersonnelTab(_incidentId, false);
+  loadAttachmentsTab(_incidentId, false);
 
   // Änderungshistorie laden
   _loadChanges();

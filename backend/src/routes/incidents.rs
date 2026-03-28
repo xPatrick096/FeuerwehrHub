@@ -1,6 +1,9 @@
 use axum::{
-    extract::{Path, Query, State},
+    body::Body,
+    extract::{Multipart, Path, Query, State},
+    http::header,
     middleware,
+    response::Response,
     routing::{delete, get, post, put},
     Extension, Json, Router,
 };
@@ -709,21 +712,21 @@ pub async fn get_stats(
     ).bind(year).fetch_one(&state.db).await?;
 
     let brand: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM incident_reports
-         WHERE EXTRACT(YEAR FROM incident_date) = $1
-           AND incident_type_key LIKE 'brand%'"
+        "SELECT COUNT(*) FROM incident_reports ir
+         LEFT JOIN incident_types it ON it.key = ir.incident_type_key
+         WHERE EXTRACT(YEAR FROM ir.incident_date) = $1 AND it.category = 'brand'"
     ).bind(year).fetch_one(&state.db).await?;
 
     let thl: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM incident_reports
-         WHERE EXTRACT(YEAR FROM incident_date) = $1
-           AND incident_type_key LIKE 'thl%'"
+        "SELECT COUNT(*) FROM incident_reports ir
+         LEFT JOIN incident_types it ON it.key = ir.incident_type_key
+         WHERE EXTRACT(YEAR FROM ir.incident_date) = $1 AND it.category = 'thl'"
     ).bind(year).fetch_one(&state.db).await?;
 
     let fehlalarm: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM incident_reports
-         WHERE EXTRACT(YEAR FROM incident_date) = $1
-           AND incident_type_key LIKE 'fehlalarm%'"
+        "SELECT COUNT(*) FROM incident_reports ir
+         LEFT JOIN incident_types it ON it.key = ir.incident_type_key
+         WHERE EXTRACT(YEAR FROM ir.incident_date) = $1 AND it.category = 'fehlalarm'"
     ).bind(year).fetch_one(&state.db).await?;
 
     let sonstiges = total - brand - thl - fehlalarm;
@@ -782,15 +785,433 @@ fn parse_time(s: Option<&str>) -> Option<chrono::NaiveTime> {
     })
 }
 
+// ── Phase B: Fahrzeuge im Einsatz ─────────────────────────────────────────────
+
+#[derive(Serialize, sqlx::FromRow)]
+pub struct IncidentVehicle {
+    pub id:             Uuid,
+    pub incident_id:    Uuid,
+    pub vehicle_id:     Option<Uuid>,
+    pub vehicle_name:   String,
+    pub callsign:       Option<String>,
+    pub alarm_time:     Option<chrono::NaiveTime>,
+    pub departure_time: Option<chrono::NaiveTime>,
+    pub arrival_time:   Option<chrono::NaiveTime>,
+    pub return_time:    Option<chrono::NaiveTime>,
+    pub ready_time:     Option<chrono::NaiveTime>,
+    pub km_driven:      Option<i32>,
+    pub crew_count:     Option<i32>,
+    pub notes:          Option<String>,
+    pub created_at:     chrono::DateTime<Utc>,
+}
+
+#[derive(Deserialize)]
+pub struct IncidentVehicleBody {
+    pub vehicle_id:     Option<Uuid>,
+    pub vehicle_name:   String,
+    pub callsign:       Option<String>,
+    pub alarm_time:     Option<String>,
+    pub departure_time: Option<String>,
+    pub arrival_time:   Option<String>,
+    pub return_time:    Option<String>,
+    pub ready_time:     Option<String>,
+    pub km_driven:      Option<i32>,
+    pub crew_count:     Option<i32>,
+    pub notes:          Option<String>,
+}
+
+pub async fn list_incident_vehicles(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+) -> AppResult<Json<Vec<IncidentVehicle>>> {
+    ensure_incident_readable(&state.db, id, &claims).await?;
+    let rows = sqlx::query_as::<_, IncidentVehicle>(
+        "SELECT * FROM incident_vehicles WHERE incident_id = $1 ORDER BY created_at ASC"
+    )
+    .bind(id)
+    .fetch_all(&state.db)
+    .await?;
+    Ok(Json(rows))
+}
+
+pub async fn add_incident_vehicle(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+    Json(body): Json<IncidentVehicleBody>,
+) -> AppResult<Json<IncidentVehicle>> {
+    ensure_incident_editable(&state.db, id, &claims).await?;
+    let name = body.vehicle_name.trim().to_string();
+    if name.is_empty() {
+        return Err(AppError::BadRequest("Fahrzeugname darf nicht leer sein".into()));
+    }
+    let row = sqlx::query_as::<_, IncidentVehicle>(
+        "INSERT INTO incident_vehicles
+            (incident_id, vehicle_id, vehicle_name, callsign,
+             alarm_time, departure_time, arrival_time, return_time, ready_time,
+             km_driven, crew_count, notes)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+         RETURNING *"
+    )
+    .bind(id)
+    .bind(body.vehicle_id)
+    .bind(&name)
+    .bind(body.callsign.as_deref())
+    .bind(parse_time(body.alarm_time.as_deref()))
+    .bind(parse_time(body.departure_time.as_deref()))
+    .bind(parse_time(body.arrival_time.as_deref()))
+    .bind(parse_time(body.return_time.as_deref()))
+    .bind(parse_time(body.ready_time.as_deref()))
+    .bind(body.km_driven)
+    .bind(body.crew_count)
+    .bind(body.notes.as_deref())
+    .fetch_one(&state.db)
+    .await?;
+    Ok(Json(row))
+}
+
+pub async fn update_incident_vehicle(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path((id, fid)): Path<(Uuid, Uuid)>,
+    Json(body): Json<IncidentVehicleBody>,
+) -> AppResult<Json<IncidentVehicle>> {
+    ensure_incident_editable(&state.db, id, &claims).await?;
+    let name = body.vehicle_name.trim().to_string();
+    if name.is_empty() {
+        return Err(AppError::BadRequest("Fahrzeugname darf nicht leer sein".into()));
+    }
+    let row = sqlx::query_as::<_, IncidentVehicle>(
+        "UPDATE incident_vehicles SET
+            vehicle_id=$1, vehicle_name=$2, callsign=$3,
+            alarm_time=$4, departure_time=$5, arrival_time=$6,
+            return_time=$7, ready_time=$8, km_driven=$9, crew_count=$10, notes=$11
+         WHERE id=$12 AND incident_id=$13
+         RETURNING *"
+    )
+    .bind(body.vehicle_id)
+    .bind(&name)
+    .bind(body.callsign.as_deref())
+    .bind(parse_time(body.alarm_time.as_deref()))
+    .bind(parse_time(body.departure_time.as_deref()))
+    .bind(parse_time(body.arrival_time.as_deref()))
+    .bind(parse_time(body.return_time.as_deref()))
+    .bind(parse_time(body.ready_time.as_deref()))
+    .bind(body.km_driven)
+    .bind(body.crew_count)
+    .bind(body.notes.as_deref())
+    .bind(fid)
+    .bind(id)
+    .fetch_optional(&state.db)
+    .await?
+    .ok_or(AppError::NotFound)?;
+    Ok(Json(row))
+}
+
+pub async fn remove_incident_vehicle(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path((id, fid)): Path<(Uuid, Uuid)>,
+) -> AppResult<Json<serde_json::Value>> {
+    ensure_incident_editable(&state.db, id, &claims).await?;
+    sqlx::query("DELETE FROM incident_vehicles WHERE id=$1 AND incident_id=$2")
+        .bind(fid).bind(id).execute(&state.db).await?;
+    Ok(Json(serde_json::json!({ "message": "Fahrzeug entfernt" })))
+}
+
+// ── Phase B: Personal im Einsatz ──────────────────────────────────────────────
+
+#[derive(Serialize, sqlx::FromRow)]
+pub struct IncidentPersonnel {
+    pub id:           Uuid,
+    pub incident_id:  Uuid,
+    pub user_id:      Option<Uuid>,
+    pub display_name: String,
+    pub role_name:    Option<String>,
+    pub function:     Option<String>,
+    pub created_at:   chrono::DateTime<Utc>,
+}
+
+#[derive(Deserialize)]
+pub struct IncidentPersonnelBody {
+    pub user_id:      Option<Uuid>,
+    pub display_name: String,
+    pub role_name:    Option<String>,
+    pub function:     Option<String>,
+}
+
+pub async fn list_incident_personnel(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+) -> AppResult<Json<Vec<IncidentPersonnel>>> {
+    ensure_incident_readable(&state.db, id, &claims).await?;
+    let rows = sqlx::query_as::<_, IncidentPersonnel>(
+        "SELECT * FROM incident_personnel WHERE incident_id = $1 ORDER BY created_at ASC"
+    )
+    .bind(id)
+    .fetch_all(&state.db)
+    .await?;
+    Ok(Json(rows))
+}
+
+pub async fn add_incident_personnel(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+    Json(body): Json<IncidentPersonnelBody>,
+) -> AppResult<Json<IncidentPersonnel>> {
+    ensure_incident_editable(&state.db, id, &claims).await?;
+    let name = body.display_name.trim().to_string();
+    if name.is_empty() {
+        return Err(AppError::BadRequest("Name darf nicht leer sein".into()));
+    }
+    let row = sqlx::query_as::<_, IncidentPersonnel>(
+        "INSERT INTO incident_personnel (incident_id, user_id, display_name, role_name, function)
+         VALUES ($1,$2,$3,$4,$5) RETURNING *"
+    )
+    .bind(id)
+    .bind(body.user_id)
+    .bind(&name)
+    .bind(body.role_name.as_deref())
+    .bind(body.function.as_deref())
+    .fetch_one(&state.db)
+    .await?;
+    Ok(Json(row))
+}
+
+pub async fn remove_incident_personnel(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path((id, pid)): Path<(Uuid, Uuid)>,
+) -> AppResult<Json<serde_json::Value>> {
+    ensure_incident_editable(&state.db, id, &claims).await?;
+    sqlx::query("DELETE FROM incident_personnel WHERE id=$1 AND incident_id=$2")
+        .bind(pid).bind(id).execute(&state.db).await?;
+    Ok(Json(serde_json::json!({ "message": "Person entfernt" })))
+}
+
+// ── Phase C: Anhänge ──────────────────────────────────────────────────────────
+
+const MAX_ATTACHMENT_SIZE: usize = 20 * 1024 * 1024; // 20 MB
+
+const ALLOWED_MIME_TYPES: &[&str] = &[
+    "image/jpeg",
+    "image/png",
+    "image/gif",
+    "image/webp",
+    "application/pdf",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.oasis.opendocument.text",
+    "text/plain",
+];
+
+#[derive(Serialize, sqlx::FromRow)]
+pub struct IncidentAttachment {
+    pub id:          Uuid,
+    pub incident_id: Uuid,
+    pub filename:    String,
+    pub stored_name: String,
+    pub mime_type:   String,
+    pub file_size:   i64,
+    pub uploaded_by: Option<Uuid>,
+    pub created_at:  chrono::DateTime<chrono::Utc>,
+}
+
+pub async fn list_attachments(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+) -> AppResult<Json<Vec<IncidentAttachment>>> {
+    ensure_incident_readable(&state.db, id, &claims).await?;
+    let rows = sqlx::query_as::<_, IncidentAttachment>(
+        "SELECT * FROM incident_attachments WHERE incident_id = $1 ORDER BY created_at ASC"
+    )
+    .bind(id)
+    .fetch_all(&state.db)
+    .await?;
+    Ok(Json(rows))
+}
+
+pub async fn upload_attachment(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+    mut multipart: Multipart,
+) -> AppResult<Json<IncidentAttachment>> {
+    ensure_incident_editable(&state.db, id, &claims).await?;
+
+    while let Some(field) = multipart.next_field().await
+        .map_err(|e| AppError::BadRequest(e.to_string()))?
+    {
+        if field.name() != Some("file") { continue; }
+
+        let filename = field.file_name().unwrap_or("datei").to_string();
+        let mime_type = field.content_type()
+            .unwrap_or("application/octet-stream")
+            .to_string();
+
+        if !ALLOWED_MIME_TYPES.contains(&mime_type.as_str()) {
+            return Err(AppError::BadRequest(format!(
+                "Dateityp '{}' ist nicht erlaubt. Erlaubt: Bilder (JPEG/PNG/GIF/WebP), PDF, Word (docx), ODT, Text",
+                mime_type
+            )));
+        }
+
+        let data = field.bytes().await
+            .map_err(|e| AppError::BadRequest(e.to_string()))?;
+
+        if data.len() > MAX_ATTACHMENT_SIZE {
+            return Err(AppError::BadRequest("Datei zu groß (max. 20 MB)".into()));
+        }
+
+        let ext = filename.rsplit('.').next().unwrap_or("bin").to_lowercase();
+        let stored_name = format!("{}.{}", Uuid::new_v4(), ext);
+
+        let dir = format!("{}/incidents/{}", state.config.data_dir, id);
+        tokio::fs::create_dir_all(&dir).await
+            .map_err(|e| AppError::Internal(anyhow::anyhow!("Ordner erstellen: {e}")))?;
+        tokio::fs::write(format!("{}/{}", dir, stored_name), &data).await
+            .map_err(|e| AppError::Internal(anyhow::anyhow!("Datei schreiben: {e}")))?;
+
+        let file_size = data.len() as i64;
+
+        let row = sqlx::query_as::<_, IncidentAttachment>(
+            "INSERT INTO incident_attachments
+             (incident_id, filename, stored_name, mime_type, file_size, uploaded_by)
+             VALUES ($1,$2,$3,$4,$5,$6) RETURNING *"
+        )
+        .bind(id)
+        .bind(&filename)
+        .bind(&stored_name)
+        .bind(&mime_type)
+        .bind(file_size)
+        .bind(claims.sub)
+        .fetch_one(&state.db)
+        .await?;
+
+        return Ok(Json(row));
+    }
+
+    Err(AppError::BadRequest("Keine Datei im Request gefunden".into()))
+}
+
+pub async fn download_attachment(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path((id, aid)): Path<(Uuid, Uuid)>,
+) -> AppResult<Response> {
+    ensure_incident_readable(&state.db, id, &claims).await?;
+
+    let attachment = sqlx::query_as::<_, IncidentAttachment>(
+        "SELECT * FROM incident_attachments WHERE id = $1 AND incident_id = $2"
+    )
+    .bind(aid)
+    .bind(id)
+    .fetch_optional(&state.db)
+    .await?
+    .ok_or(AppError::NotFound)?;
+
+    let file_path = format!("{}/incidents/{}/{}", state.config.data_dir, id, attachment.stored_name);
+    let bytes = tokio::fs::read(&file_path).await
+        .map_err(|_| AppError::NotFound)?;
+
+    let safe_name = attachment.filename.replace('"', "'");
+    let content_disp = format!("attachment; filename=\"{}\"", safe_name);
+
+    Ok(Response::builder()
+        .header(header::CONTENT_TYPE, &attachment.mime_type)
+        .header(header::CONTENT_DISPOSITION, content_disp)
+        .header(header::CONTENT_LENGTH, bytes.len())
+        .body(Body::from(bytes))
+        .unwrap())
+}
+
+pub async fn delete_attachment(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path((id, aid)): Path<(Uuid, Uuid)>,
+) -> AppResult<Json<serde_json::Value>> {
+    ensure_incident_editable(&state.db, id, &claims).await?;
+
+    let attachment = sqlx::query_as::<_, IncidentAttachment>(
+        "SELECT * FROM incident_attachments WHERE id = $1 AND incident_id = $2"
+    )
+    .bind(aid)
+    .bind(id)
+    .fetch_optional(&state.db)
+    .await?
+    .ok_or(AppError::NotFound)?;
+
+    let file_path = format!("{}/incidents/{}/{}", state.config.data_dir, id, attachment.stored_name);
+    let _ = tokio::fs::remove_file(&file_path).await; // Datei-Fehler ignorieren (war vielleicht schon weg)
+
+    sqlx::query("DELETE FROM incident_attachments WHERE id = $1")
+        .bind(aid)
+        .execute(&state.db)
+        .await?;
+
+    Ok(Json(serde_json::json!({ "message": "Anhang gelöscht" })))
+}
+
+// ── Zugriffshelfer ────────────────────────────────────────────────────────────
+
+async fn ensure_incident_readable(db: &PgPool, id: Uuid, claims: &Claims) -> AppResult<()> {
+    let report = sqlx::query_as::<_, IncidentReport>(
+        "SELECT * FROM incident_reports WHERE id = $1"
+    )
+    .bind(id)
+    .fetch_optional(db)
+    .await?
+    .ok_or(AppError::NotFound)?;
+
+    if report.status == "entwurf" && !claims.is_admin_or_above() {
+        if report.created_by != Some(claims.sub) {
+            let level = user_role_level(db, claims.sub).await;
+            if level < GF_LEVEL { return Err(AppError::Forbidden); }
+        }
+    }
+    Ok(())
+}
+
+async fn ensure_incident_editable(db: &PgPool, id: Uuid, claims: &Claims) -> AppResult<()> {
+    let report = sqlx::query_as::<_, IncidentReport>(
+        "SELECT * FROM incident_reports WHERE id = $1"
+    )
+    .bind(id)
+    .fetch_optional(db)
+    .await?
+    .ok_or(AppError::NotFound)?;
+
+    if report.status != "entwurf" && !claims.is_admin_or_above() {
+        return Err(AppError::Forbidden);
+    }
+    if report.status == "entwurf" && !claims.is_admin_or_above() {
+        if report.created_by != Some(claims.sub) {
+            let level = user_role_level(db, claims.sub).await;
+            if level < GF_LEVEL { return Err(AppError::Forbidden); }
+        }
+    }
+    Ok(())
+}
+
 // ── Router ────────────────────────────────────────────────────────────────────
 
 pub fn router(state: AppState) -> Router<AppState> {
     Router::new()
-        .route("/stats",      get(get_stats))
-        .route("/",           get(list_incidents).post(create_incident))
-        .route("/:id",        get(get_incident).put(update_incident).delete(delete_incident))
-        .route("/:id/status", put(set_status))
-        .route("/:id/changes", get(get_changes))
+        .route("/stats",                    get(get_stats))
+        .route("/",                         get(list_incidents).post(create_incident))
+        .route("/:id",                      get(get_incident).put(update_incident).delete(delete_incident))
+        .route("/:id/status",               put(set_status))
+        .route("/:id/changes",              get(get_changes))
+        .route("/:id/fahrzeuge",            get(list_incident_vehicles).post(add_incident_vehicle))
+        .route("/:id/fahrzeuge/:fid",       put(update_incident_vehicle).delete(remove_incident_vehicle))
+        .route("/:id/personal",             get(list_incident_personnel).post(add_incident_personnel))
+        .route("/:id/personal/:pid",        delete(remove_incident_personnel))
+        .route("/:id/anhaenge",             get(list_attachments).post(upload_attachment))
+        .route("/:id/anhaenge/:aid/download", get(download_attachment))
+        .route("/:id/anhaenge/:aid",        delete(delete_attachment))
         .route_layer(middleware::from_fn_with_state(state.clone(), require_module("einsatzberichte")))
         .route_layer(middleware::from_fn_with_state(state, require_auth))
 }

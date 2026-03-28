@@ -25,6 +25,7 @@ pub struct IncidentType {
     pub sort_order: i32,
     pub active:     bool,
     pub created_at: DateTime<Utc>,
+    pub used_count: i64,
 }
 
 #[derive(Deserialize)]
@@ -44,9 +45,12 @@ pub async fn list_incident_types(
     _claims: Extension<Claims>,
 ) -> AppResult<Json<Vec<IncidentType>>> {
     let types = sqlx::query_as::<_, IncidentType>(
-        "SELECT id, key, label, category, sort_order, active, created_at
-         FROM incident_types
-         ORDER BY category ASC, sort_order ASC, label ASC"
+        "SELECT it.id, it.key, it.label, it.category, it.sort_order, it.active, it.created_at,
+                COUNT(ir.id) AS used_count
+         FROM incident_types it
+         LEFT JOIN incident_reports ir ON ir.incident_type_key = it.key
+         GROUP BY it.id
+         ORDER BY it.category ASC, it.sort_order ASC, it.label ASC"
     )
     .fetch_all(&state.db)
     .await?;
