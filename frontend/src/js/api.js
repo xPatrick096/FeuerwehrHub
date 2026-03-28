@@ -206,6 +206,7 @@ export const api = {
   deleteIncident:    (id)        => request('DELETE', `/einsatzberichte/${id}`),
   setIncidentStatus: (id, status)=> request('PUT',    `/einsatzberichte/${id}/status`, { status }),
   getIncidentStats:  (year)      => request('GET',    `/einsatzberichte/stats${year ? `?year=${year}` : ''}`),
+  getIncidentChanges:(id)        => request('GET',    `/einsatzberichte/${id}/changes`),
 
   // Geräte / Beladung
   getEquipment:         (vid)           => request('GET',    `/vehicles/${vid}/equipment`),

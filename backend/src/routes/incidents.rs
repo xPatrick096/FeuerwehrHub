@@ -178,6 +178,17 @@ pub struct IncidentBody {
     pub equipment_damage:           Option<String>,
     pub resources:                  Option<JsonValue>,
     pub incident_number:            Option<String>,
+    pub comment:                    Option<String>,
+}
+
+#[derive(Serialize, sqlx::FromRow)]
+pub struct IncidentChange {
+    pub id:               Uuid,
+    pub incident_id:      Uuid,
+    pub changed_by:       Option<Uuid>,
+    pub changed_by_name:  Option<String>,
+    pub comment:          Option<String>,
+    pub created_at:       chrono::DateTime<Utc>,
 }
 
 #[derive(Deserialize)]
@@ -558,6 +569,19 @@ pub async fn update_incident(
     .fetch_one(&state.db)
     .await?;
 
+    // Änderungsprotokoll
+    sqlx::query(
+        "INSERT INTO incident_changes (incident_id, changed_by, changed_by_name, comment)
+         VALUES ($1, $2, $3, $4)"
+    )
+    .bind(id)
+    .bind(claims.sub)
+    .bind(&claims.username)
+    .bind(body.comment.as_deref())
+    .execute(&state.db)
+    .await
+    .ok();
+
     audit::log(&state.db, Some(claims.sub), &claims.username,
         "INCIDENT_UPDATED", Some("incident_reports"), Some(id), None).await;
 
@@ -712,6 +736,41 @@ pub async fn get_stats(
     Ok(Json(StatsResponse { year, total, brand, thl, fehlalarm, sonstiges, entwurf }))
 }
 
+// ── Änderungshistorie ─────────────────────────────────────────────────────────
+
+pub async fn get_changes(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+) -> AppResult<Json<Vec<IncidentChange>>> {
+    // Existenzcheck + Zugriffscheck via get_incident logic
+    let report = sqlx::query_as::<_, IncidentReport>(
+        "SELECT * FROM incident_reports WHERE id = $1"
+    )
+    .bind(id)
+    .fetch_optional(&state.db)
+    .await?
+    .ok_or(AppError::NotFound)?;
+
+    if report.status == "entwurf" && !claims.is_admin_or_above() {
+        if report.created_by != Some(claims.sub) {
+            let level = user_role_level(&state.db, claims.sub).await;
+            if level < GF_LEVEL {
+                return Err(AppError::Forbidden);
+            }
+        }
+    }
+
+    let changes = sqlx::query_as::<_, IncidentChange>(
+        "SELECT * FROM incident_changes WHERE incident_id = $1 ORDER BY created_at DESC"
+    )
+    .bind(id)
+    .fetch_all(&state.db)
+    .await?;
+
+    Ok(Json(changes))
+}
+
 // ── Hilfsfunktion: Zeit parsen ────────────────────────────────────────────────
 
 fn parse_time(s: Option<&str>) -> Option<chrono::NaiveTime> {
@@ -727,10 +786,11 @@ fn parse_time(s: Option<&str>) -> Option<chrono::NaiveTime> {
 
 pub fn router(state: AppState) -> Router<AppState> {
     Router::new()
-        .route("/stats",    get(get_stats))
-        .route("/",         get(list_incidents).post(create_incident))
-        .route("/:id",      get(get_incident).put(update_incident).delete(delete_incident))
+        .route("/stats",      get(get_stats))
+        .route("/",           get(list_incidents).post(create_incident))
+        .route("/:id",        get(get_incident).put(update_incident).delete(delete_incident))
         .route("/:id/status", put(set_status))
+        .route("/:id/changes", get(get_changes))
         .route_layer(middleware::from_fn_with_state(state.clone(), require_module("einsatzberichte")))
         .route_layer(middleware::from_fn_with_state(state, require_auth))
 }

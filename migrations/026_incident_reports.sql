@@ -104,3 +104,17 @@ UPDATE roles
 SET permissions = array_append(permissions, 'einsatzberichte')
 WHERE name IN ('Wehrleiter', 'Zugführer', 'Gruppenführer', 'Truppführer', 'Gerätewart')
   AND NOT ('einsatzberichte' = ANY(permissions));
+
+-- ── Änderungshistorie ─────────────────────────────────────────────────────────
+
+CREATE TABLE incident_changes (
+    id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    incident_id     UUID        NOT NULL REFERENCES incident_reports(id) ON DELETE CASCADE,
+    changed_by      UUID        REFERENCES users(id) ON DELETE SET NULL,
+    changed_by_name TEXT,
+    comment         TEXT,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_incident_changes_incident ON incident_changes(incident_id);
+CREATE INDEX IF NOT EXISTS idx_incident_changes_time     ON incident_changes(created_at DESC);
