@@ -11,6 +11,10 @@ $text-subtle:   #4c5462;
 $rot:           #e63022;
 $rot-dunkel:    #b5261b;
 $rot-hell:      rgba(230, 48, 34, 0.15);
+$rot-border:    rgba(230, 48, 34, 0.30);   // Hover-Border-Akzent
+$rot-glow:      rgba(230, 48, 34, 0.35);   // Button-Shadow Hover
+$rot-focus:     rgba(230, 48, 34, 0.12);   // Input Focus-Ring
+$rot-subtle:    rgba(230, 48, 34, 0.05);   // Ganz subtiler Hintergrund
 
 // ── Statusfarben ──────────────────────────────────────────────────────────────
 $gruen:         #3fb950;
@@ -22,17 +26,9 @@ $blau-hell:     rgba(56, 139, 253, 0.15);
 $lila:          #a371f7;
 $lila-hell:     rgba(163, 113, 247, 0.15);
 
-// ── Aliase (Kompatibilität mit bestehendem Code) ───────────────────────────────
-$weiss:         #e6edf3;   // Primäre Textfarbe (hell)
-$schwarz:       $bg;
-$grau-dunkel:   $bg-card;
-$grau:          $text-muted;
-$grau-mittel:   $text-subtle;
-$grau-hell:     $bg-card-hover;
-$grau-rand:     $border;
-
 // ── Typografie ────────────────────────────────────────────────────────────────
 $font-family:   'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+$font-size-2xs: 10px;
 $font-size-xs:  11px;
 $font-size-sm:  12px;
 $font-size-md:  14px;
