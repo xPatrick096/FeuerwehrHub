@@ -10,8 +10,10 @@ const ROLE_LABELS = {
 };
 
 const MODULE_LABELS = {
-  lager:    '🏪 Lager',
-  personal: '👥 Personal',
+  lager:           '🏪 Lager',
+  personal:        '👥 Personal',
+  fahrzeuge:       '🚗 Fahrzeuge',
+  einsatzberichte: '🚨 Einsatzberichte',
 };
 
 export async function renderAdmin() {
@@ -933,7 +935,7 @@ async function loadUsers(me, roles = []) {
 const MODULE_DEFS = [
   { key: 'lager',           icon: '🏪', label: 'Lager',           desc: 'Beschaffungsaufträge, Bestellübersicht, Artikelstamm' },
   { key: 'personal',        icon: '👥', label: 'Personal',        desc: 'Mitgliederverwaltung, Qualifikationen, Ehrungen' },
-  { key: 'einsatzberichte', icon: '🚒', label: 'Einsatzberichte', desc: 'Einsatzberichte erfassen und verwalten',               soon: true },
+  { key: 'einsatzberichte', icon: '🚒', label: 'Einsatzberichte', desc: 'Einsatzberichte erfassen und verwalten' },
   { key: 'fahrzeuge',       icon: '🚗', label: 'Fahrzeuge',       desc: 'Stammdaten, Fristen &amp; Prüfungen, Einsatzstatus' },
   { key: 'jugendfeuerwehr', icon: '🧒', label: 'Jugendfeuerwehr', desc: 'JF-Mitglieder, Termine, Wettbewerbe',                  soon: true },
 ];
