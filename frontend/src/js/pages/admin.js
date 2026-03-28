@@ -35,7 +35,7 @@ export async function renderAdmin() {
       </div>
     </div>
 
-    <div id="update-banner" style="display:none;background:#1a2a1a;border:1px solid #3fb950;border-radius:8px;padding:10px 16px;margin-bottom:16px;font-size:13px;color:#3fb950;display:flex;align-items:center;gap:10px">
+    <div id="update-banner" style="display:none;background:#1a2a1a;border:1px solid #3fb950;border-radius:8px;padding:10px 16px;margin-bottom:16px;font-size:13px;color:#3fb950;align-items:center;gap:10px">
       <span>⬆️</span>
       <span id="update-banner-text"></span>
       <a id="update-banner-link" href="#" target="_blank" style="margin-left:auto;color:#3fb950;font-weight:600;text-decoration:underline">Releases ansehen</a>
