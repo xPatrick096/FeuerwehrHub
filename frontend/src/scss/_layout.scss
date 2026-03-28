@@ -27,7 +27,7 @@
     width: 38px;
     height: 38px;
     background: $rot-hell;
-    border: 1px solid rgba(230, 48, 34, 0.3);
+    border: 1px solid $rot-border;
     border-radius: 10px;
     display: flex;
     align-items: center;
@@ -120,7 +120,7 @@
   &__copyright {
     padding: $space-md $space-lg;
     border-top: 1px solid $border;
-    font-size: 10px;
+    font-size: $font-size-2xs;
     color: $text-subtle;
     text-align: center;
     letter-spacing: 0.02em;
@@ -146,6 +146,7 @@
     &:hover {
       color: $text;
       background: $bg-card;
+      border-left-color: $rot-border;
     }
 
     &.active {
@@ -175,7 +176,7 @@
     gap: $space-sm;
     padding: 10px $space-md 4px;
     color: $text-subtle;
-    font-size: 10px;
+    font-size: $font-size-2xs;
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;

@@ -979,10 +979,17 @@ function setupInspectionModal(vehicleId, isAdmin) {
     editInspectionId = null;
     editInspectionVid = null;
   };
-  document.getElementById('btn-close-inspection-modal').addEventListener('click', close);
-  document.getElementById('btn-cancel-inspection').addEventListener('click', close);
+  ['btn-close-inspection-modal', 'btn-cancel-inspection'].forEach(btnId => {
+    const old = document.getElementById(btnId);
+    const fresh = old.cloneNode(true);
+    old.parentNode.replaceChild(fresh, old);
+    fresh.addEventListener('click', close);
+  });
 
-  document.getElementById('btn-submit-inspection').addEventListener('click', async () => {
+  const submitOld = document.getElementById('btn-submit-inspection');
+  const submitBtn = submitOld.cloneNode(true);
+  submitOld.parentNode.replaceChild(submitBtn, submitOld);
+  submitBtn.addEventListener('click', async () => {
     const name = document.getElementById('insp-name').value.trim();
     if (!name) { toast('Bezeichnung eingeben', 'error'); return; }
 
@@ -994,6 +1001,7 @@ function setupInspectionModal(vehicleId, isAdmin) {
       notes:           nvl('insp-notes'),
     };
 
+    submitBtn.disabled = true;
     try {
       if (editInspectionId) {
         await api.updateInspection(editInspectionVid, editInspectionId, body);
@@ -1005,6 +1013,7 @@ function setupInspectionModal(vehicleId, isAdmin) {
       close();
       await reloadInspections(vehicleId, isAdmin);
     } catch (e) { toast(e.message, 'error'); }
+    finally { submitBtn.disabled = false; }
   });
 }
 
@@ -1161,9 +1170,17 @@ let editTripId = null;
 function setupTripModal(vehicleId, isAdmin) {
   const modalId = 'modal-trip';
   const close = () => { document.getElementById(modalId).style.display = 'none'; editTripId = null; };
-  document.getElementById('btn-close-trip-modal').addEventListener('click', close);
-  document.getElementById('btn-cancel-trip').addEventListener('click', close);
-  document.getElementById('btn-submit-trip').addEventListener('click', async () => {
+  ['btn-close-trip-modal', 'btn-cancel-trip'].forEach(btnId => {
+    const old = document.getElementById(btnId);
+    const fresh = old.cloneNode(true);
+    old.parentNode.replaceChild(fresh, old);
+    fresh.addEventListener('click', close);
+  });
+
+  const submitOld = document.getElementById('btn-submit-trip');
+  const submitBtn = submitOld.cloneNode(true);
+  submitOld.parentNode.replaceChild(submitBtn, submitOld);
+  submitBtn.addEventListener('click', async () => {
     const dateVal = document.getElementById('trip-date').value;
     if (!dateVal) { toast('Datum eingeben', 'error'); return; }
     const body = {
@@ -1174,12 +1191,14 @@ function setupTripModal(vehicleId, isAdmin) {
       km_end:    num('trip-km-end'),
       notes:     nvl('trip-notes'),
     };
+    submitBtn.disabled = true;
     try {
       if (editTripId) { await api.updateTrip(vehicleId, editTripId, body); toast('Fahrt gespeichert'); }
       else            { await api.createTrip(vehicleId, body);             toast('Fahrt eingetragen'); }
       close();
       loadTrips(vehicleId, isAdmin);
     } catch (e) { toast(e.message, 'error'); }
+    finally { submitBtn.disabled = false; }
   });
 }
 
@@ -1200,9 +1219,17 @@ let editFuelingId = null;
 
 function setupFuelingModal(vehicleId, isAdmin) {
   const close = () => { document.getElementById('modal-fueling').style.display = 'none'; editFuelingId = null; };
-  document.getElementById('btn-close-fueling-modal').addEventListener('click', close);
-  document.getElementById('btn-cancel-fueling').addEventListener('click', close);
-  document.getElementById('btn-submit-fueling').addEventListener('click', async () => {
+  ['btn-close-fueling-modal', 'btn-cancel-fueling'].forEach(btnId => {
+    const old = document.getElementById(btnId);
+    const fresh = old.cloneNode(true);
+    old.parentNode.replaceChild(fresh, old);
+    fresh.addEventListener('click', close);
+  });
+
+  const submitOld = document.getElementById('btn-submit-fueling');
+  const submitBtn = submitOld.cloneNode(true);
+  submitOld.parentNode.replaceChild(submitBtn, submitOld);
+  submitBtn.addEventListener('click', async () => {
     const dateVal = document.getElementById('fueling-date').value;
     if (!dateVal) { toast('Datum eingeben', 'error'); return; }
     const body = {
@@ -1213,12 +1240,14 @@ function setupFuelingModal(vehicleId, isAdmin) {
       cost_eur:     flt('fueling-cost'),
       notes:        nvl('fueling-notes'),
     };
+    submitBtn.disabled = true;
     try {
       if (editFuelingId) { await api.updateFueling(vehicleId, editFuelingId, body); toast('Tankvorgang gespeichert'); }
       else               { await api.createFueling(vehicleId, body);                toast('Tankvorgang eingetragen'); }
       close();
       loadFuelings(vehicleId, isAdmin);
     } catch (e) { toast(e.message, 'error'); }
+    finally { submitBtn.disabled = false; }
   });
 }
 
@@ -1309,9 +1338,19 @@ async function loadDefects(vehicleId, isAdmin) {
 
 function setupDefectModal(vehicleId, isAdmin) {
   const close = () => document.getElementById('modal-defect').style.display = 'none';
-  document.getElementById('btn-close-defect-modal').addEventListener('click', close);
-  document.getElementById('btn-cancel-defect').addEventListener('click', close);
-  document.getElementById('btn-submit-defect').addEventListener('click', async () => {
+
+  // cloneNode entfernt alte gestapelte Listener (gleicher Fix wie openStatusModal)
+  ['btn-close-defect-modal', 'btn-cancel-defect'].forEach(btnId => {
+    const old = document.getElementById(btnId);
+    const fresh = old.cloneNode(true);
+    old.parentNode.replaceChild(fresh, old);
+    fresh.addEventListener('click', close);
+  });
+
+  const submitOld = document.getElementById('btn-submit-defect');
+  const submitBtn = submitOld.cloneNode(true);
+  submitOld.parentNode.replaceChild(submitBtn, submitOld);
+  submitBtn.addEventListener('click', async () => {
     const title = document.getElementById('defect-title').value.trim();
     if (!title) { toast('Titel eingeben', 'error'); return; }
     const body = {
@@ -1319,12 +1358,17 @@ function setupDefectModal(vehicleId, isAdmin) {
       description: nvl('defect-desc'),
       priority:    document.getElementById('defect-priority').value,
     };
+    submitBtn.disabled = true;
     try {
       await api.createDefect(vehicleId, body);
       toast('Störung gemeldet');
       close();
       loadDefects(vehicleId, isAdmin);
-    } catch (e) { toast(e.message, 'error'); }
+    } catch (e) {
+      toast(e.message, 'error');
+    } finally {
+      submitBtn.disabled = false;
+    }
   });
 }
 
@@ -1461,9 +1505,17 @@ let editEquipmentId = null;
 
 function setupEquipmentModal(vehicleId, isAdmin) {
   const close = () => { document.getElementById('modal-equipment').style.display = 'none'; editEquipmentId = null; };
-  document.getElementById('btn-close-equipment-modal').addEventListener('click', close);
-  document.getElementById('btn-cancel-equipment').addEventListener('click', close);
-  document.getElementById('btn-submit-equipment').addEventListener('click', async () => {
+  ['btn-close-equipment-modal', 'btn-cancel-equipment'].forEach(btnId => {
+    const old = document.getElementById(btnId);
+    const fresh = old.cloneNode(true);
+    old.parentNode.replaceChild(fresh, old);
+    fresh.addEventListener('click', close);
+  });
+
+  const submitOld = document.getElementById('btn-submit-equipment');
+  const submitBtn = submitOld.cloneNode(true);
+  submitOld.parentNode.replaceChild(submitBtn, submitOld);
+  submitBtn.addEventListener('click', async () => {
     const name = document.getElementById('eq-name').value.trim();
     if (!name) { toast('Bezeichnung eingeben', 'error'); return; }
     const body = {
@@ -1477,12 +1529,14 @@ function setupEquipmentModal(vehicleId, isAdmin) {
       interval_months: num('eq-interval'),
       notes:           nvl('eq-notes'),
     };
+    submitBtn.disabled = true;
     try {
       if (editEquipmentId) { await api.updateEquipment(vehicleId, editEquipmentId, body); toast('Gerät gespeichert'); }
       else                 { await api.createEquipment(vehicleId, body);                  toast('Gerät angelegt'); }
       close();
       loadEquipment(vehicleId, isAdmin);
     } catch (e) { toast(e.message, 'error'); }
+    finally { submitBtn.disabled = false; }
   });
 }
 
@@ -1593,10 +1647,17 @@ function setupTemplateModal(vehicleId, isAdmin) {
     document.getElementById('modal-template').style.display = 'none';
     document.getElementById('tpl-items-wrap').innerHTML = '';
   };
-  document.getElementById('btn-close-template-modal').addEventListener('click', close);
-  document.getElementById('btn-cancel-template').addEventListener('click', close);
+  ['btn-close-template-modal', 'btn-cancel-template'].forEach(btnId => {
+    const old = document.getElementById(btnId);
+    const fresh = old.cloneNode(true);
+    old.parentNode.replaceChild(fresh, old);
+    fresh.addEventListener('click', close);
+  });
 
-  document.getElementById('btn-add-tpl-item').addEventListener('click', () => {
+  const addOld = document.getElementById('btn-add-tpl-item');
+  const addBtn = addOld.cloneNode(true);
+  addOld.parentNode.replaceChild(addBtn, addOld);
+  addBtn.addEventListener('click', () => {
     const wrap = document.getElementById('tpl-items-wrap');
     const idx = wrap.children.length;
     const div = document.createElement('div');
@@ -1611,19 +1672,24 @@ function setupTemplateModal(vehicleId, isAdmin) {
     div.querySelector('input').focus();
   });
 
-  document.getElementById('btn-submit-template').addEventListener('click', async () => {
+  const submitOld = document.getElementById('btn-submit-template');
+  const submitBtn = submitOld.cloneNode(true);
+  submitOld.parentNode.replaceChild(submitBtn, submitOld);
+  submitBtn.addEventListener('click', async () => {
     const name = document.getElementById('tpl-name').value.trim();
     if (!name) { toast('Name eingeben', 'error'); return; }
     const items = [...document.querySelectorAll('.tpl-item-input')]
       .map(i => i.value.trim()).filter(Boolean);
     if (!items.length) { toast('Mindestens einen Prüfpunkt eingeben', 'error'); return; }
     const body = { name, interval: document.getElementById('tpl-interval').value, items };
+    submitBtn.disabled = true;
     try {
       await api.createTemplate(vehicleId, body);
       toast('Vorlage gespeichert');
       close();
       loadTemplates(vehicleId, isAdmin);
     } catch (e) { toast(e.message, 'error'); }
+    finally { submitBtn.disabled = false; }
   });
 }
 
@@ -1662,6 +1728,44 @@ function openFillModal(template, vehicleId, isAdmin) {
           style="flex:1;min-width:120px;background:#0d1117;border:1px solid #21273d;color:#e6edf3;padding:4px 8px;border-radius:6px;font-size:12px" />
       </div>
     </div>`).join('');
+
+  const close = () => {
+    document.getElementById('modal-fill-checklist').style.display = 'none';
+  };
+  document.getElementById('btn-close-fill-modal').onclick = close;
+  document.getElementById('btn-cancel-fill').onclick = close;
+
+  const submitOld = document.getElementById('btn-submit-fill');
+  const submitBtn = submitOld.cloneNode(true);
+  submitOld.parentNode.replaceChild(submitBtn, submitOld);
+  submitBtn.textContent = 'Checkliste speichern';
+  submitBtn.style.background = '';
+  submitBtn.style.display = '';
+  submitBtn.onclick = async () => {
+    if (!fillTemplateData || !fillVehicleId) return;
+    submitBtn.disabled = true;
+    const entries = fillTemplateData.items.map((item, i) => ({
+      item_id:    item.id,
+      item_label: item.label,
+      result:     document.querySelector(`[name="item-${i}"]:checked`)?.value || 'nicht_geprueft',
+      note:       document.querySelector(`.fill-note-${i}`)?.value?.trim() || null,
+    }));
+    const body = {
+      template_id: fillTemplateData.id,
+      notes: document.getElementById('fill-notes')?.value?.trim() || null,
+      entries,
+    };
+    try {
+      await api.createChecklist(fillVehicleId, body);
+      toast('Checkliste gespeichert');
+      close();
+      loadChecklists(fillVehicleId, true);
+    } catch (e) {
+      toast(e.message, 'error');
+    } finally {
+      submitBtn.disabled = false;
+    }
+  };
 
   document.getElementById('modal-fill-checklist').style.display = 'flex';
 }
@@ -1716,29 +1820,6 @@ async function openChecklistDetail(vehicleId, checklistId, isAdmin) {
     document.getElementById('btn-cancel-fill').onclick;
 }
 
-// Submit Checkliste ausfüllen einmalig registrieren
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('btn-submit-fill')?.addEventListener('click', async function handler() {
-    if (!fillTemplateData || !fillVehicleId) return;
-    const entries = fillTemplateData.items.map((item, i) => ({
-      item_id:    item.id,
-      item_label: item.label,
-      result:     document.querySelector(`[name="item-${i}"]:checked`)?.value || 'nicht_geprueft',
-      note:       document.querySelector(`.fill-note-${i}`)?.value?.trim() || null,
-    }));
-    const body = {
-      template_id: fillTemplateData.id,
-      notes: nvl('fill-notes'),
-      entries,
-    };
-    try {
-      await api.createChecklist(fillVehicleId, body);
-      toast('Checkliste gespeichert');
-      document.getElementById('modal-fill-checklist').style.display = 'none';
-      loadChecklists(fillVehicleId, true);
-    } catch (e) { toast(e.message, 'error'); }
-  });
-});
 
 function styleGenericRows(cls) {
   document.querySelectorAll('.' + cls).forEach((tr, i) => {

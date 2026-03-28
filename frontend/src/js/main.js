@@ -10,6 +10,9 @@ import { renderAdmin } from './pages/admin.js';
 import { renderMyArea } from './pages/my-area.js';
 import { renderPersonal } from './pages/personal.js';
 import { renderVehicles } from './pages/vehicles.js';
+import { renderIncidents } from './pages/incidents.js';
+import { renderNewIncident } from './pages/new-incident.js';
+import { renderEditIncident } from './pages/edit-incident.js';
 
 // Routen registrieren
 registerRoute('#/login',     renderLogin);
@@ -17,7 +20,10 @@ registerRoute('#/setup',     renderSetup);
 registerRoute('#/',          renderHome);
 registerRoute('#/my-area',   renderMyArea);
 registerRoute('#/personal',  renderPersonal, 'personal');
-registerRoute('#/vehicles',  renderVehicles, 'fahrzeuge');
+registerRoute('#/vehicles',  renderVehicles,  'fahrzeuge');
+registerRoute('#/incidents',     renderIncidents,   'einsatzberichte');
+registerRoute('#/new-incident',  renderNewIncident,  'einsatzberichte');
+registerRoute('#/edit-incident', renderEditIncident, 'einsatzberichte');
 registerRoute('#/orders',    renderOrders,    'lager');
 registerRoute('#/new-order', renderNewOrder,  'lager');
 registerRoute('#/articles',  renderArticles,  'lager');

@@ -1,5 +1,42 @@
 @use 'variables' as *;
 
+// ── Mixins ────────────────────────────────────────────────────────────────────
+
+// Gemeinsame Basis-Styles für Formularfelder
+@mixin field-base {
+  padding: 8px 12px;
+  border: 1px solid $border;
+  border-radius: $radius-md;
+  color: $text;
+  background: $bg;
+  transition: border-color $transition-fast, box-shadow $transition-fast;
+
+  &:focus-visible {
+    outline: none;
+    border-color: $rot;
+    box-shadow: 0 0 0 3px $rot-focus;
+  }
+
+  &::placeholder { color: $text-subtle; }
+  option { background: $bg-card; }
+}
+
+// Inline-Eingabefelder im Beschaffungsformular (randlos, transparent)
+@mixin beschaffung-input {
+  width: 100%;
+  border: none;
+  border-radius: 0;
+  padding: $space-sm $space-md;
+  font-size: $font-size-md;
+  background: transparent;
+  color: $text;
+  box-shadow: none;
+  outline: none;
+
+  &:focus-visible { background: $rot-subtle; }
+  option { background: $bg-card; }
+}
+
 // ── Card ──────────────────────────────────────────────────────────────────────
 .card {
   background: $bg-card;
@@ -57,7 +94,7 @@
     &:hover:not(:disabled) {
       background: $rot-dunkel;
       transform: translateY(-1px);
-      box-shadow: 0 4px 14px rgba(230,48,34,0.35);
+      box-shadow: 0 4px 14px $rot-glow;
     }
   }
 
@@ -128,22 +165,7 @@
   }
 
   input, select, textarea {
-    padding: 8px 12px;
-    border: 1px solid $border;
-    border-radius: $radius-md;
-    color: $text;
-    background: $bg;
-    transition: border-color $transition-fast, box-shadow $transition-fast;
-
-    &:focus {
-      outline: none;
-      border-color: $rot;
-      box-shadow: 0 0 0 3px rgba(230, 48, 34, 0.12);
-    }
-
-    &::placeholder { color: $text-subtle; }
-
-    option { background: $bg-card; }
+    @include field-base;
   }
 
   textarea { resize: vertical; min-height: 80px; }
@@ -186,7 +208,7 @@ tr:hover td { background: $bg-card-hover; }
 
 .table-empty {
   text-align: center;
-  padding: 48px;
+  padding: $space-2xl;
   color: $text-muted;
   font-style: italic;
 }
@@ -235,7 +257,7 @@ tr:hover td { background: $bg-card-hover; }
 
 .tab-panel { display: block; }
 
-// ── Stats-Karten ─────────────────────────────────────────────────────────────
+// ── Stats-Karten ──────────────────────────────────────────────────────────────
 .stats-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -251,7 +273,7 @@ tr:hover td { background: $bg-card-hover; }
   text-align: center;
   transition: border-color $transition-fast, transform $transition-fast;
 
-  &:hover { border-color: rgba(230,48,34,0.3); transform: translateY(-1px); }
+  &:hover { border-color: $rot-border; transform: translateY(-1px); }
 
   &__number {
     font-size: $font-size-2xl;
@@ -284,53 +306,18 @@ tr:hover td { background: $bg-card-hover; }
   margin-bottom: $space-md;
 
   input, select {
+    @include field-base;
     padding: 7px 12px;
-    border: 1px solid $border;
-    border-radius: $radius-md;
+    background: $bg-card;
     font-size: $font-size-sm;
-    color: $text;
-    background: $bg-card;
-
-    &:focus {
-      outline: none;
-      border-color: $rot;
-    }
-
-    option { background: $bg-card; }
   }
 }
 
-// ── Modal (Admin-Variante) ────────────────────────────────────────────────────
-.modal {
-  &[style*="display: flex"], &[style*="display:flex"] {
-    position: fixed;
-    inset: 0;
-    z-index: 200;
-    align-items: center;
-    justify-content: center;
-  }
+// ── Modal ─────────────────────────────────────────────────────────────────────
+// Zwei Verwendungsmuster im Projekt:
+// A) .modal[style="display:flex"] > .modal__backdrop + .modal__box > __header/__body/__footer
+// B) .modal-overlay.active > .modal > __header/__body/__footer
 
-  &__backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.65);
-    backdrop-filter: blur(4px);
-  }
-
-  &__box {
-    position: relative;
-    z-index: 1;
-    background: $bg-card;
-    border: 1px solid $border;
-    border-radius: $radius-xl;
-    box-shadow: $schatten-lg;
-    width: 90%;
-    max-width: 480px;
-    overflow: hidden;
-  }
-}
-
-// ── Modal (Legacy mit modal-overlay) ─────────────────────────────────────────
 .modal-overlay {
   display: none;
   position: fixed;
@@ -345,6 +332,7 @@ tr:hover td { background: $bg-card-hover; }
 }
 
 .modal {
+  // Muster B: .modal ist die Box (direkt in .modal-overlay)
   background: $bg-card;
   border: 1px solid $border;
   border-radius: $radius-xl;
@@ -353,6 +341,47 @@ tr:hover td { background: $bg-card-hover; }
   max-width: 540px;
   max-height: 90vh;
   overflow-y: auto;
+
+  // Muster A: .modal ist der Container (gesteuert per inline style)
+  &[style*="display: flex"],
+  &[style*="display:flex"] {
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(4px);
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    width: 100%;
+    max-width: none;
+    max-height: none;
+    overflow-y: visible;
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+
+  // Muster A: optionales Backdrop-Element
+  &__backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(4px);
+  }
+
+  // Muster A: die eigentliche Box innerhalb des Containers
+  &__box {
+    position: relative;
+    z-index: 1;
+    background: $bg-card;
+    border: 1px solid $border;
+    border-radius: $radius-xl;
+    box-shadow: $schatten-lg;
+    width: 90%;
+    max-width: 540px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
 
   &__header {
     background: $bg-card-hover;
@@ -434,7 +463,6 @@ tr:hover td { background: $bg-card-hover; }
   position: relative;
   overflow: hidden;
 
-  // Subtiler Hintergrund-Glow wie auf der Landing Page
   &::before {
     content: '';
     position: absolute;
@@ -443,7 +471,7 @@ tr:hover td { background: $bg-card-hover; }
     transform: translateX(-50%);
     width: 600px;
     height: 600px;
-    background: radial-gradient(ellipse, rgba(230,48,34,0.10) 0%, transparent 70%);
+    background: radial-gradient(ellipse, $rot-hell 0%, transparent 70%);
     pointer-events: none;
   }
 
@@ -550,22 +578,10 @@ tr:hover td { background: $bg-card-hover; }
   &--datum { flex: 1; }
 
   input, textarea, select {
-    width: 100%;
-    border: none;
-    border-radius: 0;
-    padding: $space-sm $space-md;
-    font-size: $font-size-md;
-    background: transparent;
-    color: $text;
-    box-shadow: none;
-    outline: none;
-    resize: vertical;
-
-    &:focus { background: rgba(230,48,34,0.05); }
-    &::placeholder { color: $text-subtle; }
+    @include beschaffung-input;
   }
 
-  textarea { min-height: 90px; }
+  textarea { resize: vertical; min-height: 90px; }
 }
 
 .beschaffung-label {
@@ -614,18 +630,7 @@ tr:hover td { background: $bg-card-hover; }
   &--gegenstand { flex: 1; }
 
   input, select {
-    width: 100%;
-    border: none;
-    border-radius: 0;
-    padding: $space-sm $space-md;
-    font-size: $font-size-md;
-    background: transparent;
-    color: $text;
-    box-shadow: none;
-    outline: none;
-
-    &:focus { background: rgba(230,48,34,0.05); }
-    option { background: $bg-card; }
+    @include beschaffung-input;
   }
 }
 
@@ -653,7 +658,6 @@ tr:hover td { background: $bg-card-hover; }
   overflow: hidden;
   transition: all $transition-md;
 
-  // Roter Akzent oben (wie Feature-Cards auf der Landing Page)
   &::after {
     content: '';
     position: absolute;
@@ -668,8 +672,8 @@ tr:hover td { background: $bg-card-hover; }
     width: 48px;
     height: 48px;
     background: $rot-hell;
-    border: 1px solid rgba(230,48,34,0.2);
-    border-radius: 12px;
+    border: 1px solid $rot-border;
+    border-radius: $radius-lg;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -678,17 +682,17 @@ tr:hover td { background: $bg-card-hover; }
   }
 
   &__label {
-    font-size: 14px;
+    font-size: $font-size-md;
     font-weight: 700;
     color: $text;
     margin-bottom: 4px;
   }
 
-  &__desc { font-size: 12px; color: $text-muted; line-height: 1.5; }
+  &__desc { font-size: $font-size-sm; color: $text-muted; line-height: 1.5; }
 
   &__soon {
     margin-top: $space-sm;
-    font-size: 10px;
+    font-size: $font-size-2xs;
     color: $text-muted;
     background: $bg-card-hover;
     border: 1px solid $border;
@@ -703,7 +707,7 @@ tr:hover td { background: $bg-card-hover; }
   &--active {
     cursor: pointer;
     &:hover {
-      border-color: rgba(230,48,34,0.3);
+      border-color: $rot-border;
       background: $bg-card-hover;
       transform: translateY(-3px);
       box-shadow: 0 10px 28px rgba(0,0,0,0.35);

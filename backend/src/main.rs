@@ -4,6 +4,7 @@ mod config;
 mod errors;
 mod log_buffer;
 mod routes;
+mod updater;
 
 use axum::{
     http::{HeaderValue, Method},
@@ -19,12 +20,14 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use config::Config;
 use log_buffer::{LogBuffer, LogBufferLayer};
+use updater::UpdateState;
 
 #[derive(Clone)]
 pub struct AppState {
-    pub db: PgPool,
-    pub config: Config,
-    pub log_buffer: LogBuffer,
+    pub db:           PgPool,
+    pub config:       Config,
+    pub log_buffer:   LogBuffer,
+    pub update_state: UpdateState,
 }
 
 #[tokio::main]
@@ -49,9 +52,10 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("Migrationen abgeschlossen");
 
     let state = AppState {
-        db: pool,
-        config: config.clone(),
+        db:           pool,
+        config:       config.clone(),
         log_buffer,
+        update_state: UpdateState::new(),
     };
 
     let origin: HeaderValue = config.frontend_url
@@ -67,16 +71,18 @@ async fn main() -> anyhow::Result<()> {
         ]);
 
     let app = Router::new()
-        .nest("/api/auth", routes::auth::router(state.clone()))
-        .nest("/api/admin", routes::admin::router(state.clone()))
-        .nest("/api/roles", routes::roles::router(state.clone()))
-        .nest("/api/orders", routes::orders::router(state.clone()))
-        .nest("/api/articles", routes::articles::router(state.clone()))
-        .nest("/api/settings", routes::settings::router(state.clone()))
+        .nest("/api/auth",          routes::auth::router(state.clone()))
+        .nest("/api/admin",         routes::admin::router(state.clone()))
+        .nest("/api/roles",         routes::roles::router(state.clone()))
+        .nest("/api/orders",        routes::orders::router(state.clone()))
+        .nest("/api/articles",      routes::articles::router(state.clone()))
+        .nest("/api/settings",      routes::settings::router(state.clone()))
         .nest("/api/announcements", routes::announcements::router(state.clone()))
-        .nest("/api/me",           routes::selfservice::router(state.clone()))
-        .nest("/api/personal",     routes::personal::router(state.clone()))
-        .nest("/api/vehicles",     routes::vehicles::router(state.clone()))
+        .nest("/api/me",            routes::selfservice::router(state.clone()))
+        .nest("/api/personal",      routes::personal::router(state.clone()))
+        .nest("/api/vehicles",           routes::vehicles::router(state.clone()))
+        .nest("/api/incident-types",     routes::incident_types::router(state.clone()))
+        .nest("/api/einsatzberichte",    routes::incidents::router(state.clone()))
         .with_state(state)
         .layer(cors)
         .layer(SetResponseHeaderLayer::if_not_present(

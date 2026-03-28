@@ -186,6 +186,67 @@ export const api = {
   getDefectComments:    (vid, did)      => request('GET',    `/vehicles/${vid}/defects/${did}/comments`),
   createDefectComment:  (vid, did, body)=> request('POST',   `/vehicles/${vid}/defects/${did}/comments`, body),
 
+  // Einsatzarten
+  getIncidentTypes:    ()         => request('GET',    '/incident-types'),
+  createIncidentType:  (body)     => request('POST',   '/incident-types', body),
+  updateIncidentType:  (id, body) => request('PUT',    `/incident-types/${id}`, body),
+  deleteIncidentType:  (id)       => request('DELETE', `/incident-types/${id}`),
+
+  // Einsatzberichte
+  getIncidents: (params) => {
+    const p = new URLSearchParams();
+    for (const [k, v] of Object.entries(params || {})) {
+      if (v != null && v !== '') p.append(k, v);
+    }
+    return request('GET', `/einsatzberichte?${p}`);
+  },
+  getIncident:       (id)        => request('GET',    `/einsatzberichte/${id}`),
+  createIncident:    (body)      => request('POST',   '/einsatzberichte', body),
+  updateIncident:    (id, body)  => request('PUT',    `/einsatzberichte/${id}`, body),
+  deleteIncident:    (id)        => request('DELETE', `/einsatzberichte/${id}`),
+  setIncidentStatus: (id, status)=> request('PUT',    `/einsatzberichte/${id}/status`, { status }),
+  getIncidentStats:  (year)      => request('GET',    `/einsatzberichte/stats${year ? `?year=${year}` : ''}`),
+  getIncidentChanges:  (id)       => request('GET',    `/einsatzberichte/${id}/changes`),
+
+  // Phase B
+  getIncidentVehicles: (id)       => request('GET',    `/einsatzberichte/${id}/fahrzeuge`),
+  addIncidentVehicle:  (id, body) => request('POST',   `/einsatzberichte/${id}/fahrzeuge`, body),
+  updateIncidentVehicle:(id,fid,body)=>request('PUT',  `/einsatzberichte/${id}/fahrzeuge/${fid}`, body),
+  removeIncidentVehicle:(id, fid) => request('DELETE', `/einsatzberichte/${id}/fahrzeuge/${fid}`),
+
+  getIncidentPersonnel:  (id)       => request('GET',    `/einsatzberichte/${id}/personal`),
+  addIncidentPersonnel:  (id, body) => request('POST',   `/einsatzberichte/${id}/personal`, body),
+  removeIncidentPersonnel:(id, pid) => request('DELETE', `/einsatzberichte/${id}/personal/${pid}`),
+
+  // Phase C — Anhänge
+  getIncidentAttachments:   (id)       => request('GET',    `/einsatzberichte/${id}/anhaenge`),
+  deleteIncidentAttachment: (id, aid)  => request('DELETE', `/einsatzberichte/${id}/anhaenge/${aid}`),
+  uploadIncidentAttachment: (id, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const token = localStorage.getItem('ff_token');
+    return fetch(`${BASE}/einsatzberichte/${id}/anhaenge`, {
+      method: 'POST',
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      body: formData,
+    }).then(async res => {
+      if (res.status === 401) {
+        localStorage.removeItem('ff_token');
+        window.location.hash = '#/login';
+        return null;
+      }
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+      return data;
+    });
+  },
+  downloadIncidentAttachment: (id, aid) => {
+    const token = localStorage.getItem('ff_token');
+    return fetch(`${BASE}/einsatzberichte/${id}/anhaenge/${aid}/download`, {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+  },
+
   // Geräte / Beladung
   getEquipment:         (vid)           => request('GET',    `/vehicles/${vid}/equipment`),
   createEquipment:      (vid, body)     => request('POST',   `/vehicles/${vid}/equipment`, body),
