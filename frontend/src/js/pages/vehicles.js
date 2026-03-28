@@ -762,19 +762,21 @@ async function openVehicleDetail(id, vehicles, isAdmin) {
       loadChecklists(id, isAdmin);
     }, { once: true });
 
+    // Für alle Nutzer: Fahrtenbuch, Tankprotokoll, Störungsmeldung
+    document.getElementById('btn-new-trip').addEventListener('click', () => openTripModal(null, id, isAdmin));
+    document.getElementById('btn-new-fueling').addEventListener('click', () => openFuelingModal(null, id, isAdmin));
+    document.getElementById('btn-new-defect').addEventListener('click', () => openDefectModal(id, isAdmin));
+    setupTripModal(id, isAdmin);
+    setupFuelingModal(id, isAdmin);
+    setupDefectModal(id, isAdmin);
+
     if (isAdmin) {
       document.getElementById('btn-edit-vehicle').addEventListener('click', () => openVehicleModal(v));
       document.getElementById('btn-delete-vehicle').addEventListener('click', () => deleteVehicle(id, isAdmin));
       document.getElementById('btn-new-inspection').addEventListener('click', () => openInspectionModal(null, id, isAdmin));
-      document.getElementById('btn-new-trip').addEventListener('click', () => openTripModal(null, id, isAdmin));
-      document.getElementById('btn-new-fueling').addEventListener('click', () => openFuelingModal(null, id, isAdmin));
-      document.getElementById('btn-new-defect').addEventListener('click', () => openDefectModal(id, isAdmin));
       document.getElementById('btn-new-equipment')?.addEventListener('click', () => openEquipmentModal(null, id, isAdmin));
       document.getElementById('btn-new-template')?.addEventListener('click', () => openTemplateModal(id, isAdmin));
       setupInspectionModal(id, isAdmin);
-      setupTripModal(id, isAdmin);
-      setupFuelingModal(id, isAdmin);
-      setupDefectModal(id, isAdmin);
       setupEquipmentModal(id, isAdmin);
       setupTemplateModal(id, isAdmin);
     }
