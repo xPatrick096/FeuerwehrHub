@@ -2,6 +2,7 @@ import { api } from '../api.js';
 import { toast } from '../toast.js';
 import { renderShell, setShellInfo } from '../shell.js';
 import { generateBeschaffungsauftrag } from '../pdf-generator.js';
+import { esc } from '../utils.js';
 
 const PAGE_SIZE = 25;
 
@@ -598,7 +599,6 @@ function openMailto(order) {
 
 // ── Hilfsfunktionen ────────────────────────────────────────────────────────────
 
-function esc(s) { return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function formatDate(d) { if (!d) return '—'; const part = d.split('T')[0]; const [y,m,dd] = part.split('-'); return `${dd}.${m}.${y}`; }
 function today() { return new Date().toISOString().split('T')[0]; }
 function statusLabel(s) {

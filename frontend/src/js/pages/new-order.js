@@ -2,6 +2,7 @@ import { api } from '../api.js';
 import { toast } from '../toast.js';
 import { navigate } from '../router.js';
 import { renderShell, setShellInfo } from '../shell.js';
+import { esc } from '../utils.js';
 
 const NUM_POSITIONS = 6;
 
@@ -214,5 +215,4 @@ export async function renderNewOrder() {
   document.getElementById('btn-cancel').addEventListener('click', () => navigate('#/orders'));
 }
 
-function esc(s) { return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function today() { return new Date().toISOString().split('T')[0]; }

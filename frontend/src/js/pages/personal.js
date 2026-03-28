@@ -1,6 +1,7 @@
 import { api } from '../api.js';
 import { toast } from '../toast.js';
 import { renderShell, setShellInfo } from '../shell.js';
+import { esc } from '../utils.js';
 
 const EQUIPMENT_LABELS = {
   pager:          '📟 Pager',
@@ -208,6 +209,40 @@ function renderStammdaten(userId, details) {
         <div class="btn-group" style="margin-top:16px">
           <button class="btn btn--primary" id="btn-save-stamm">Stammdaten speichern</button>
         </div>
+      </div>
+    </div>
+
+    <div class="card" style="max-width:560px;margin-top:16px">
+      <div class="card__header" style="display:flex;justify-content:space-between;align-items:center">
+        <span>Kontaktdaten</span>
+        <span style="font-size:11px;color:#7d8590">Vom Mitglied selbst pflegbar</span>
+      </div>
+      <div class="card__body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Telefon</label>
+            <input type="text" value="${esc(details?.phone || '')}" disabled style="opacity:0.7;cursor:default" />
+          </div>
+          <div class="form-group">
+            <label>Private E-Mail</label>
+            <input type="text" value="${esc(details?.email_private || '')}" disabled style="opacity:0.7;cursor:default" />
+          </div>
+          <div class="form-group form-group--full">
+            <label>Adresse</label>
+            <input type="text" value="${esc(details?.address || '')}" disabled style="opacity:0.7;cursor:default" />
+          </div>
+          <div class="form-group">
+            <label>Notfallkontakt – Name</label>
+            <input type="text" value="${esc(details?.emergency_contact_name || '')}" disabled style="opacity:0.7;cursor:default" />
+          </div>
+          <div class="form-group">
+            <label>Notfallkontakt – Telefon</label>
+            <input type="text" value="${esc(details?.emergency_contact_phone || '')}" disabled style="opacity:0.7;cursor:default" />
+          </div>
+        </div>
+        ${!details?.phone && !details?.email_private && !details?.emergency_contact_name
+          ? '<p style="color:#7d8590;font-size:12px;margin-top:8px">Noch keine Kontaktdaten hinterlegt.</p>'
+          : ''}
       </div>
     </div>
   `;
@@ -678,9 +713,6 @@ function formatDate(d) {
   return new Date(d).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
-function esc(s) {
-  return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
 
 // ── Tab: Anwesenheit ──────────────────────────────────────────────────────────
 

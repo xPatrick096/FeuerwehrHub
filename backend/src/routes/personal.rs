@@ -30,14 +30,20 @@ pub struct MemberSummary {
 
 #[derive(Serialize, sqlx::FromRow)]
 pub struct MemberDetails {
-    pub id:               Uuid,
-    pub user_id:          Uuid,
-    pub date_of_birth:    Option<NaiveDate>,
-    pub entry_date:       Option<NaiveDate>,
-    pub exit_date:        Option<NaiveDate>,
-    pub personnel_number: Option<String>,
-    pub notes:            Option<String>,
-    pub updated_at:       DateTime<Utc>,
+    pub id:                      Uuid,
+    pub user_id:                 Uuid,
+    pub date_of_birth:           Option<NaiveDate>,
+    pub entry_date:              Option<NaiveDate>,
+    pub exit_date:               Option<NaiveDate>,
+    pub personnel_number:        Option<String>,
+    pub notes:                   Option<String>,
+    pub updated_at:              DateTime<Utc>,
+    // Kontaktdaten aus member_profiles (selbst gepflegt)
+    pub phone:                   Option<String>,
+    pub email_private:           Option<String>,
+    pub address:                 Option<String>,
+    pub emergency_contact_name:  Option<String>,
+    pub emergency_contact_phone: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -131,9 +137,13 @@ pub async fn get_details(
     Path(user_id): Path<Uuid>,
 ) -> AppResult<Json<MemberDetails>> {
     let details = sqlx::query_as::<_, MemberDetails>(
-        "SELECT id, user_id, date_of_birth, entry_date, exit_date,
-                personnel_number, notes, updated_at
-         FROM member_details WHERE user_id = $1"
+        "SELECT d.id, d.user_id, d.date_of_birth, d.entry_date, d.exit_date,
+                d.personnel_number, d.notes, d.updated_at,
+                p.phone, p.email_private, p.address,
+                p.emergency_contact_name, p.emergency_contact_phone
+         FROM member_details d
+         LEFT JOIN member_profiles p ON p.user_id = d.user_id
+         WHERE d.user_id = $1"
     )
     .bind(user_id)
     .fetch_optional(&state.db)
@@ -145,10 +155,19 @@ pub async fn get_details(
 
     // Noch nicht vorhanden → anlegen
     let new = sqlx::query_as::<_, MemberDetails>(
-        "INSERT INTO member_details (user_id)
-         VALUES ($1)
-         RETURNING id, user_id, date_of_birth, entry_date, exit_date,
-                   personnel_number, notes, updated_at"
+        "WITH ins AS (
+             INSERT INTO member_details (user_id)
+             VALUES ($1)
+             ON CONFLICT (user_id) DO UPDATE SET user_id = EXCLUDED.user_id
+             RETURNING id, user_id, date_of_birth, entry_date, exit_date,
+                       personnel_number, notes, updated_at
+         )
+         SELECT ins.id, ins.user_id, ins.date_of_birth, ins.entry_date, ins.exit_date,
+                ins.personnel_number, ins.notes, ins.updated_at,
+                p.phone, p.email_private, p.address,
+                p.emergency_contact_name, p.emergency_contact_phone
+         FROM ins
+         LEFT JOIN member_profiles p ON p.user_id = ins.user_id"
     )
     .bind(user_id)
     .fetch_one(&state.db)

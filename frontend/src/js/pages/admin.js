@@ -1,6 +1,7 @@
 import { api } from '../api.js';
 import { toast } from '../toast.js';
 import { renderShell, setShellInfo } from '../shell.js';
+import { esc } from '../utils.js';
 
 const ROLE_LABELS = {
   superuser: '⭐ Superuser',
@@ -157,6 +158,7 @@ export async function renderAdmin() {
           <div class="btn-group" style="margin-top:12px">
             <button class="btn btn--primary" id="btn-upload-pdf">PDF hochladen</button>
             <a class="btn btn--outline" href="/api/settings/pdf" target="_blank" id="btn-view-pdf">Aktuelles PDF ansehen</a>
+            <button class="btn btn--danger" id="btn-delete-pdf" style="display:none">PDF löschen</button>
           </div>
         </div>
       </div>
@@ -344,15 +346,22 @@ export async function renderAdmin() {
   });
 
   // PDF-Status anzeigen
-  fetch('/api/settings/pdf', { method: 'HEAD' }).then(res => {
+  const updatePdfStatus = (hasPdf) => {
     const statusEl = document.getElementById('pdf-upload-status');
+    const deleteBtn = document.getElementById('btn-delete-pdf');
     if (!statusEl) return;
-    if (res.ok) {
+    if (hasPdf) {
       statusEl.innerHTML = '<span style="color:#3fb950">✅ PDF-Vorlage ist hinterlegt</span>';
+      if (deleteBtn) deleteBtn.style.display = '';
     } else {
       statusEl.innerHTML = '<span style="color:#ff8a80">⚠️ Noch keine PDF-Vorlage hochgeladen</span>';
+      if (deleteBtn) deleteBtn.style.display = 'none';
     }
-  }).catch(() => {});
+  };
+
+  fetch('/api/settings/pdf', { method: 'HEAD' })
+    .then(res => updatePdfStatus(res.ok))
+    .catch(() => updatePdfStatus(false));
 
   // PDF hochladen
   document.getElementById('btn-upload-pdf').addEventListener('click', async () => {
@@ -363,8 +372,17 @@ export async function renderAdmin() {
       await api.uploadPdf(file);
       toast('PDF-Vorlage erfolgreich hochgeladen');
       document.getElementById('pdf-upload-input').value = '';
-      document.getElementById('pdf-upload-status').innerHTML =
-        '<span style="color:#1E8449">✅ PDF-Vorlage ist hinterlegt</span>';
+      updatePdfStatus(true);
+    } catch (e) { toast(e.message, 'error'); }
+  });
+
+  // PDF löschen
+  document.getElementById('btn-delete-pdf').addEventListener('click', async () => {
+    if (!confirm('PDF-Vorlage wirklich löschen? Danach wird das generische PDF verwendet.')) return;
+    try {
+      await api.deletePdf();
+      toast('PDF-Vorlage gelöscht');
+      updatePdfStatus(false);
     } catch (e) { toast(e.message, 'error'); }
   });
 
@@ -1008,9 +1026,6 @@ async function loadAuditLog() {
   }
 }
 
-function esc(s) {
-  return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
 
 // ── Container-Log ─────────────────────────────────────────────────────────────
 
@@ -1034,7 +1049,7 @@ async function loadContainerLog() {
 
 // ── Update-Check ──────────────────────────────────────────────────────────────
 
-const CURRENT_VERSION = '0.1.0';
+const CURRENT_VERSION = __APP_VERSION__;
 const GITHUB_REPO     = 'xpatrick096/FeuerwehrHub';
 
 async function checkForUpdate() {

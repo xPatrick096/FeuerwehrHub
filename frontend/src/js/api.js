@@ -72,6 +72,8 @@ export const api = {
   updateModules:  (body) => request('PUT', '/settings/modules', body),
 
   // PDF-Vorlage
+  deletePdf: () => request('DELETE', '/settings/pdf'),
+
   uploadPdf: (file) => {
     const formData = new FormData();
     formData.append('file', file);
