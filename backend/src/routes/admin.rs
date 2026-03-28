@@ -14,6 +14,7 @@ use crate::{
     audit,
     auth::middleware::{require_auth, Claims},
     errors::{AppError, AppResult},
+    updater,
     AppState,
 };
 
@@ -637,6 +638,48 @@ pub async fn get_container_log(
     Ok(Json(serde_json::json!({ "lines": lines })))
 }
 
+// ── Handler: Update anstoßen ─────────────────────────────────────────────────
+
+pub async fn trigger_update(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+) -> AppResult<Json<serde_json::Value>> {
+    if !claims.is_admin_or_above() {
+        return Err(AppError::Forbidden);
+    }
+
+    if *state.update_state.status.lock().await == updater::UpdateStatus::Running {
+        return Err(AppError::BadRequest("Ein Update läuft bereits.".into()));
+    }
+
+    let update_state = state.update_state.clone();
+    let config      = state.config.clone();
+    tokio::spawn(async move {
+        updater::run_update(update_state, config).await;
+    });
+
+    Ok(Json(serde_json::json!({ "message": "Update gestartet" })))
+}
+
+// ── Handler: Update-Status + Log abrufen ─────────────────────────────────────
+
+pub async fn get_update_status(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+) -> AppResult<Json<serde_json::Value>> {
+    if !claims.is_admin_or_above() {
+        return Err(AppError::Forbidden);
+    }
+
+    let status = state.update_state.status.lock().await.clone();
+    let log    = state.update_state.log.lock().await.clone();
+
+    Ok(Json(serde_json::json!({
+        "status": status,
+        "log":    log,
+    })))
+}
+
 // ── Router ────────────────────────────────────────────────────────────────────
 
 pub fn router(state: AppState) -> Router<AppState> {
@@ -652,5 +695,7 @@ pub fn router(state: AppState) -> Router<AppState> {
         .route("/users/:id/functions/:role_id", delete(remove_function))
         .route("/audit-log", get(get_audit_log))
         .route("/container-log", get(get_container_log))
+        .route("/update", post(trigger_update))
+        .route("/update/status", get(get_update_status))
         .route_layer(middleware::from_fn_with_state(state, require_auth))
 }

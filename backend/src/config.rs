@@ -16,6 +16,10 @@ pub struct Config {
     pub frontend_url: String,
     pub login_max_attempts: u32,
     pub lockout_minutes: i64,
+    // Docker-Container-Namen für den In-App-Update-Mechanismus
+    pub container_backend:  String,
+    pub container_frontend: String,
+    pub container_db:       String,
 }
 
 impl Config {
@@ -53,6 +57,12 @@ impl Config {
                 .unwrap_or_else(|_| "15".into())
                 .parse()
                 .unwrap_or(15),
+            container_backend:  std::env::var("CONTAINER_BACKEND")
+                .unwrap_or_else(|_| "feuerwehrhub-backend".into()),
+            container_frontend: std::env::var("CONTAINER_FRONTEND")
+                .unwrap_or_else(|_| "feuerwehrhub-frontend".into()),
+            container_db:       std::env::var("CONTAINER_DB")
+                .unwrap_or_else(|_| "feuerwehrhub-db".into()),
         })
     }
 

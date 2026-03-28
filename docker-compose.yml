@@ -4,6 +4,7 @@ services:
   # Für externe Datenbank: postgres-Service hier entfernen und DB_HOST in .env setzen.
   postgres:
     image: postgres:17-alpine
+    container_name: ${CONTAINER_DB:-feuerwehrhub-db}
     restart: unless-stopped
     environment:
       POSTGRES_DB:       ${DB_NAME:-feuerwehrhub}
@@ -22,6 +23,7 @@ services:
   # ── Backend ───────────────────────────────────────────────────────────────────
   backend:
     image: ghcr.io/xpatrick096/feuerwehrhub-backend:latest
+    container_name: ${CONTAINER_BACKEND:-feuerwehrhub-backend}
     restart: unless-stopped
     depends_on:
       postgres:
@@ -41,8 +43,12 @@ services:
       FRONTEND_URL:         ${FRONTEND_URL:-http://localhost:8080}
       LOGIN_MAX_ATTEMPTS:   ${LOGIN_MAX_ATTEMPTS:-5}
       LOCKOUT_MINUTES:      ${LOCKOUT_MINUTES:-15}
+      CONTAINER_BACKEND:    ${CONTAINER_BACKEND:-feuerwehrhub-backend}
+      CONTAINER_FRONTEND:   ${CONTAINER_FRONTEND:-feuerwehrhub-frontend}
+      CONTAINER_DB:         ${CONTAINER_DB:-feuerwehrhub-db}
     volumes:
       - ff-data:/data
+      - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - "${APP_PORT:-3000}:3000"
     networks:
@@ -53,6 +59,7 @@ services:
   # ── Frontend ──────────────────────────────────────────────────────────────────
   frontend:
     image: ghcr.io/xpatrick096/feuerwehrhub-frontend:latest
+    container_name: ${CONTAINER_FRONTEND:-feuerwehrhub-frontend}
     restart: unless-stopped
     ports:
       - "8080:80"

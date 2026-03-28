@@ -38,8 +38,28 @@ export async function renderAdmin() {
     <div id="update-banner" style="display:none;background:#1a2a1a;border:1px solid #3fb950;border-radius:8px;padding:10px 16px;margin-bottom:16px;font-size:13px;color:#3fb950;align-items:center;gap:10px">
       <span>⬆️</span>
       <span id="update-banner-text"></span>
-      <a id="update-banner-link" href="#" target="_blank" style="margin-left:auto;color:#3fb950;font-weight:600;text-decoration:underline">Releases ansehen</a>
+      <a id="update-banner-link" href="#" target="_blank" style="color:#3fb950;font-weight:600;text-decoration:underline">Releases ansehen</a>
+      <button id="update-banner-btn" onclick="triggerUpdate()" style="margin-left:auto;background:#3fb950;color:#0d1117;border:none;border-radius:6px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer">Update installieren</button>
     </div>
+
+    <div id="update-modal" class="modal-overlay">
+      <div class="modal" style="max-width:580px">
+        <div class="modal__header">
+          <span>⬆️ Update wird installiert</span>
+        </div>
+        <div class="modal__body">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+            <div id="update-spinner" style="width:18px;height:18px;border:2px solid #21273d;border-top-color:#3fb950;border-radius:50%;animation:spin 0.8s linear infinite;flex-shrink:0"></div>
+            <span id="update-status-text" style="font-weight:600;color:#e6edf3">Initialisiere...</span>
+            <span id="update-timer" style="margin-left:auto;font-size:12px;color:#7d8590;font-variant-numeric:tabular-nums"></span>
+          </div>
+          <pre id="update-log" style="background:#0d1117;border:1px solid #21273d;border-radius:8px;padding:12px;font-size:12px;line-height:1.6;color:#7d8590;max-height:320px;overflow-y:auto;white-space:pre-wrap;word-break:break-word;font-family:monospace">Warte auf ersten Log-Eintrag...</pre>
+          <div id="update-countdown" style="display:none;margin-top:16px;padding:12px;background:#1a2a1a;border:1px solid #3fb950;border-radius:8px;color:#3fb950;font-size:13px;text-align:center"></div>
+        </div>
+      </div>
+    </div>
+
+    <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
 
     <div class="tab-bar">
       <button class="tab-btn tab-btn--active" data-tab="users">Benutzer</button>
@@ -1047,10 +1067,14 @@ async function loadContainerLog() {
   }
 }
 
-// ── Update-Check ──────────────────────────────────────────────────────────────
+// ── Update-Check & In-App-Update ─────────────────────────────────────────────
 
 const CURRENT_VERSION = __APP_VERSION__;
 const GITHUB_REPO     = 'xpatrick096/FeuerwehrHub';
+
+let _updatePollInterval = null;
+let _updateTimerInterval = null;
+let _updateStartTime = null;
 
 async function checkForUpdate() {
   try {
@@ -1071,4 +1095,102 @@ async function checkForUpdate() {
       banner.style.display = 'flex';
     }
   } catch (_) { /* GitHub nicht erreichbar — ignorieren */ }
+}
+
+window.triggerUpdate = async function() {
+  if (!confirm('Update jetzt installieren?\n\nDas System wird dabei neu gestartet. Alle aktiven Sitzungen bleiben nach dem Neustart erhalten.')) return;
+
+  const modal   = document.getElementById('update-modal');
+  const logPre  = document.getElementById('update-log');
+  const spinner = document.getElementById('update-spinner');
+  const statusText = document.getElementById('update-status-text');
+  const timerEl = document.getElementById('update-timer');
+  const countdown = document.getElementById('update-countdown');
+
+  // Modal öffnen + Reset
+  modal.classList.add('active');
+  logPre.textContent = '';
+  countdown.style.display = 'none';
+  statusText.textContent  = 'Starte Update...';
+  statusText.style.color  = '#e6edf3';
+  spinner.style.display   = 'block';
+
+  // Laufzeit-Timer starten
+  _updateStartTime = Date.now();
+  clearInterval(_updateTimerInterval);
+  _updateTimerInterval = setInterval(() => {
+    const sec = Math.floor((Date.now() - _updateStartTime) / 1000);
+    const m = String(Math.floor(sec / 60)).padStart(2, '0');
+    const s = String(sec % 60).padStart(2, '0');
+    timerEl.textContent = `${m}:${s}`;
+  }, 1000);
+
+  // Update anstoßen
+  try {
+    await api.request('POST', '/admin/update');
+  } catch (e) {
+    statusText.textContent = `Fehler: ${e.message}`;
+    statusText.style.color = '#ff8a80';
+    spinner.style.display  = 'none';
+    clearInterval(_updateTimerInterval);
+    return;
+  }
+
+  // Log-Polling starten
+  clearInterval(_updatePollInterval);
+  _updatePollInterval = setInterval(async () => {
+    try {
+      const data = await api.request('GET', '/admin/update/status');
+
+      // Log aktualisieren
+      if (data.log && data.log.length > 0) {
+        logPre.textContent = data.log.join('\n');
+        logPre.scrollTop = logPre.scrollHeight;
+        statusText.textContent = data.log[data.log.length - 1].replace(/^\[[^\]]+\]\s*/, '');
+      }
+
+      if (data.status === 'done') {
+        clearInterval(_updatePollInterval);
+        clearInterval(_updateTimerInterval);
+        spinner.style.display  = 'none';
+        statusText.textContent = 'Update abgeschlossen — System startet neu...';
+        statusText.style.color = '#3fb950';
+        _startRestartCountdown(countdown);
+      }
+
+      if (data.status === 'error') {
+        clearInterval(_updatePollInterval);
+        clearInterval(_updateTimerInterval);
+        spinner.style.display  = 'none';
+        statusText.textContent = 'Update fehlgeschlagen.';
+        statusText.style.color = '#ff8a80';
+      }
+    } catch (_) {
+      // Backend antwortet nicht mehr → Neustart läuft
+      if (document.getElementById('update-countdown')?.style.display !== 'none') return;
+      clearInterval(_updatePollInterval);
+      clearInterval(_updateTimerInterval);
+      spinner.style.display  = 'none';
+      statusText.textContent = 'Backend neugestartet — Weiterleitung...';
+      statusText.style.color = '#3fb950';
+      _startRestartCountdown(countdown);
+    }
+  }, 1500);
+};
+
+function _startRestartCountdown(countdownEl) {
+  let seconds = 12;
+  countdownEl.style.display = 'block';
+  countdownEl.textContent   = `System startet neu — Weiterleitung zum Login in ${seconds}s...`;
+
+  const iv = setInterval(() => {
+    seconds--;
+    if (seconds <= 0) {
+      clearInterval(iv);
+      window.location.hash = '#/login';
+      window.location.reload();
+    } else {
+      countdownEl.textContent = `System startet neu — Weiterleitung zum Login in ${seconds}s...`;
+    }
+  }, 1000);
 }
