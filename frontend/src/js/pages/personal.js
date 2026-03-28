@@ -211,6 +211,40 @@ function renderStammdaten(userId, details) {
         </div>
       </div>
     </div>
+
+    <div class="card" style="max-width:560px;margin-top:16px">
+      <div class="card__header" style="display:flex;justify-content:space-between;align-items:center">
+        <span>Kontaktdaten</span>
+        <span style="font-size:11px;color:#7d8590">Vom Mitglied selbst pflegbar</span>
+      </div>
+      <div class="card__body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Telefon</label>
+            <input type="text" value="${esc(details?.phone || '')}" disabled style="opacity:0.7;cursor:default" />
+          </div>
+          <div class="form-group">
+            <label>Private E-Mail</label>
+            <input type="text" value="${esc(details?.email_private || '')}" disabled style="opacity:0.7;cursor:default" />
+          </div>
+          <div class="form-group form-group--full">
+            <label>Adresse</label>
+            <input type="text" value="${esc(details?.address || '')}" disabled style="opacity:0.7;cursor:default" />
+          </div>
+          <div class="form-group">
+            <label>Notfallkontakt – Name</label>
+            <input type="text" value="${esc(details?.emergency_contact_name || '')}" disabled style="opacity:0.7;cursor:default" />
+          </div>
+          <div class="form-group">
+            <label>Notfallkontakt – Telefon</label>
+            <input type="text" value="${esc(details?.emergency_contact_phone || '')}" disabled style="opacity:0.7;cursor:default" />
+          </div>
+        </div>
+        ${!details?.phone && !details?.email_private && !details?.emergency_contact_name
+          ? '<p style="color:#7d8590;font-size:12px;margin-top:8px">Noch keine Kontaktdaten hinterlegt.</p>'
+          : ''}
+      </div>
+    </div>
   `;
 
   document.getElementById('btn-save-stamm').addEventListener('click', async () => {
