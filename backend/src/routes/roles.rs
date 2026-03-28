@@ -23,6 +23,7 @@ pub struct Role {
     pub name:        String,
     pub permissions: Vec<String>,
     pub r#type:      String,
+    pub level:       Option<i32>,
     pub created_at:  DateTime<Utc>,
 }
 
@@ -31,6 +32,7 @@ pub struct RoleBody {
     pub name:        String,
     pub permissions: Vec<String>,
     pub r#type:      Option<String>,
+    pub level:       Option<i32>,
 }
 
 // ── Alle Rollen auflisten ─────────────────────────────────────────────────────
@@ -44,7 +46,7 @@ pub async fn list_roles(
     }
 
     let roles = sqlx::query_as::<_, Role>(
-        "SELECT id, name, permissions, type, created_at FROM roles ORDER BY type ASC, name ASC"
+        "SELECT id, name, permissions, type, level, created_at FROM roles ORDER BY type ASC, level ASC NULLS LAST, name ASC"
     )
     .fetch_all(&state.db)
     .await?;
@@ -73,14 +75,17 @@ pub async fn create_role(
         Some("funktion") => "funktion",
         _ => "dienstgrad",
     };
+    // Funktionen haben kein Hierarchielevel
+    let level = if role_type == "funktion" { None } else { body.level };
 
     let role = sqlx::query_as::<_, Role>(
-        "INSERT INTO roles (name, permissions, type) VALUES ($1, $2, $3)
-         RETURNING id, name, permissions, type, created_at"
+        "INSERT INTO roles (name, permissions, type, level) VALUES ($1, $2, $3, $4)
+         RETURNING id, name, permissions, type, level, created_at"
     )
     .bind(&name)
     .bind(&permissions)
     .bind(role_type)
+    .bind(level)
     .fetch_one(&state.db)
     .await
     .map_err(|e| {
@@ -116,14 +121,16 @@ pub async fn update_role(
         Some("funktion") => "funktion",
         _ => "dienstgrad",
     };
+    let level = if role_type == "funktion" { None } else { body.level };
 
     let role = sqlx::query_as::<_, Role>(
-        "UPDATE roles SET name = $1, permissions = $2, type = $3 WHERE id = $4
-         RETURNING id, name, permissions, type, created_at"
+        "UPDATE roles SET name = $1, permissions = $2, type = $3, level = $4 WHERE id = $5
+         RETURNING id, name, permissions, type, level, created_at"
     )
     .bind(&name)
     .bind(&permissions)
     .bind(role_type)
+    .bind(level)
     .bind(id)
     .fetch_optional(&state.db)
     .await?
