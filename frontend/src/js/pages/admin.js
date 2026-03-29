@@ -11,7 +11,8 @@ const ROLE_LABELS = {
 };
 
 const MODULE_LABELS = {
-  lager:           'Lager',
+  lager:           'Lager (Schreiben)',
+  'lager.approve': 'Lager (Genehmigen)',
   personal:        'Personal',
   fahrzeuge:       'Fahrzeuge',
   einsatzberichte: 'Einsatzberichte',
