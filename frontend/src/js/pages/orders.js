@@ -11,6 +11,8 @@ export async function renderOrders() {
   const [settings, user] = await Promise.all([api.getSettings(), api.me()]);
   setShellInfo(settings?.ff_name, user, settings?.modules);
   renderShell('orders');
+  const canApprove = user?.role === 'admin' || user?.role === 'superuser'
+    || (user?.permissions || []).includes('lager.approve');
 
   const content = document.getElementById('page-content');
   content.innerHTML = `
@@ -29,7 +31,11 @@ export async function renderOrders() {
           <input type="text" id="filter-search" placeholder="Suche..." style="width:180px" />
           <select id="filter-status">
             <option value="">Alle Status</option>
-            <option value="offen">Offen</option>
+            <option value="entwurf">Entwurf</option>
+            <option value="ausstehend">Ausstehend</option>
+            <option value="genehmigt">Genehmigt</option>
+            <option value="abgelehnt">Abgelehnt</option>
+            <option value="offen">Offen (alt)</option>
             <option value="teillieferung">Teillieferung</option>
             <option value="vollstaendig">Vollständig</option>
             <option value="storniert">Storniert</option>
@@ -114,6 +120,40 @@ export async function renderOrders() {
     renderTable();
   }
 
+  // Reject-Modal
+  const rejectModal = document.createElement('div');
+  rejectModal.innerHTML = `
+    <div id="reject-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:400;align-items:center;justify-content:center">
+      <div style="background:#161b27;border:1px solid #21273d;border-radius:12px;padding:24px;width:100%;max-width:420px">
+        <h3 style="margin:0 0 12px;font-size:16px">Ablehnen</h3>
+        <div class="form-group">
+          <label>Ablehnungsgrund</label>
+          <textarea id="reject-reason" rows="3" placeholder="Bitte Grund angeben..."
+            style="width:100%;resize:vertical;padding:8px;border:1px solid #21273d;border-radius:6px;background:#0d1117;color:#e6edf3;font-size:13px"></textarea>
+        </div>
+        <div class="btn-group" style="margin-top:12px">
+          <button class="btn btn--danger"  id="btn-confirm-reject">Ablehnen</button>
+          <button class="btn btn--outline" id="btn-cancel-reject">Abbrechen</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(rejectModal.firstElementChild);
+
+  let rejectTargetId = null;
+  document.getElementById('btn-cancel-reject').addEventListener('click', () => {
+    document.getElementById('reject-modal').style.display = 'none';
+  });
+  document.getElementById('btn-confirm-reject').addEventListener('click', async () => {
+    const reason = document.getElementById('reject-reason').value.trim();
+    if (!reason) { toast('Ablehnungsgrund eingeben', 'error'); return; }
+    try {
+      await api.rejectOrder(rejectTargetId, reason);
+      toast('Abgelehnt');
+      document.getElementById('reject-modal').style.display = 'none';
+      load();
+    } catch (e) { toast(e.message, 'error'); }
+  });
+
   // ── Stats ────────────────────────────────────────────────────────────────────
 
   function renderStats(stats) {
@@ -180,16 +220,28 @@ export async function renderOrders() {
             <td>${positionsHtml}</td>
             <td>${esc(o.ordered_by_name) || '—'}</td>
             <td>${formatDate(o.order_date)}</td>
-            <td><span class="badge badge--${o.status}">${statusLabel(o.status)}</span></td>
+            <td>
+              <span class="badge badge--${o.approval_status || o.status}">${approvalLabel(o.approval_status, o.status)}</span>
+            </td>
             <td>
               <div class="btn-group">
                 <button class="btn btn--secondary btn--sm" data-action="detail" data-id="${o.id}" title="Details">${icon('search', 14)}</button>
-                ${o.status !== 'vollstaendig' && o.status !== 'storniert'
+                ${o.approval_status === 'entwurf'
+                  ? `<button class="btn btn--primary btn--sm" data-action="submit" data-id="${o.id}" title="Einreichen">${icon('send', 14)}</button>`
+                  : ''}
+                ${o.approval_status === 'ausstehend' && canApprove ? `
+                  <button class="btn btn--success btn--sm" data-action="approve" data-id="${o.id}" title="Genehmigen">${icon('check', 14)}</button>
+                  <button class="btn btn--danger btn--sm"  data-action="reject"  data-id="${o.id}" title="Ablehnen">${icon('x', 14)}</button>
+                ` : ''}
+                ${o.approval_status === 'abgelehnt'
+                  ? `<button class="btn btn--outline btn--sm" data-action="resubmit" data-id="${o.id}" title="Erneut einreichen">${icon('refresh-cw', 14)}</button>`
+                  : ''}
+                ${['genehmigt', 'offen', 'teillieferung'].includes(o.approval_status) && o.status !== 'vollstaendig' && o.status !== 'storniert'
                   ? `<button class="btn btn--success btn--sm" data-action="delivery" data-id="${o.id}" title="Lieferung">${icon('package', 14)}</button>`
                   : ''}
-                <button class="btn btn--outline btn--sm" data-action="pdf" data-id="${o.id}" title="PDF">${icon('file-text', 14)}</button>
-                <button class="btn btn--outline btn--sm" data-action="email" data-id="${o.id}" title="E-Mail">${icon('mail', 14)}</button>
-                <button class="btn btn--danger btn--sm" data-action="delete" data-id="${o.id}" title="Löschen">${icon('trash-2', 14)}</button>
+                <button class="btn btn--outline btn--sm" data-action="pdf"    data-id="${o.id}" title="PDF">${icon('file-text', 14)}</button>
+                <button class="btn btn--outline btn--sm" data-action="email"  data-id="${o.id}" title="E-Mail">${icon('mail', 14)}</button>
+                <button class="btn btn--danger btn--sm"  data-action="delete" data-id="${o.id}" title="Löschen">${icon('trash-2', 14)}</button>
               </div>
             </td>
           </tr>
@@ -284,6 +336,30 @@ export async function renderOrders() {
       }
     }
 
+    if (action === 'submit') {
+      if (!confirm('Beschaffungsauftrag zur Genehmigung einreichen?')) return;
+      try { await api.submitOrder(id); toast('Eingereicht'); load(); }
+      catch (e) { toast(e.message, 'error'); }
+    }
+
+    if (action === 'approve') {
+      if (!confirm('Beschaffungsauftrag genehmigen?')) return;
+      try { await api.approveOrder(id); toast('Genehmigt'); load(); }
+      catch (e) { toast(e.message, 'error'); }
+    }
+
+    if (action === 'reject') {
+      rejectTargetId = id;
+      document.getElementById('reject-reason').value = '';
+      document.getElementById('reject-modal').style.display = 'flex';
+    }
+
+    if (action === 'resubmit') {
+      if (!confirm('Erneut zur Genehmigung einreichen?')) return;
+      try { await api.resubmitOrder(id); toast('Erneut eingereicht'); load(); }
+      catch (e) { toast(e.message, 'error'); }
+    }
+
     if (action === 'delete') {
       if (!confirm('Bestellung wirklich löschen?')) return;
       try {
@@ -355,6 +431,21 @@ export async function renderOrders() {
       ${haendler.length > 0 ? `
         <div style="margin-bottom:12px;font-size:0.9em">
           <strong>Händler / Anbieter:</strong><br>${haendler.map(h => esc(h)).join('<br>')}
+        </div>
+      ` : ''}
+
+      ${order.rejection_reason ? `
+        <div style="margin-bottom:12px;padding:10px 14px;background:#2d1212;border:1px solid #e6302244;border-radius:8px;font-size:0.9em">
+          <strong style="color:#ff8a80">Ablehnungsgrund:</strong><br>
+          <span style="color:#ffcdd2">${esc(order.rejection_reason)}</span>
+          ${order.approved_by_name ? `<br><span style="color:#7d8590;font-size:11px">Abgelehnt von: ${esc(order.approved_by_name)}</span>` : ''}
+        </div>
+      ` : ''}
+
+      ${order.approval_status === 'genehmigt' && order.approved_by_name ? `
+        <div style="margin-bottom:12px;font-size:0.9em;color:#7d8590">
+          Genehmigt von: ${esc(order.approved_by_name)}
+          ${order.approved_at ? ` · ${formatDate(order.approved_at)}` : ''}
         </div>
       ` : ''}
 
@@ -608,4 +699,11 @@ function formatDate(d) { if (!d) return '—'; const part = d.split('T')[0]; con
 function today() { return new Date().toISOString().split('T')[0]; }
 function statusLabel(s) {
   return { offen: 'Offen', teillieferung: 'Teillieferung', vollstaendig: 'Vollständig', storniert: 'Storniert' }[s] || s;
+}
+
+function approvalLabel(approvalStatus, deliveryStatus) {
+  if (approvalStatus === 'genehmigt') {
+    return { offen: 'Offen', teillieferung: 'Teillieferung', vollstaendig: 'Vollständig', storniert: 'Storniert' }[deliveryStatus] || 'Genehmigt';
+  }
+  return { entwurf: 'Entwurf', ausstehend: 'Ausstehend', abgelehnt: 'Abgelehnt' }[approvalStatus] || statusLabel(deliveryStatus);
 }

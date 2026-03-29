@@ -41,6 +41,10 @@ pub struct Order {
     pub quantity:         f64,
     pub unit:             String,
     pub status:           String,
+    pub approval_status:  String,
+    pub approved_by_name: Option<String>,
+    pub rejection_reason: Option<String>,
+    pub approved_at:      Option<DateTime<Utc>>,
     pub supplier:         Option<String>,
     pub order_date:       NaiveDate,
     pub notes:            Option<String>,
@@ -86,6 +90,10 @@ struct OrderRow {
     quantity:         f64,
     unit:             String,
     status:           String,
+    approval_status:  String,
+    approved_by_name: Option<String>,
+    rejection_reason: Option<String>,
+    approved_at:      Option<DateTime<Utc>>,
     supplier:         Option<String>,
     order_date:       NaiveDate,
     notes:            Option<String>,
@@ -107,26 +115,30 @@ impl From<OrderRow> for Order {
         let positions = r.positions
             .and_then(|v| serde_json::from_value(v).ok());
         Order {
-            id:              r.id,
-            article_id:      r.article_id,
-            article_name:    r.article_name,
-            quantity:        r.quantity,
-            unit:            r.unit,
-            status:          r.status,
-            supplier:        r.supplier,
-            order_date:      r.order_date,
-            notes:           r.notes,
-            ordered_by_id:   r.ordered_by_id,
-            ordered_by_name: r.ordered_by_name,
-            telefon:         r.telefon,
-            lieferanschrift: r.lieferanschrift,
-            begruendung:     r.begruendung,
-            haendler_1:      r.haendler_1,
-            haendler_2:      r.haendler_2,
-            haendler_3:      r.haendler_3,
+            id:               r.id,
+            article_id:       r.article_id,
+            article_name:     r.article_name,
+            quantity:         r.quantity,
+            unit:             r.unit,
+            status:           r.status,
+            approval_status:  r.approval_status,
+            approved_by_name: r.approved_by_name,
+            rejection_reason: r.rejection_reason,
+            approved_at:      r.approved_at,
+            supplier:         r.supplier,
+            order_date:       r.order_date,
+            notes:            r.notes,
+            ordered_by_id:    r.ordered_by_id,
+            ordered_by_name:  r.ordered_by_name,
+            telefon:          r.telefon,
+            lieferanschrift:  r.lieferanschrift,
+            begruendung:      r.begruendung,
+            haendler_1:       r.haendler_1,
+            haendler_2:       r.haendler_2,
+            haendler_3:       r.haendler_3,
             positions,
-            created_at:      r.created_at,
-            updated_at:      r.updated_at,
+            created_at:       r.created_at,
+            updated_at:       r.updated_at,
         }
     }
 }
@@ -198,8 +210,9 @@ fn derive_article_fields(body: &OrderBody) -> Result<(String, f64, String), AppE
 
 const ORDER_COLUMNS: &str = r#"
     id, article_id, article_name, quantity::float8 as quantity,
-    unit, status::text as status, supplier, order_date,
-    notes, ordered_by_id, ordered_by_name,
+    unit, status::text as status, approval_status,
+    approved_by_name, rejection_reason, approved_at,
+    supplier, order_date, notes, ordered_by_id, ordered_by_name,
     telefon, lieferanschrift, begruendung,
     haendler_1, haendler_2, haendler_3,
     positions, created_at, updated_at
@@ -272,8 +285,8 @@ pub async fn create_order(
              (article_id, article_name, quantity, unit, supplier, order_date, notes,
               ordered_by_id, ordered_by_name,
               telefon, lieferanschrift, begruendung, haendler_1, haendler_2, haendler_3,
-              positions)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+              positions, approval_status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, 'entwurf')
          RETURNING {ORDER_COLUMNS}"
     );
 
@@ -370,14 +383,20 @@ pub async fn add_delivery(
         return Err(AppError::BadRequest("Liefermenge muss größer als 0 sein".into()));
     }
 
-    // Bestellung laden: Menge + Positionen für Status-Berechnung
-    let order_data = sqlx::query_as::<_, (f64, Option<serde_json::Value>)>(
-        "SELECT quantity::float8, positions FROM orders WHERE id = $1"
+    // Bestellung laden + Freigabe-Prüfung
+    let order_data = sqlx::query_as::<_, (f64, Option<serde_json::Value>, String)>(
+        "SELECT quantity::float8, positions, approval_status FROM orders WHERE id = $1"
     )
     .bind(id)
     .fetch_optional(&state.db)
     .await?
     .ok_or(AppError::NotFound)?;
+
+    if order_data.2 != "genehmigt" {
+        return Err(AppError::BadRequest(
+            "Bestellung muss erst genehmigt werden, bevor Lieferungen eingetragen werden können".into(),
+        ));
+    }
 
     // Anzahl nicht-leerer Positionen
     let positions_count = order_data.1.as_ref()
@@ -492,13 +511,136 @@ pub async fn set_status(
     Ok(Json(serde_json::json!({ "status": body.status })))
 }
 
+// ── Freigabe-Workflow ─────────────────────────────────────────────────────────
+
+pub async fn submit_order(
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> AppResult<Json<serde_json::Value>> {
+    let result = sqlx::query(
+        "UPDATE orders SET approval_status = 'ausstehend'
+         WHERE id = $1 AND approval_status = 'entwurf'"
+    )
+    .bind(id)
+    .execute(&state.db)
+    .await?;
+
+    if result.rows_affected() == 0 {
+        return Err(AppError::BadRequest(
+            "Bestellung nicht gefunden oder nicht im Status 'Entwurf'".into(),
+        ));
+    }
+    Ok(Json(serde_json::json!({ "approval_status": "ausstehend" })))
+}
+
+pub async fn approve_order(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+) -> AppResult<Json<serde_json::Value>> {
+    let approver_name = claims.username.clone();
+
+    let result = sqlx::query(
+        "UPDATE orders
+         SET approval_status = 'genehmigt',
+             approved_by_id   = $1,
+             approved_by_name = $2,
+             approved_at      = NOW()
+         WHERE id = $3 AND approval_status = 'ausstehend'"
+    )
+    .bind(claims.sub)
+    .bind(&approver_name)
+    .bind(id)
+    .execute(&state.db)
+    .await?;
+
+    if result.rows_affected() == 0 {
+        return Err(AppError::BadRequest(
+            "Bestellung nicht gefunden oder nicht im Status 'Ausstehend'".into(),
+        ));
+    }
+    Ok(Json(serde_json::json!({ "approval_status": "genehmigt" })))
+}
+
+#[derive(Deserialize)]
+pub struct RejectBody {
+    pub reason: String,
+}
+
+pub async fn reject_order(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+    Json(body): Json<RejectBody>,
+) -> AppResult<Json<serde_json::Value>> {
+    let reason = body.reason.trim().to_string();
+    if reason.is_empty() {
+        return Err(AppError::BadRequest("Ablehnungsgrund darf nicht leer sein".into()));
+    }
+
+    let result = sqlx::query(
+        "UPDATE orders
+         SET approval_status  = 'abgelehnt',
+             approved_by_id   = $1,
+             approved_by_name = $2,
+             rejection_reason = $3,
+             approved_at      = NOW()
+         WHERE id = $4 AND approval_status = 'ausstehend'"
+    )
+    .bind(claims.sub)
+    .bind(&claims.username)
+    .bind(&reason)
+    .bind(id)
+    .execute(&state.db)
+    .await?;
+
+    if result.rows_affected() == 0 {
+        return Err(AppError::BadRequest(
+            "Bestellung nicht gefunden oder nicht im Status 'Ausstehend'".into(),
+        ));
+    }
+    Ok(Json(serde_json::json!({ "approval_status": "abgelehnt" })))
+}
+
+pub async fn resubmit_order(
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> AppResult<Json<serde_json::Value>> {
+    let result = sqlx::query(
+        "UPDATE orders SET approval_status = 'ausstehend', rejection_reason = NULL
+         WHERE id = $1 AND approval_status = 'abgelehnt'"
+    )
+    .bind(id)
+    .execute(&state.db)
+    .await?;
+
+    if result.rows_affected() == 0 {
+        return Err(AppError::BadRequest(
+            "Bestellung nicht gefunden oder nicht im Status 'Abgelehnt'".into(),
+        ));
+    }
+    Ok(Json(serde_json::json!({ "approval_status": "ausstehend" })))
+}
+
 pub fn router(state: AppState) -> Router<AppState> {
-    Router::new()
+    // Genehmigungsrouten — benötigen lager.approve
+    let approve_routes = Router::new()
+        .route("/:id/approve",   post(approve_order))
+        .route("/:id/reject",    post(reject_order))
+        .route_layer(middleware::from_fn_with_state(state.clone(), require_module("lager.approve")))
+        .route_layer(middleware::from_fn_with_state(state.clone(), require_auth));
+
+    // Standard-Lager-Routen
+    let lager_routes = Router::new()
         .route("/", get(list_orders).post(create_order))
         .route("/stats", get(get_stats))
         .route("/:id", get(get_order).put(update_order).delete(delete_order))
-        .route("/:id/delivery", post(add_delivery))
-        .route("/:id/status", post(set_status))
+        .route("/:id/delivery",  post(add_delivery))
+        .route("/:id/status",    post(set_status))
+        .route("/:id/submit",    post(submit_order))
+        .route("/:id/resubmit",  post(resubmit_order))
         .route_layer(middleware::from_fn_with_state(state.clone(), require_module("lager")))
-        .route_layer(middleware::from_fn_with_state(state, require_auth))
+        .route_layer(middleware::from_fn_with_state(state, require_auth));
+
+    Router::new().merge(lager_routes).merge(approve_routes)
 }

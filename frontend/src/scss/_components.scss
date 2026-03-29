@@ -227,6 +227,10 @@ tr:hover td { background: $bg-card-hover; }
   &--teillieferung { background: $orange-hell; color: #ffb74d; }
   &--vollstaendig  { background: $gruen-hell;  color: $gruen; }
   &--storniert     { background: $bg-card-hover; color: $text-muted; }
+  &--entwurf      { background: #1f2937; color: #9ca3af; }
+  &--ausstehend   { background: #1c2a3a; color: #60a5fa; }
+  &--genehmigt    { background: $gruen-hell;  color: $gruen; }
+  &--abgelehnt    { background: $rot-hell;    color: #ff8a80; }
 
   &--superuser { background: $orange-hell; color: $orange; }
   &--admin     { background: $lila-hell;   color: $lila; }

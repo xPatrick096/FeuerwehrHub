@@ -21,61 +21,28 @@ export async function renderPersonal() {
   renderShell('personal');
 
   const content = document.getElementById('page-content');
-  content.innerHTML = `
-    <div class="page-header">
-      <div><h2>Personal</h2><p>Mitgliederverwaltung</p></div>
-      <div style="display:flex;gap:8px">
-        <button class="btn btn--primary btn--sm"  id="pnav-mitglieder">${icon('users', 14)} Mitglieder</button>
-        <button class="btn btn--outline btn--sm"  id="pnav-termine">${icon('calendar', 14)} Termine</button>
-        <button class="btn btn--outline btn--sm"  id="pnav-typen">${icon('tag', 14)} Termintypen</button>
-      </div>
-    </div>
-    <div id="personal-list-wrap"></div>
-    <div id="personal-detail-wrap" style="display:none"></div>
-    <div id="personal-termine-wrap" style="display:none"></div>
-    <div id="personal-typen-wrap"   style="display:none"></div>
-  `;
 
-  const navBtns = {
-    mitglieder: document.getElementById('pnav-mitglieder'),
-    termine:    document.getElementById('pnav-termine'),
-    typen:      document.getElementById('pnav-typen'),
-  };
-  const views = {
-    mitglieder: document.getElementById('personal-list-wrap'),
-    detail:     document.getElementById('personal-detail-wrap'),
-    termine:    document.getElementById('personal-termine-wrap'),
-    typen:      document.getElementById('personal-typen-wrap'),
-  };
-
-  function switchView(name) {
-    Object.values(views).forEach(v => v.style.display = 'none');
-    Object.values(navBtns).forEach(b => { b.className = 'btn btn--outline btn--sm'; });
-    if (name === 'mitglieder') {
-      views.mitglieder.style.display = 'block';
-      navBtns.mitglieder.className = 'btn btn--primary btn--sm';
-    } else if (name === 'termine') {
-      views.termine.style.display = 'block';
-      navBtns.termine.className = 'btn btn--primary btn--sm';
-      loadTermineView();
-    } else if (name === 'typen') {
-      views.typen.style.display = 'block';
-      navBtns.typen.className = 'btn btn--primary btn--sm';
-      loadTerminTypenView();
-    }
-  }
-
-  navBtns.mitglieder.addEventListener('click', () => switchView('mitglieder'));
-  navBtns.termine.addEventListener('click',    () => switchView('termine'));
-  navBtns.typen.addEventListener('click',      () => switchView('typen'));
-
-  // Auto-Switch wenn direkt über #/termine navigiert
   if (window.location.hash === '#/termine') {
-    switchView('termine');
+    content.innerHTML = `
+      <div class="page-header">
+        <div><h2>Termine</h2><p>Terminverwaltung</p></div>
+      </div>
+      <div id="personal-termine-wrap"></div>
+      <div id="personal-typen-wrap" style="display:none"></div>
+    `;
+    renderIcons(content);
+    loadTermineView();
   } else {
+    content.innerHTML = `
+      <div class="page-header">
+        <div><h2>Personal</h2><p>Mitgliederverwaltung</p></div>
+      </div>
+      <div id="personal-list-wrap"></div>
+      <div id="personal-detail-wrap" style="display:none"></div>
+    `;
+    renderIcons(content);
     loadMemberList();
   }
-  renderIcons(document.getElementById('page-content'));
 }
 
 // ── Mitgliederliste ───────────────────────────────────────────────────────────
@@ -1035,7 +1002,10 @@ async function loadTermineView() {
       <div class="card">
         <div class="card__header" style="display:flex;justify-content:space-between;align-items:center">
           <span>Termine (${termine.length})</span>
-          <button class="btn btn--primary btn--sm" id="btn-add-termin">+ Termin erstellen</button>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn--outline btn--sm" id="btn-show-typen">${icon('tag', 13)} Termintypen</button>
+            <button class="btn btn--primary btn--sm" id="btn-add-termin">+ Termin erstellen</button>
+          </div>
         </div>
         <div id="termine-list">
           ${termine.length ? renderTerminTable(termine) : '<div style="padding:16px"><p style="color:#7d8590;font-size:13px">Noch keine Termine eingetragen.</p></div>'}
@@ -1189,6 +1159,13 @@ function bindTermineActions(typen, members) {
   const closeTerminModal = () => { terminModal.style.display = 'none'; };
 
   document.getElementById('btn-add-termin').addEventListener('click', () => openTerminModal());
+  document.getElementById('btn-show-typen').addEventListener('click', () => {
+    const typenWrap = document.getElementById('personal-typen-wrap');
+    if (typenWrap) {
+      typenWrap.style.display = typenWrap.style.display === 'none' ? 'block' : 'none';
+      if (typenWrap.style.display === 'block') loadTerminTypenView();
+    }
+  });
   document.getElementById('btn-cancel-termin').addEventListener('click', closeTerminModal);
 
   document.getElementById('btn-save-termin').addEventListener('click', async () => {

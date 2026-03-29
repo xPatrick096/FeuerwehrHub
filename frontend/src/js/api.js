@@ -55,8 +55,12 @@ export const api = {
   createOrder:  (body)   => request('POST',   '/orders', body),
   updateOrder:  (id, b)  => request('PUT',    `/orders/${id}`, b),
   deleteOrder:  (id)     => request('DELETE', `/orders/${id}`),
-  addDelivery:  (id, b)  => request('POST',   `/orders/${id}/delivery`, b),
-  setStatus:    (id, s)  => request('POST',   `/orders/${id}/status`, { status: s }),
+  addDelivery:    (id, b)  => request('POST',   `/orders/${id}/delivery`, b),
+  setStatus:      (id, s)  => request('POST',   `/orders/${id}/status`, { status: s }),
+  submitOrder:    (id)     => request('POST',   `/orders/${id}/submit`),
+  approveOrder:   (id)     => request('POST',   `/orders/${id}/approve`),
+  rejectOrder:    (id, r)  => request('POST',   `/orders/${id}/reject`, { reason: r }),
+  resubmitOrder:  (id)     => request('POST',   `/orders/${id}/resubmit`),
   getStats:     ()       => request('GET',    '/orders/stats'),
 
   // Artikel
