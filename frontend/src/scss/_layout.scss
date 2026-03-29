@@ -130,18 +130,19 @@
     display: flex;
     align-items: center;
     gap: $space-sm;
-    padding: 10px $space-md;
+    padding: 8px $space-sm 8px $space-md;
+    margin: 1px $space-sm 1px 0;
+    border-radius: 0 $radius-md $radius-md 0;
     color: $text-muted;
     cursor: pointer;
     border: none;
+    border-left: 2px solid transparent;
     background: none;
-    width: 100%;
+    width: calc(100% - #{$space-sm});
     text-align: left;
     font-size: $font-size-md;
     font-weight: 500;
     transition: all $transition-fast;
-    border-left: 2px solid transparent;
-    margin: 1px 0;
 
     &:hover {
       color: $text;
@@ -150,17 +151,22 @@
     }
 
     &.active {
-      color: $text;
-      background: $bg-card;
+      color: $rot;
+      background: $rot-hell;
       border-left-color: $rot;
       font-weight: 600;
     }
 
     &__icon {
-      font-size: 15px;
-      width: 20px;
-      text-align: center;
+      width: 18px;
+      height: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       flex-shrink: 0;
+      color: inherit;
+
+      .icon svg { width: 16px; height: 16px; }
     }
   }
 
@@ -211,7 +217,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding-bottom: $space-lg;
   margin-bottom: $space-lg;
+  border-bottom: 1px solid $border;
 
   h2 {
     font-size: $font-size-xl;

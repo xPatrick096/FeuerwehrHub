@@ -59,6 +59,15 @@ export async function renderHome() {
           <p style="color:#7d8590;font-size:13px">Lade...</p>
         </div>
       </div>
+
+      <div id="termine-widget" class="widget-card widget-card--termine" style="display:none">
+        <div class="widget-card__header">
+          <h3>${icon('calendar', 15)} Termine</h3>
+        </div>
+        <div class="widget-card__body">
+          <p style="color:#7d8590;font-size:13px;margin:0">Keine bevorstehenden Termine. Das Terminmodul wird in einer der nächsten Versionen verfügbar sein.</p>
+        </div>
+      </div>
     </div>
 
     ${isAdmin ? `
@@ -106,6 +115,8 @@ export async function renderHome() {
   }
   if (isAdmin || (modules.personal === true && canAccess(user, 'personal'))) {
     loadPersonalWidget();
+    const termineWidget = document.getElementById('termine-widget');
+    if (termineWidget) termineWidget.style.display = 'flex';
   }
   if (isAdmin || (modules.einsatzberichte === true && canAccess(user, 'einsatzberichte'))) {
     loadIncidentWidget();

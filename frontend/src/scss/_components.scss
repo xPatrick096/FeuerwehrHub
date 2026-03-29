@@ -41,10 +41,12 @@
 .card {
   background: $bg-card;
   border: 1px solid $border;
-  border-radius: $radius-lg;
+  border-radius: $radius-xl;
   margin-bottom: $space-lg;
   overflow: hidden;
-  transition: border-color $transition-fast;
+  transition: border-color $transition-fast, box-shadow $transition-fast;
+
+  &:hover { box-shadow: $schatten-sm; }
 
   &__header {
     background: $bg-card-hover;
@@ -758,6 +760,9 @@ tr:hover td { background: $bg-card-hover; }
   border: 1px solid $border;
   border-radius: $radius-xl;
   overflow: hidden;
+  transition: box-shadow $transition-fast;
+
+  &:hover { box-shadow: $schatten-md; }
 
   &__header {
     display: flex;
@@ -794,6 +799,7 @@ tr:hover td { background: $bg-card-hover; }
   &--einsatzberichte .widget-card__header { border-left-color: #e63022; }
   &--personal        .widget-card__header { border-left-color: #22c55e; }
   &--lager           .widget-card__header { border-left-color: #f59e0b; }
+  &--termine         .widget-card__header { border-left-color: #8b5cf6; }
 }
 
 .stat-tiles {
