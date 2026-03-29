@@ -431,7 +431,7 @@ pub async fn update_permissions(
     }
 
     // Nur bekannte Module erlauben
-    let known: &[&str] = &["lager", "personal", "fahrzeuge"];
+    let known: &[&str] = &["lager", "lager.approve", "personal", "fahrzeuge", "einsatzberichte"];
     let permissions: Vec<String> = body.permissions
         .into_iter()
         .filter(|p| known.contains(&p.as_str()))
