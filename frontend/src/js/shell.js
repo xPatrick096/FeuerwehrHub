@@ -46,17 +46,18 @@ export function renderShell(activePage) {
               <span class="sidebar__item__icon">${icon('user', 16)}</span> Mein Bereich
             </button>
             <div class="sidebar__divider"></div>
-            ${canAccess(currentUser, 'lager') && activeModules['lager'] ? `
+            ${(canAccess(currentUser, 'lager') || canAccess(currentUser, 'lager.approve')) && activeModules['lager'] ? `
             <div class="sidebar__module">${icon('package', 14)} Lager</div>
             <button class="sidebar__item${activePage === 'orders' ? ' active' : ''}" data-page="orders">
               <span class="sidebar__item__icon">${icon('clipboard-list', 16)}</span> Bestellübersicht
             </button>
+            ${canAccess(currentUser, 'lager') ? `
             <button class="sidebar__item${activePage === 'new-order' ? ' active' : ''}" data-page="new-order">
               <span class="sidebar__item__icon">${icon('plus', 16)}</span> Neue Bestellung
             </button>
             <button class="sidebar__item${activePage === 'articles' ? ' active' : ''}" data-page="articles">
               <span class="sidebar__item__icon">${icon('box', 16)}</span> Artikelstamm
-            </button>
+            </button>` : ''}
             <div class="sidebar__divider"></div>` : ''}
 
             ${canAccess(currentUser, 'personal') && activeModules['personal'] ? `
