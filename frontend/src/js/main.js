@@ -20,6 +20,7 @@ registerRoute('#/setup',     renderSetup);
 registerRoute('#/',          renderHome);
 registerRoute('#/my-area',   renderMyArea);
 registerRoute('#/personal',  renderPersonal, 'personal');
+registerRoute('#/termine',   renderPersonal, 'personal');
 registerRoute('#/vehicles',  renderVehicles,  'fahrzeuge');
 registerRoute('#/incidents',     renderIncidents,   'einsatzberichte');
 registerRoute('#/new-incident',  renderNewIncident,  'einsatzberichte');

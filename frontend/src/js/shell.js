@@ -64,6 +64,9 @@ export function renderShell(activePage) {
             <button class="sidebar__item${activePage === 'personal' ? ' active' : ''}" data-page="personal">
               <span class="sidebar__item__icon">${icon('user', 16)}</span> Mitglieder
             </button>
+            <button class="sidebar__item${activePage === 'termine' ? ' active' : ''}" data-page="termine">
+              <span class="sidebar__item__icon">${icon('calendar', 16)}</span> Termine
+            </button>
             <div class="sidebar__divider"></div>` : ''}
 
             ${canAccess(currentUser, 'fahrzeuge') && activeModules['fahrzeuge'] ? `

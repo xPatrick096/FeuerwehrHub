@@ -63,9 +63,10 @@ export async function renderHome() {
       <div id="termine-widget" class="widget-card widget-card--termine" style="display:none">
         <div class="widget-card__header">
           <h3>${icon('calendar', 15)} Termine</h3>
+          <a href="#/termine">Alle anzeigen →</a>
         </div>
-        <div class="widget-card__body">
-          <p style="color:#7d8590;font-size:13px;margin:0">Keine bevorstehenden Termine. Das Terminmodul wird in einer der nächsten Versionen verfügbar sein.</p>
+        <div class="widget-card__body" id="termine-widget-content">
+          <p style="color:#7d8590;font-size:13px">Lade...</p>
         </div>
       </div>
     </div>
@@ -115,9 +116,9 @@ export async function renderHome() {
   }
   if (isAdmin || (modules.personal === true && canAccess(user, 'personal'))) {
     loadPersonalWidget();
-    const termineWidget = document.getElementById('termine-widget');
-    if (termineWidget) termineWidget.style.display = 'flex';
   }
+  // Termine-Widget für alle eingeloggten Nutzer
+  loadTermineWidget();
   if (isAdmin || (modules.einsatzberichte === true && canAccess(user, 'einsatzberichte'))) {
     loadIncidentWidget();
   }
@@ -347,6 +348,58 @@ async function loadIncidentWidget() {
         ${tile(s.brand,   'Brand',               '#e63022')}
         ${tile(s.entwurf, 'Entwürfe offen',      entwurfColor)}
       </div>`;
+  } catch (_) {
+    widget.style.display = 'none';
+    widget.style.flexDirection = '';
+  }
+}
+
+// ── Termine-Widget ────────────────────────────────────────────────────────────
+
+async function loadTermineWidget() {
+  const widget  = document.getElementById('termine-widget');
+  const content = document.getElementById('termine-widget-content');
+  if (!widget || !content) return;
+
+  widget.style.display = 'flex';
+  widget.style.flexDirection = 'column';
+
+  try {
+    const termine = await api.getMyTermine();
+    const now     = new Date();
+    const upcoming = termine
+      .filter(t => new Date(t.start_at) >= now)
+      .slice(0, 5); // Nächste 5 Termine
+
+    if (!upcoming.length) {
+      content.innerHTML = `<p style="color:#7d8590;font-size:13px;margin:0">Keine bevorstehenden Termine.</p>`;
+      return;
+    }
+
+    content.innerHTML = upcoming.map(t => {
+      const d = new Date(t.start_at);
+      const colorDot = t.typ_color
+        ? `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${t.typ_color};margin-right:5px;flex-shrink:0"></span>`
+        : '';
+      return `
+        <div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid #21273d">
+          <div style="min-width:40px;text-align:center;background:#0d1117;border-radius:5px;padding:4px 6px;flex-shrink:0">
+            <div style="font-size:14px;font-weight:700;line-height:1">${String(d.getDate()).padStart(2,'0')}</div>
+            <div style="font-size:9px;color:#7d8590;text-transform:uppercase">${d.toLocaleDateString('de-DE',{month:'short'})}</div>
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+              ${colorDot}${esc(t.title)}
+            </div>
+            <div style="color:#7d8590;font-size:11px;margin-top:1px">
+              ${d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})} Uhr
+              ${t.location ? ` · ${esc(t.location)}` : ''}
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+
+    renderIcons(widget);
   } catch (_) {
     widget.style.display = 'none';
     widget.style.flexDirection = '';

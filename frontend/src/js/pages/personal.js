@@ -69,7 +69,12 @@ export async function renderPersonal() {
   navBtns.termine.addEventListener('click',    () => switchView('termine'));
   navBtns.typen.addEventListener('click',      () => switchView('typen'));
 
-  loadMemberList();
+  // Auto-Switch wenn direkt über #/termine navigiert
+  if (window.location.hash === '#/termine') {
+    switchView('termine');
+  } else {
+    loadMemberList();
+  }
   renderIcons(document.getElementById('page-content'));
 }
 
