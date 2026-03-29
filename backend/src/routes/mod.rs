@@ -9,4 +9,5 @@ pub mod personal;
 pub mod roles;
 pub mod selfservice;
 pub mod settings;
+pub mod termine;
 pub mod vehicles;

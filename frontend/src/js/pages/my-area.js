@@ -464,17 +464,72 @@ async function loadEquipmentTab() {
 
 // ── Tab: Termine ──────────────────────────────────────────────────────────────
 
-function loadAppointmentsTab() {
-  document.getElementById('tab-appointments').innerHTML = `
-    <div class="card">
-      <div class="card__body" style="text-align:center;padding:40px 20px">
-        <div style="margin-bottom:12px">${icon('calendar', 32)}</div>
-        <p style="color:#7d8590;font-size:14px">Das Terminmodul ist noch nicht verfügbar.</p>
-        <p style="color:#4c5462;font-size:12px;margin-top:8px">Kommt in einer zukünftigen Version.</p>
-      </div>
-    </div>
-  `;
-  renderIcons(document.getElementById('tab-appointments'));
+async function loadAppointmentsTab() {
+  const wrap = document.getElementById('tab-appointments');
+  wrap.innerHTML = '<p style="color:#7d8590;font-size:13px">Lade...</p>';
+
+  try {
+    const termine = await api.getMyTermine();
+    const now = new Date();
+
+    if (!termine.length) {
+      wrap.innerHTML = `
+        <div class="card">
+          <div class="card__body" style="text-align:center;padding:40px 20px">
+            <div style="margin-bottom:12px">${icon('calendar', 32)}</div>
+            <p style="color:#7d8590;font-size:14px">Keine Termine vorhanden.</p>
+          </div>
+        </div>`;
+      renderIcons(wrap);
+      return;
+    }
+
+    const upcoming = termine.filter(t => new Date(t.start_at) >= now);
+    const past     = termine.filter(t => new Date(t.start_at) <  now);
+
+    const renderCards = (list) => list.map(t => {
+      const colorDot = t.typ_color
+        ? `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${t.typ_color};margin-right:4px"></span>`
+        : '';
+      return `
+        <div style="border:1px solid #21273d;border-radius:8px;padding:14px 16px;margin-bottom:10px">
+          <div style="display:flex;align-items:flex-start;gap:12px">
+            <div style="min-width:52px;text-align:center;background:#0d1117;border-radius:6px;padding:6px 8px">
+              <div style="font-size:18px;font-weight:700;line-height:1">${new Date(t.start_at).getDate().toString().padStart(2,'0')}</div>
+              <div style="font-size:10px;color:#7d8590;text-transform:uppercase">${new Date(t.start_at).toLocaleDateString('de-DE', {month:'short'})}</div>
+            </div>
+            <div style="flex:1">
+              <div style="font-weight:600;font-size:14px">${esc(t.title)}</div>
+              <div style="color:#7d8590;font-size:12px;margin-top:3px">
+                ${colorDot}${t.typ_name ? esc(t.typ_name) + ' · ' : ''}
+                ${new Date(t.start_at).toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'})} Uhr
+                ${t.end_at ? ` – ${new Date(t.end_at).toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'})} Uhr` : ''}
+              </div>
+              ${t.location ? `<div style="color:#7d8590;font-size:12px;margin-top:2px">${icon('map-pin',11)} ${esc(t.location)}</div>` : ''}
+              ${t.description ? `<div style="color:#9ca3af;font-size:12px;margin-top:4px">${esc(t.description)}</div>` : ''}
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+
+    wrap.innerHTML = `
+      ${upcoming.length ? `
+        <div class="card" style="margin-bottom:16px">
+          <div class="card__header">Bevorstehende Termine (${upcoming.length})</div>
+          <div class="card__body">${renderCards(upcoming)}</div>
+        </div>` : ''}
+      ${past.length ? `
+        <div class="card">
+          <div class="card__header" style="color:#7d8590">Vergangene Termine (${past.length})</div>
+          <div class="card__body" style="opacity:0.6">${renderCards(past)}</div>
+        </div>` : ''}
+    `;
+
+    renderIcons(wrap);
+
+  } catch (e) {
+    wrap.innerHTML = `<p style="color:#ff8a80">${esc(e.message)}</p>`;
+  }
 }
 
 // ── Hilfsfunktionen ───────────────────────────────────────────────────────────

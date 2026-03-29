@@ -145,6 +145,20 @@ export const api = {
   updateMemberProfile:        (id, b)  => request('PUT',    `/personal/members/${id}/profile`, b),
   getMemberEmergencyContacts: (id)     => request('GET',    `/personal/members/${id}/emergency-contacts`),
 
+  // Termine (Personal-Modul)
+  getTermine:              ()            => request('GET',    '/personal/termine'),
+  createTermin:            (b)           => request('POST',   '/personal/termine', b),
+  updateTermin:            (id, b)       => request('PUT',    `/personal/termine/${id}`, b),
+  deleteTermin:            (id)          => request('DELETE', `/personal/termine/${id}`),
+  getTerminAssignments:    (id)          => request('GET',    `/personal/termine/${id}/assignments`),
+  setTerminAssignments:    (id, b)       => request('POST',   `/personal/termine/${id}/assignments`, b),
+  getTerminTypen:          ()            => request('GET',    '/personal/termin-typen'),
+  createTerminTyp:         (b)           => request('POST',   '/personal/termin-typen', b),
+  deleteTerminTyp:         (id)          => request('DELETE', `/personal/termin-typen/${id}`),
+
+  // Mein Bereich - Termine
+  getMyTermine:            ()            => request('GET',    '/me/termine'),
+
   // Ankündigungen
   getAnnouncements:    ()          => request('GET',    '/announcements'),
   createAnnouncement:  (body)      => request('POST',   '/announcements', body),
