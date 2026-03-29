@@ -2,6 +2,7 @@ import { api } from '../api.js';
 import { toast } from '../toast.js';
 import { renderShell, setShellInfo, canAccess } from '../shell.js';
 import { esc } from '../utils.js';
+import { icon, renderIcons } from '../icons.js';
 
 export async function renderHome() {
   const [settings, user] = await Promise.all([api.getSettings(), api.me()]);
@@ -28,38 +29,35 @@ export async function renderHome() {
       <div id="announcements-list"><p style="color:#7d8590;font-size:13px">Lade...</p></div>
     </div>
 
-    <div id="dashboard-modules" style="margin-top:32px">
-      <h3 style="margin:0 0 12px;font-size:15px;font-weight:600;color:#e6edf3">Meine Module</h3>
-      <div class="dashboard-grid" id="module-cards"></div>
-    </div>
+    <div class="widget-grid" id="widget-grid">
+      <div id="vehicle-widget" class="widget-card widget-card--fahrzeuge" style="display:none">
+        <div class="widget-card__header">
+          <h3>${icon('truck', 15)} Fahrzeuge</h3>
+          <a href="#/vehicles">Alle anzeigen →</a>
+        </div>
+        <div class="widget-card__body" id="vehicle-widget-content">
+          <p style="color:#7d8590;font-size:13px">Lade...</p>
+        </div>
+      </div>
 
-    <div id="vehicle-widget" style="display:none;margin-top:32px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <h3 style="margin:0;font-size:15px;font-weight:600;color:#e6edf3">🚒 Fahrzeuge — Übersicht</h3>
-        <a href="#/vehicles" style="font-size:12px;color:#7d8590;text-decoration:none">Alle anzeigen →</a>
+      <div id="incident-widget" class="widget-card widget-card--einsatzberichte" style="display:none">
+        <div class="widget-card__header">
+          <h3>${icon('siren', 15)} Einsatzberichte</h3>
+          <a href="#/incidents">Alle anzeigen →</a>
+        </div>
+        <div class="widget-card__body" id="incident-widget-content">
+          <p style="color:#7d8590;font-size:13px">Lade...</p>
+        </div>
       </div>
-      <div id="vehicle-widget-content">
-        <p style="color:#7d8590;font-size:13px">Lade...</p>
-      </div>
-    </div>
 
-    <div id="incident-widget" style="display:none;margin-top:32px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <h3 style="margin:0;font-size:15px;font-weight:600;color:#e6edf3">🚨 Einsatzberichte — Übersicht</h3>
-        <a href="#/incidents" style="font-size:12px;color:#7d8590;text-decoration:none">Alle anzeigen →</a>
-      </div>
-      <div id="incident-widget-content">
-        <p style="color:#7d8590;font-size:13px">Lade...</p>
-      </div>
-    </div>
-
-    <div id="personal-widget" style="display:none;margin-top:32px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <h3 style="margin:0;font-size:15px;font-weight:600;color:#e6edf3">👥 Personal — Übersicht</h3>
-        <a href="#/personal" style="font-size:12px;color:#7d8590;text-decoration:none">Alle anzeigen →</a>
-      </div>
-      <div id="personal-widget-content">
-        <p style="color:#7d8590;font-size:13px">Lade...</p>
+      <div id="personal-widget" class="widget-card widget-card--personal" style="display:none">
+        <div class="widget-card__header">
+          <h3>${icon('users', 15)} Personal</h3>
+          <a href="#/personal">Alle anzeigen →</a>
+        </div>
+        <div class="widget-card__body" id="personal-widget-content">
+          <p style="color:#7d8590;font-size:13px">Lade...</p>
+        </div>
       </div>
     </div>
 
@@ -99,8 +97,8 @@ export async function renderHome() {
     ` : ''}
   `;
 
+  renderIcons(content);
   await loadAnnouncements(user, isAdmin);
-  renderModuleCards(user, settings?.modules || {});
 
   const modules = settings?.modules || {};
   if (isAdmin || (modules.fahrzeuge === true && canAccess(user, 'fahrzeuge'))) {
@@ -136,7 +134,7 @@ async function loadAnnouncements(user, isAdmin) {
       <div class="card announcement-card" data-id="${a.id}" style="margin-bottom:12px">
         <div class="card__header" style="display:flex;justify-content:space-between;align-items:center">
           <span>
-            ${a.pinned ? '<span style="color:#c0392b;margin-right:6px" title="Angeheftet">📌</span>' : ''}
+            ${a.pinned ? `<span style="color:#c0392b;margin-right:6px" title="Angeheftet">${icon('pin', 13)}</span>` : ''}
             <strong>${esc(a.title)}</strong>
           </span>
           <span style="display:flex;align-items:center;gap:12px">
@@ -243,61 +241,6 @@ function openAnnouncementModal(ann, user, isAdmin) {
   document.getElementById('ann-title').focus();
 }
 
-// ── Modul-Kacheln ─────────────────────────────────────────────────────────────
-
-function renderModuleCards(user, modules) {
-  const grid = document.getElementById('module-cards');
-  if (!grid) return;
-
-  const isAdmin = user?.role === 'admin' || user?.role === 'superuser';
-
-  const allModules = [
-    { key: 'lager',           icon: '🏪', label: 'Lager',           desc: 'Bestellungen, Artikelstamm',          page: '#/orders', implemented: true },
-    { key: 'einsatzberichte', icon: '🚨', label: 'Einsatzberichte', desc: 'Berichte erfassen & verwalten',        page: '#/incidents', implemented: true },
-    { key: 'fahrzeuge',       icon: '🚗', label: 'Fahrzeuge',       desc: 'Stammdaten, Fristen, Wartung',          page: '#/vehicles', implemented: true },
-    { key: 'personal',        icon: '👥', label: 'Personal',        desc: 'Mitglieder, Qualifikationen, Ehrungen', page: '#/personal', implemented: true },
-    { key: 'jugendfeuerwehr', icon: '🧒', label: 'Jugendfeuerwehr', desc: 'JF-Mitglieder, Termine',               page: null,       implemented: false },
-  ];
-
-  // Für reguläre Benutzer: nur aktive Module mit Berechtigung
-  // Für Admins: aktive Module + deaktivierte implementierte Module (als Hinweis) + Demnächst-Module
-  const visible = allModules.filter(m => {
-    if (!m.implemented) return isAdmin; // Demnächst nur für Admins
-    const isActive = modules[m.key] === true;
-    if (isActive) return canAccess(user, m.key);
-    return isAdmin; // Deaktivierte Module nur für Admins sichtbar
-  });
-
-  if (!visible.length) {
-    grid.innerHTML = `<p style="color:#7d8590;font-size:13px">Keine Module verfügbar. Wende dich an deinen Administrator.</p>`;
-    return;
-  }
-
-  grid.innerHTML = visible.map(m => {
-    const isActive = modules[m.key] === true;
-    const isClickable = m.implemented && isActive && m.page;
-    let badge = '';
-    if (!m.implemented) badge = `<div class="dashboard-card__soon">Demnächst</div>`;
-    else if (!isActive) badge = `<div class="dashboard-card__soon">Deaktiviert</div>`;
-
-    return `
-      <div class="dashboard-card ${isClickable ? 'dashboard-card--active' : 'dashboard-card--soon'}"
-        ${isClickable ? `data-page="${m.page}"` : ''}>
-        <div class="dashboard-card__icon">${m.icon}</div>
-        <div class="dashboard-card__label">${m.label}</div>
-        <div class="dashboard-card__desc">${m.desc}</div>
-        ${badge}
-      </div>
-    `;
-  }).join('');
-
-  grid.querySelectorAll('.dashboard-card--active[data-page]').forEach(card => {
-    card.addEventListener('click', () => {
-      window.location.hash = card.dataset.page;
-    });
-  });
-}
-
 // ── Fahrzeuge-Widget ──────────────────────────────────────────────────────────
 
 async function loadVehicleWidget() {
@@ -305,31 +248,30 @@ async function loadVehicleWidget() {
   const content = document.getElementById('vehicle-widget-content');
   if (!widget || !content) return;
 
-  widget.style.display = 'block';
+  widget.style.display = 'flex';
+  widget.style.flexDirection = 'column';
 
   try {
     const s = await api.getVehicleStats();
 
     const tile = (value, label, color) => `
-      <div style="background:#161b27;border:1px solid #21273d;border-radius:10px;padding:14px 18px;min-width:120px;flex:1">
-        <div style="font-size:22px;font-weight:800;color:${color};letter-spacing:-0.02em">${value}</div>
-        <div style="font-size:11px;color:#7d8590;margin-top:2px">${label}</div>
+      <div class="stat-tile">
+        <div class="stat-tile__value" style="color:${color}">${value}</div>
+        <div class="stat-tile__label">${label}</div>
       </div>`;
 
     const overdueColor = s.inspections_overdue > 0 ? '#e63022' : '#3fb950';
     const soonColor    = s.inspections_soon    > 0 ? '#f0a500' : '#3fb950';
-    const maintColor   = s.in_maintenance      > 0 ? '#f0a500' : '#3fb950';
 
     content.innerHTML = `
-      <div style="display:flex;flex-wrap:wrap;gap:10px">
-        ${tile(s.active,              'Einsatzbereit',          '#3fb950')}
-        ${tile(s.total,               'Fahrzeuge gesamt',       '#7d8590')}
-        ${tile(s.in_maintenance,      'Außer Dienst / Wartung', maintColor)}
-        ${tile(s.inspections_overdue, 'Fristen überfällig',     overdueColor)}
-        ${tile(s.inspections_soon,    'Fristen bald fällig',    soonColor)}
+      <div class="stat-tiles">
+        ${tile(s.active,              'Einsatzbereit',      '#3fb950')}
+        ${tile(s.inspections_overdue, 'Fristen überfällig', overdueColor)}
+        ${tile(s.inspections_soon,    'Fristen bald fällig',soonColor)}
       </div>`;
   } catch (_) {
     widget.style.display = 'none';
+    widget.style.flexDirection = '';
   }
 }
 
@@ -340,31 +282,30 @@ async function loadPersonalWidget() {
   const content = document.getElementById('personal-widget-content');
   if (!widget || !content) return;
 
-  widget.style.display = 'block';
+  widget.style.display = 'flex';
+  widget.style.flexDirection = 'column';
 
   try {
     const s = await api.getPersonalStats();
 
     const tile = (value, label, color) => `
-      <div style="background:#161b27;border:1px solid #21273d;border-radius:10px;padding:14px 18px;min-width:120px;flex:1">
-        <div style="font-size:22px;font-weight:800;color:${color};letter-spacing:-0.02em">${value}</div>
-        <div style="font-size:11px;color:#7d8590;margin-top:2px">${label}</div>
+      <div class="stat-tile">
+        <div class="stat-tile__value" style="color:${color}">${value}</div>
+        <div class="stat-tile__label">${label}</div>
       </div>`;
 
-    const warn30Color  = s.qualifications_expiring_30 > 0 ? '#e63022' : '#3fb950';
-    const warn90Color  = s.qualifications_expiring_90 > 0 ? '#f0a500' : '#3fb950';
-    const g263Color    = s.g263_expiring_90           > 0 ? '#f0a500' : '#3fb950';
+    const warn30Color = s.qualifications_expiring_30 > 0 ? '#e63022' : '#3fb950';
+    const g263Color   = s.g263_expiring_90           > 0 ? '#f0a500' : '#3fb950';
 
     content.innerHTML = `
-      <div style="display:flex;flex-wrap:wrap;gap:10px">
-        ${tile(s.active_members,             'Aktive Mitglieder',         '#e6edf3')}
-        ${tile(s.total_members,              'Gesamt',                    '#7d8590')}
+      <div class="stat-tiles">
+        ${tile(s.active_members,             'Aktive Mitglieder',          '#e6edf3')}
         ${tile(s.qualifications_expiring_30, 'Quali. ablaufend (30 Tage)', warn30Color)}
-        ${tile(s.qualifications_expiring_90, 'Quali. ablaufend (90 Tage)', warn90Color)}
-        ${tile(s.g263_expiring_90,           'G26.3 ablaufend (90 Tage)', g263Color)}
+        ${tile(s.g263_expiring_90,           'G26.3 ablaufend (90 Tage)',  g263Color)}
       </div>`;
   } catch (_) {
     widget.style.display = 'none';
+    widget.style.flexDirection = '';
   }
 }
 
@@ -375,30 +316,29 @@ async function loadIncidentWidget() {
   const content = document.getElementById('incident-widget-content');
   if (!widget || !content) return;
 
-  widget.style.display = 'block';
+  widget.style.display = 'flex';
+  widget.style.flexDirection = 'column';
 
   try {
     const s = await api.getIncidentStats();
 
     const tile = (value, label, color) => `
-      <div style="background:#161b27;border:1px solid #21273d;border-radius:10px;padding:14px 18px;min-width:100px;flex:1">
-        <div style="font-size:22px;font-weight:800;color:${color};letter-spacing:-0.02em">${value}</div>
-        <div style="font-size:11px;color:#7d8590;margin-top:2px">${label}</div>
+      <div class="stat-tile">
+        <div class="stat-tile__value" style="color:${color}">${value}</div>
+        <div class="stat-tile__label">${label}</div>
       </div>`;
 
     const entwurfColor = s.entwurf > 0 ? '#f0a500' : '#3fb950';
 
     content.innerHTML = `
-      <div style="display:flex;flex-wrap:wrap;gap:10px">
-        ${tile(s.total,     `Einsätze ${s.year}`, '#e6edf3')}
-        ${tile(s.brand,     'Brand',              '#e63022')}
-        ${tile(s.thl,       'THL',                '#f0a500')}
-        ${tile(s.fehlalarm, 'Fehlalarm',          '#7d8590')}
-        ${tile(s.sonstiges, 'Sonstiges',          '#7d8590')}
-        ${tile(s.entwurf,   'Entwürfe offen',     entwurfColor)}
+      <div class="stat-tiles">
+        ${tile(s.total,   `Einsätze ${s.year}`, '#e6edf3')}
+        ${tile(s.brand,   'Brand',               '#e63022')}
+        ${tile(s.entwurf, 'Entwürfe offen',      entwurfColor)}
       </div>`;
   } catch (_) {
     widget.style.display = 'none';
+    widget.style.flexDirection = '';
   }
 }
 

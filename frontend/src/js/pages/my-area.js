@@ -2,13 +2,14 @@ import { api } from '../api.js';
 import { toast } from '../toast.js';
 import { renderShell, setShellInfo } from '../shell.js';
 import { esc } from '../utils.js';
+import { icon, renderIcons } from '../icons.js';
 
 const EQUIPMENT_LABELS = {
-  pager:           '📟 Pager',
-  key:             '🔑 Schlüssel',
-  transponder:     '💳 Transponder',
-  id_card:         '🪪 Dienstausweis',
-  driving_permit:  '🚒 Fahrberechtigung',
+  pager:           'Pager',
+  key:             'Schlüssel',
+  transponder:     'Transponder',
+  id_card:         'Dienstausweis',
+  driving_permit:  'Fahrberechtigung',
 };
 
 export async function renderMyArea() {
@@ -26,10 +27,10 @@ export async function renderMyArea() {
     </div>
 
     <div class="tab-bar" style="display:flex;gap:4px;margin-bottom:24px;border-bottom:1px solid #21273d;padding-bottom:0">
-      <button class="tab-btn active" data-tab="profile"          style="padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:#7d8590;cursor:pointer;font-size:13px;font-weight:600;margin-bottom:-1px">👤 Mein Profil</button>
-      <button class="tab-btn"        data-tab="qualifications"   style="padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:#7d8590;cursor:pointer;font-size:13px;font-weight:600;margin-bottom:-1px">🎓 Qualifikationen</button>
-      <button class="tab-btn"        data-tab="equipment"        style="padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:#7d8590;cursor:pointer;font-size:13px;font-weight:600;margin-bottom:-1px">🔧 Ausrüstung</button>
-      <button class="tab-btn"        data-tab="appointments"     style="padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:#7d8590;cursor:pointer;font-size:13px;font-weight:600;margin-bottom:-1px">📅 Termine</button>
+      <button class="tab-btn active" data-tab="profile"          style="padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:#7d8590;cursor:pointer;font-size:13px;font-weight:600;margin-bottom:-1px">${icon('user', 14)} Mein Profil</button>
+      <button class="tab-btn"        data-tab="qualifications"   style="padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:#7d8590;cursor:pointer;font-size:13px;font-weight:600;margin-bottom:-1px">${icon('graduation-cap', 14)} Qualifikationen</button>
+      <button class="tab-btn"        data-tab="equipment"        style="padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:#7d8590;cursor:pointer;font-size:13px;font-weight:600;margin-bottom:-1px">${icon('wrench', 14)} Ausrüstung</button>
+      <button class="tab-btn"        data-tab="appointments"     style="padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:#7d8590;cursor:pointer;font-size:13px;font-weight:600;margin-bottom:-1px">${icon('calendar', 14)} Termine</button>
     </div>
 
     <div id="tab-profile"></div>
@@ -62,6 +63,7 @@ export async function renderMyArea() {
   loadQualificationsTab();
   loadEquipmentTab();
   loadAppointmentsTab();
+  renderIcons(document.getElementById('page-content'));
 }
 
 // ── Tab: Mein Profil ──────────────────────────────────────────────────────────
@@ -194,9 +196,9 @@ async function loadQualificationsTab() {
     }
 
     const rows = qualifications.map(q => {
-      const { icon, label, daysLeft } = expiryStatus(q.expires_at, warnDays, today);
+      const { statusDot, label, daysLeft } = expiryStatus(q.expires_at, warnDays, today);
       const expiryText = q.expires_at
-        ? `${icon} ${formatDate(q.expires_at)}${daysLeft !== null ? ` (${daysLeft < 0 ? 'abgelaufen' : `noch ${daysLeft} Tage`})` : ''}`
+        ? `${statusDot} ${formatDate(q.expires_at)}${daysLeft !== null ? ` (${daysLeft < 0 ? 'abgelaufen' : `noch ${daysLeft} Tage`})` : ''}`
         : '<span style="color:#7d8590">–</span>';
 
       return `
@@ -228,7 +230,9 @@ async function loadQualificationsTab() {
         </div>
       </div>
       <p style="font-size:12px;color:#7d8590;margin-top:12px">
-        🟢 Gültig &nbsp;|&nbsp; 🟡 Läuft in ${warnDays} Tagen ab &nbsp;|&nbsp; 🔴 Abgelaufen oder kritisch
+        <span class="status-dot" style="background:#3fb950;width:8px;height:8px;border-radius:50%;display:inline-block"></span> Gültig &nbsp;|&nbsp;
+        <span class="status-dot" style="background:#f0a500;width:8px;height:8px;border-radius:50%;display:inline-block"></span> Läuft in ${warnDays} Tagen ab &nbsp;|&nbsp;
+        <span class="status-dot" style="background:#e63022;width:8px;height:8px;border-radius:50%;display:inline-block"></span> Abgelaufen oder kritisch
       </p>
     `;
 
@@ -237,6 +241,7 @@ async function loadQualificationsTab() {
       tr.style.borderBottom = '1px solid #21273d';
       tr.style.background = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)';
     });
+    renderIcons(wrap);
 
   } catch (e) {
     wrap.innerHTML = `<p style="color:#ff8a80">${esc(e.message)}</p>`;
@@ -290,25 +295,27 @@ function loadAppointmentsTab() {
   document.getElementById('tab-appointments').innerHTML = `
     <div class="card">
       <div class="card__body" style="text-align:center;padding:40px 20px">
-        <div style="font-size:32px;margin-bottom:12px">📅</div>
+        <div style="margin-bottom:12px">${icon('calendar', 32)}</div>
         <p style="color:#7d8590;font-size:14px">Das Terminmodul ist noch nicht verfügbar.</p>
         <p style="color:#4c5462;font-size:12px;margin-top:8px">Kommt in einer zukünftigen Version.</p>
       </div>
     </div>
   `;
+  renderIcons(document.getElementById('tab-appointments'));
 }
 
 // ── Hilfsfunktionen ───────────────────────────────────────────────────────────
 
 function expiryStatus(expiresAt, warnDays, today) {
-  if (!expiresAt) return { icon: '', label: 'ok', daysLeft: null };
+  const dot = (color) => `<span class="status-dot" style="background:${color};width:8px;height:8px;border-radius:50%;display:inline-block"></span>`;
+  if (!expiresAt) return { statusDot: '', label: 'ok', daysLeft: null };
   const exp = new Date(expiresAt);
   exp.setHours(0, 0, 0, 0);
   const daysLeft = Math.floor((exp - today) / (1000 * 60 * 60 * 24));
-  if (daysLeft < 0)        return { icon: '🔴', label: 'abgelaufen', daysLeft };
-  if (daysLeft <= 30)      return { icon: '🔴', label: 'kritisch', daysLeft };
-  if (daysLeft <= warnDays) return { icon: '🟡', label: 'warnung', daysLeft };
-  return { icon: '🟢', label: 'ok', daysLeft };
+  if (daysLeft < 0)         return { statusDot: dot('#e63022'), label: 'abgelaufen', daysLeft };
+  if (daysLeft <= 30)       return { statusDot: dot('#e63022'), label: 'kritisch', daysLeft };
+  if (daysLeft <= warnDays) return { statusDot: dot('#f0a500'), label: 'warnung', daysLeft };
+  return { statusDot: dot('#3fb950'), label: 'ok', daysLeft };
 }
 
 function formatDate(dateStr) {

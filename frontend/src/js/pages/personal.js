@@ -2,13 +2,14 @@ import { api } from '../api.js';
 import { toast } from '../toast.js';
 import { renderShell, setShellInfo } from '../shell.js';
 import { esc } from '../utils.js';
+import { icon, renderIcons } from '../icons.js';
 
 const EQUIPMENT_LABELS = {
-  pager:          '📟 Pager',
-  key:            '🔑 Schlüssel',
-  transponder:    '💳 Transponder',
-  id_card:        '🪪 Dienstausweis',
-  driving_permit: '🚒 Fahrberechtigung',
+  pager:          'Pager',
+  key:            'Schlüssel',
+  transponder:    'Transponder',
+  id_card:        'Dienstausweis',
+  driving_permit: 'Fahrberechtigung',
 };
 
 const EQUIPMENT_TYPES = Object.entries(EQUIPMENT_LABELS)
@@ -29,6 +30,7 @@ export async function renderPersonal() {
   `;
 
   loadMemberList();
+  renderIcons(document.getElementById('page-content'));
 }
 
 // ── Mitgliederliste ───────────────────────────────────────────────────────────
@@ -135,11 +137,11 @@ async function openMember(userId, members) {
       </div>
 
       <div class="tab-bar" style="display:flex;gap:4px;margin-bottom:24px;border-bottom:1px solid #21273d;padding-bottom:0">
-        <button class="ptab-btn active" data-tab="pstamm"      style="${tabStyle(true)}">📋 Stammdaten</button>
-        <button class="ptab-btn"        data-tab="pquali"       style="${tabStyle(false)}">🎓 Qualifikationen</button>
-        <button class="ptab-btn"        data-tab="pequip"       style="${tabStyle(false)}">🔧 Ausrüstung</button>
-        <button class="ptab-btn"        data-tab="phonors"      style="${tabStyle(false)}">🏅 Ehrungen</button>
-        <button class="ptab-btn"        data-tab="panwesenheit" style="${tabStyle(false)}">📅 Anwesenheit</button>
+        <button class="ptab-btn active" data-tab="pstamm"      style="${tabStyle(true)}">${icon('clipboard-list', 14)} Stammdaten</button>
+        <button class="ptab-btn"        data-tab="pquali"       style="${tabStyle(false)}">${icon('graduation-cap', 14)} Qualifikationen</button>
+        <button class="ptab-btn"        data-tab="pequip"       style="${tabStyle(false)}">${icon('wrench', 14)} Ausrüstung</button>
+        <button class="ptab-btn"        data-tab="phonors"      style="${tabStyle(false)}">${icon('award', 14)} Ehrungen</button>
+        <button class="ptab-btn"        data-tab="panwesenheit" style="${tabStyle(false)}">${icon('calendar', 14)} Anwesenheit</button>
       </div>
 
       <div id="ptab-pstamm"></div>
@@ -165,6 +167,7 @@ async function openMember(userId, members) {
     renderAusruestung(userId, equipment);
     renderEhrungen(userId, honors);
     renderAnwesenheit(userId, attendance, member);
+    renderIcons(document.getElementById('personal-detail-wrap'));
 
   } catch (e) {
     detailWrap.innerHTML = `<p style="color:#ff8a80">${esc(e.message)}</p>`;
@@ -355,9 +358,9 @@ function renderQualifikationen(userId, qualifications, warnDays) {
 
 function renderQualiTable(qualifications, warnDays, today) {
   const rows = qualifications.map(q => {
-    const { icon, daysLeft } = expiryStatus(q.expires_at, warnDays, today);
+    const { statusDot, daysLeft } = expiryStatus(q.expires_at, warnDays, today);
     const expiryText = q.expires_at
-      ? `${icon} ${formatDate(q.expires_at)}${daysLeft !== null ? ` (${daysLeft < 0 ? 'abgelaufen' : `noch ${daysLeft}d`})` : ''}`
+      ? `${statusDot} ${formatDate(q.expires_at)}${daysLeft !== null ? ` (${daysLeft < 0 ? 'abgelaufen' : `noch ${daysLeft}d`})` : ''}`
       : '–';
     return `
       <tr data-qid="${q.id}" data-name="${esc(q.name)}"
@@ -699,13 +702,14 @@ function bindHonorActions(userId, openModal) {
 // ── Hilfsfunktionen ───────────────────────────────────────────────────────────
 
 function expiryStatus(expiresAt, warnDays, today) {
-  if (!expiresAt) return { icon: '', daysLeft: null };
+  const dot = (color) => `<span class="status-dot" style="background:${color};width:8px;height:8px;border-radius:50%;display:inline-block"></span>`;
+  if (!expiresAt) return { statusDot: '', daysLeft: null };
   const exp = new Date(expiresAt); exp.setHours(0,0,0,0);
   const daysLeft = Math.floor((exp - today) / (1000 * 60 * 60 * 24));
-  if (daysLeft < 0)         return { icon: '🔴', daysLeft };
-  if (daysLeft <= 30)       return { icon: '🔴', daysLeft };
-  if (daysLeft <= warnDays) return { icon: '🟡', daysLeft };
-  return { icon: '🟢', daysLeft };
+  if (daysLeft < 0)         return { statusDot: dot('#e63022'), daysLeft };
+  if (daysLeft <= 30)       return { statusDot: dot('#e63022'), daysLeft };
+  if (daysLeft <= warnDays) return { statusDot: dot('#f0a500'), daysLeft };
+  return { statusDot: dot('#3fb950'), daysLeft };
 }
 
 function formatDate(d) {

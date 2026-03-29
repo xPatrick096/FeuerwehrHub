@@ -3,6 +3,7 @@ import { toast } from '../toast.js';
 import { renderShell, setShellInfo } from '../shell.js';
 import { generateBeschaffungsauftrag } from '../pdf-generator.js';
 import { esc } from '../utils.js';
+import { icon, renderIcons } from '../icons.js';
 
 const PAGE_SIZE = 25;
 
@@ -18,14 +19,14 @@ export async function renderOrders() {
         <h2>Bestellübersicht</h2>
         <p>Alle erfassten Bestellungen und deren Status</p>
       </div>
-      <button class="btn btn--outline btn--sm" id="btn-csv-export">📊 CSV exportieren</button>
+      <button class="btn btn--outline btn--sm" id="btn-csv-export">${icon('bar-chart-2', 14)} CSV exportieren</button>
     </div>
     <div class="stats-row" id="stats-row"></div>
     <div class="card">
       <div class="card__header">
         Bestellungen
         <div class="filter-bar" style="margin:0">
-          <input type="text" id="filter-search" placeholder="🔍 Suche..." style="width:180px" />
+          <input type="text" id="filter-search" placeholder="Suche..." style="width:180px" />
           <select id="filter-status">
             <option value="">Alle Status</option>
             <option value="offen">Offen</option>
@@ -89,6 +90,8 @@ export async function renderOrders() {
       </div>
     </div>
   `;
+
+  renderIcons(document.getElementById('page-content'));
 
   let allOrders = [];
   let currentPage = 1;
@@ -180,19 +183,21 @@ export async function renderOrders() {
             <td><span class="badge badge--${o.status}">${statusLabel(o.status)}</span></td>
             <td>
               <div class="btn-group">
-                <button class="btn btn--secondary btn--sm" data-action="detail" data-id="${o.id}" title="Details">🔍</button>
+                <button class="btn btn--secondary btn--sm" data-action="detail" data-id="${o.id}" title="Details">${icon('search', 14)}</button>
                 ${o.status !== 'vollstaendig' && o.status !== 'storniert'
-                  ? `<button class="btn btn--success btn--sm" data-action="delivery" data-id="${o.id}" title="Lieferung">📦</button>`
+                  ? `<button class="btn btn--success btn--sm" data-action="delivery" data-id="${o.id}" title="Lieferung">${icon('package', 14)}</button>`
                   : ''}
-                <button class="btn btn--outline btn--sm" data-action="pdf" data-id="${o.id}" title="PDF">📄</button>
-                <button class="btn btn--outline btn--sm" data-action="email" data-id="${o.id}" title="E-Mail">📧</button>
-                <button class="btn btn--danger btn--sm" data-action="delete" data-id="${o.id}" title="Löschen">🗑</button>
+                <button class="btn btn--outline btn--sm" data-action="pdf" data-id="${o.id}" title="PDF">${icon('file-text', 14)}</button>
+                <button class="btn btn--outline btn--sm" data-action="email" data-id="${o.id}" title="E-Mail">${icon('mail', 14)}</button>
+                <button class="btn btn--danger btn--sm" data-action="delete" data-id="${o.id}" title="Löschen">${icon('trash-2', 14)}</button>
               </div>
             </td>
           </tr>
         `;
       }).join('');
     }
+
+    renderIcons(document.getElementById('orders-tbody'));
 
     // Pagination-Bar
     const bar = document.getElementById('pagination-bar');
