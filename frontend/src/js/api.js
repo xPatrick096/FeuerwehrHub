@@ -134,6 +134,17 @@ export const api = {
   getMyQualifications: ()          => request('GET',    '/me/qualifications'),
   getMyEquipment:      ()          => request('GET',    '/me/equipment'),
 
+  // Mein Bereich - Notfallkontakte
+  getMyEmergencyContacts:   ()         => request('GET',    '/me/emergency-contacts'),
+  createMyEmergencyContact: (b)        => request('POST',   '/me/emergency-contacts', b),
+  updateMyEmergencyContact: (id, b)    => request('PUT',    `/me/emergency-contacts/${id}`, b),
+  deleteMyEmergencyContact: (id)       => request('DELETE', `/me/emergency-contacts/${id}`),
+  getMyHonors:              ()         => request('GET',    '/me/honors'),
+
+  // Personal - Kontaktdaten
+  updateMemberProfile:        (id, b)  => request('PUT',    `/personal/members/${id}/profile`, b),
+  getMemberEmergencyContacts: (id)     => request('GET',    `/personal/members/${id}/emergency-contacts`),
+
   // Ankündigungen
   getAnnouncements:    ()          => request('GET',    '/announcements'),
   createAnnouncement:  (body)      => request('POST',   '/announcements', body),

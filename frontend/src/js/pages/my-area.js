@@ -27,14 +27,16 @@ export async function renderMyArea() {
     </div>
 
     <div class="tab-bar" style="display:flex;gap:4px;margin-bottom:24px;border-bottom:1px solid #21273d;padding-bottom:0">
-      <button class="tab-btn active" data-tab="profile"          style="padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:#7d8590;cursor:pointer;font-size:13px;font-weight:600;margin-bottom:-1px">${icon('user', 14)} Mein Profil</button>
-      <button class="tab-btn"        data-tab="qualifications"   style="padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:#7d8590;cursor:pointer;font-size:13px;font-weight:600;margin-bottom:-1px">${icon('graduation-cap', 14)} Qualifikationen</button>
-      <button class="tab-btn"        data-tab="equipment"        style="padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:#7d8590;cursor:pointer;font-size:13px;font-weight:600;margin-bottom:-1px">${icon('wrench', 14)} Ausrüstung</button>
-      <button class="tab-btn"        data-tab="appointments"     style="padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:#7d8590;cursor:pointer;font-size:13px;font-weight:600;margin-bottom:-1px">${icon('calendar', 14)} Termine</button>
+      <button class="tab-btn active" data-tab="profile"        style="padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:#7d8590;cursor:pointer;font-size:13px;font-weight:600;margin-bottom:-1px">${icon('user', 14)} Mein Profil</button>
+      <button class="tab-btn"        data-tab="qualifications" style="padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:#7d8590;cursor:pointer;font-size:13px;font-weight:600;margin-bottom:-1px">${icon('graduation-cap', 14)} Qualifikationen</button>
+      <button class="tab-btn"        data-tab="honors"         style="padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:#7d8590;cursor:pointer;font-size:13px;font-weight:600;margin-bottom:-1px">${icon('award', 14)} Ehrungen</button>
+      <button class="tab-btn"        data-tab="equipment"      style="padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:#7d8590;cursor:pointer;font-size:13px;font-weight:600;margin-bottom:-1px">${icon('wrench', 14)} Ausrüstung</button>
+      <button class="tab-btn"        data-tab="appointments"   style="padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:#7d8590;cursor:pointer;font-size:13px;font-weight:600;margin-bottom:-1px">${icon('calendar', 14)} Termine</button>
     </div>
 
     <div id="tab-profile"></div>
     <div id="tab-qualifications" style="display:none"></div>
+    <div id="tab-honors"         style="display:none"></div>
     <div id="tab-equipment"      style="display:none"></div>
     <div id="tab-appointments"   style="display:none"></div>
   `;
@@ -61,6 +63,7 @@ export async function renderMyArea() {
 
   loadProfileTab(user);
   loadQualificationsTab();
+  loadHonorsTab();
   loadEquipmentTab();
   loadAppointmentsTab();
   renderIcons(document.getElementById('page-content'));
@@ -75,7 +78,15 @@ async function loadProfileTab(user) {
   try {
     const profile = await api.getMyProfile();
 
+    const updatedByNotice = (profile?.updated_by_name && profile?.updated_by_id !== user?.id)
+      ? `<div style="background:#1c2335;border:1px solid #f0a500;border-radius:8px;padding:10px 14px;font-size:12px;color:#f0a500;margin-bottom:12px">
+           Zuletzt aktualisiert von ${esc(profile.updated_by_name)}
+         </div>`
+      : '';
+
     wrap.innerHTML = `
+      ${updatedByNotice}
+
       <div class="card" style="max-width:560px">
         <div class="card__header">Benutzerkonto</div>
         <div class="card__body">
@@ -117,23 +128,14 @@ async function loadProfileTab(user) {
       </div>
 
       <div class="card" style="max-width:560px;margin-top:16px">
-        <div class="card__header">Notfallkontakt</div>
+        <div class="card__header">Notfallkontakte</div>
         <div class="card__body">
           <p style="font-size:13px;color:#7d8590;margin-bottom:16px">
-            Wird im Einsatzfall benötigt — wird nur von Führungskräften eingesehen.
+            Werden im Einsatzfall benötigt — werden nur von Führungskräften eingesehen.
           </p>
-          <div class="form-grid">
-            <div class="form-group">
-              <label>Name</label>
-              <input type="text" id="p-emergency-name" maxlength="100" value="${esc(profile?.emergency_contact_name || '')}" placeholder="Maria Mustermann" />
-            </div>
-            <div class="form-group">
-              <label>Telefon</label>
-              <input type="tel" id="p-emergency-phone" maxlength="30" value="${esc(profile?.emergency_contact_phone || '')}" placeholder="0170 9876543" />
-            </div>
-          </div>
-          <div class="btn-group" style="margin-top:16px">
-            <button class="btn btn--primary" id="btn-save-emergency">Notfallkontakt speichern</button>
+          <div id="emergency-contacts-list"></div>
+          <div class="btn-group" style="margin-top:12px">
+            <button class="btn btn--outline btn--sm" id="btn-add-emergency">+ Neuer Notfallkontakt</button>
           </div>
         </div>
       </div>
@@ -152,22 +154,133 @@ async function loadProfileTab(user) {
       } catch (e) { toast(e.message, 'error'); }
     });
 
-    document.getElementById('btn-save-emergency').addEventListener('click', async () => {
-      try {
-        await api.updateMyProfile({
-          phone:         profile?.phone || null,
-          email_private: profile?.email_private || null,
-          address:       profile?.address || null,
-          emergency_contact_name:  document.getElementById('p-emergency-name').value.trim() || null,
-          emergency_contact_phone: document.getElementById('p-emergency-phone').value.trim() || null,
-        });
-        toast('Notfallkontakt gespeichert');
-      } catch (e) { toast(e.message, 'error'); }
+    // Notfallkontakte laden und rendern
+    await renderEmergencyContacts();
+
+    document.getElementById('btn-add-emergency').addEventListener('click', () => {
+      addEmergencyContactRow(null);
     });
 
   } catch (e) {
     wrap.innerHTML = `<p style="color:#ff8a80">${esc(e.message)}</p>`;
   }
+}
+
+async function renderEmergencyContacts() {
+  const listEl = document.getElementById('emergency-contacts-list');
+  if (!listEl) return;
+
+  try {
+    const contacts = await api.getMyEmergencyContacts();
+
+    if (!contacts.length) {
+      listEl.innerHTML = '<p style="color:#7d8590;font-size:13px;margin-bottom:8px">Noch keine Notfallkontakte hinterlegt.</p>';
+      return;
+    }
+
+    listEl.innerHTML = contacts.map(c => `
+      <div class="ec-row" data-id="${c.id}" style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-bottom:8px;align-items:center">
+        <input type="text" class="ec-name" value="${esc(c.name)}" placeholder="Name" maxlength="100"
+          style="background:#0d1117;border:1px solid #21273d;color:#e6edf3;padding:7px 10px;border-radius:6px;font-size:13px" />
+        <input type="tel" class="ec-phone" value="${esc(c.phone)}" placeholder="Telefon" maxlength="30"
+          style="background:#0d1117;border:1px solid #21273d;color:#e6edf3;padding:7px 10px;border-radius:6px;font-size:13px" />
+        <input type="text" class="ec-rel" value="${esc(c.relationship || '')}" placeholder="Beziehung (optional)" maxlength="100"
+          style="background:#0d1117;border:1px solid #21273d;color:#e6edf3;padding:7px 10px;border-radius:6px;font-size:13px" />
+        <div class="btn-group" style="flex-shrink:0">
+          <button class="btn btn--primary btn--sm ec-save" data-id="${c.id}">Speichern</button>
+          <button class="btn btn--danger btn--sm ec-delete" data-id="${c.id}">Löschen</button>
+        </div>
+      </div>
+    `).join('');
+
+    bindEmergencyContactActions();
+  } catch (e) {
+    listEl.innerHTML = `<p style="color:#ff8a80">${esc(e.message)}</p>`;
+  }
+}
+
+function addEmergencyContactRow(existingId) {
+  const listEl = document.getElementById('emergency-contacts-list');
+  if (!listEl) return;
+
+  // Leere Zeile mit temporärer ID am Ende einfügen
+  const tmpId = 'new-' + Date.now();
+  const row = document.createElement('div');
+  row.className = 'ec-row';
+  row.dataset.id = tmpId;
+  row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-bottom:8px;align-items:center';
+  row.innerHTML = `
+    <input type="text" class="ec-name" value="" placeholder="Name" maxlength="100"
+      style="background:#0d1117;border:1px solid #21273d;color:#e6edf3;padding:7px 10px;border-radius:6px;font-size:13px" />
+    <input type="tel" class="ec-phone" value="" placeholder="Telefon" maxlength="30"
+      style="background:#0d1117;border:1px solid #21273d;color:#e6edf3;padding:7px 10px;border-radius:6px;font-size:13px" />
+    <input type="text" class="ec-rel" value="" placeholder="Beziehung (optional)" maxlength="100"
+      style="background:#0d1117;border:1px solid #21273d;color:#e6edf3;padding:7px 10px;border-radius:6px;font-size:13px" />
+    <div class="btn-group" style="flex-shrink:0">
+      <button class="btn btn--primary btn--sm ec-save" data-id="${tmpId}">Speichern</button>
+      <button class="btn btn--danger btn--sm ec-delete" data-id="${tmpId}">Löschen</button>
+    </div>
+  `;
+
+  // Leere-Meldung entfernen falls vorhanden
+  const empty = listEl.querySelector('p');
+  if (empty) empty.remove();
+
+  listEl.appendChild(row);
+  row.querySelector('.ec-name').focus();
+
+  // Save-Button für neue Zeile
+  row.querySelector('.ec-save').addEventListener('click', async () => {
+    const name  = row.querySelector('.ec-name').value.trim();
+    const phone = row.querySelector('.ec-phone').value.trim();
+    const rel   = row.querySelector('.ec-rel').value.trim();
+    if (!name)  { toast('Name eingeben', 'error'); return; }
+    if (!phone) { toast('Telefon eingeben', 'error'); return; }
+    try {
+      await api.createMyEmergencyContact({ name, phone, relationship: rel || null });
+      toast('Notfallkontakt gespeichert');
+      await renderEmergencyContacts();
+    } catch (e) { toast(e.message, 'error'); }
+  });
+
+  // Delete-Button für neue Zeile (einfach entfernen ohne API-Call)
+  row.querySelector('.ec-delete').addEventListener('click', () => {
+    row.remove();
+    if (!listEl.querySelector('.ec-row')) {
+      listEl.innerHTML = '<p style="color:#7d8590;font-size:13px;margin-bottom:8px">Noch keine Notfallkontakte hinterlegt.</p>';
+    }
+  });
+}
+
+function bindEmergencyContactActions() {
+  document.querySelectorAll('.ec-save').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id  = btn.dataset.id;
+      const row = document.querySelector(`.ec-row[data-id="${id}"]`);
+      if (!row) return;
+      const name  = row.querySelector('.ec-name').value.trim();
+      const phone = row.querySelector('.ec-phone').value.trim();
+      const rel   = row.querySelector('.ec-rel').value.trim();
+      if (!name)  { toast('Name eingeben', 'error'); return; }
+      if (!phone) { toast('Telefon eingeben', 'error'); return; }
+      try {
+        await api.updateMyEmergencyContact(id, { name, phone, relationship: rel || null });
+        toast('Notfallkontakt gespeichert');
+      } catch (e) { toast(e.message, 'error'); }
+    });
+  });
+
+  document.querySelectorAll('.ec-delete').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Notfallkontakt löschen?')) return;
+      const id = btn.dataset.id;
+      try {
+        await api.deleteMyEmergencyContact(id);
+        toast('Gelöscht');
+        await renderEmergencyContacts();
+      } catch (e) { toast(e.message, 'error'); }
+    });
+  });
 }
 
 // ── Tab: Qualifikationen ──────────────────────────────────────────────────────
@@ -241,6 +354,66 @@ async function loadQualificationsTab() {
       tr.style.borderBottom = '1px solid #21273d';
       tr.style.background = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)';
     });
+    renderIcons(wrap);
+
+  } catch (e) {
+    wrap.innerHTML = `<p style="color:#ff8a80">${esc(e.message)}</p>`;
+  }
+}
+
+// ── Tab: Ehrungen ─────────────────────────────────────────────────────────────
+
+async function loadHonorsTab() {
+  const wrap = document.getElementById('tab-honors');
+  wrap.innerHTML = '<p style="color:#7d8590;font-size:13px">Lade...</p>';
+
+  try {
+    const honors = await api.getMyHonors();
+
+    if (!honors.length) {
+      wrap.innerHTML = `
+        <div class="card">
+          <div class="card__body">
+            <p style="color:#7d8590;font-size:13px">Noch keine Ehrungen hinterlegt. Ehrungen werden vom Wehrleiter im Personal-Modul eingetragen.</p>
+          </div>
+        </div>`;
+      renderIcons(wrap);
+      return;
+    }
+
+    const rows = honors.map(h => {
+      const isActive = h.status === 'aktiv';
+      const statusBadge = isActive
+        ? `<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;background:#14532d;color:#4ade80">Aktiv</span>`
+        : `<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;background:#1f2937;color:#9ca3af">Zurückgezogen</span>`;
+      return `
+        <tr style="border-bottom:1px solid #21273d">
+          <td style="padding:10px 16px"><strong>${esc(h.name)}</strong></td>
+          <td style="padding:10px 16px;color:#7d8590">${h.awarded_at ? formatDate(h.awarded_at) : '–'}</td>
+          <td style="padding:10px 16px">${statusBadge}</td>
+          <td style="padding:10px 16px;color:#7d8590">${h.notes ? esc(h.notes) : '–'}</td>
+        </tr>`;
+    }).join('');
+
+    wrap.innerHTML = `
+      <div class="card">
+        <div class="card__header">Meine Ehrungen</div>
+        <div class="card__body" style="padding:0">
+          <table style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead>
+              <tr style="background:#0d1117;text-align:left">
+                <th style="padding:10px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d">Ehrung</th>
+                <th style="padding:10px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d">Verliehen am</th>
+                <th style="padding:10px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d">Status</th>
+                <th style="padding:10px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d">Notizen</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
     renderIcons(wrap);
 
   } catch (e) {
@@ -323,4 +496,3 @@ function formatDate(dateStr) {
   const d = new Date(dateStr);
   return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
-

@@ -44,6 +44,26 @@ pub struct MemberDetails {
     pub address:                 Option<String>,
     pub emergency_contact_name:  Option<String>,
     pub emergency_contact_phone: Option<String>,
+    pub updated_by_id:           Option<Uuid>,
+    pub updated_by_name:         Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct UpdateProfileBody {
+    pub phone:         Option<String>,
+    pub email_private: Option<String>,
+    pub address:       Option<String>,
+}
+
+#[derive(Serialize, sqlx::FromRow)]
+pub struct EmergencyContact {
+    pub id:           Uuid,
+    pub user_id:      Uuid,
+    pub name:         String,
+    pub phone:        String,
+    pub relationship: Option<String>,
+    pub sort_order:   i32,
+    pub created_at:   DateTime<Utc>,
 }
 
 #[derive(Deserialize)]
@@ -102,6 +122,7 @@ pub struct Honor {
     pub name:       String,
     pub awarded_at: Option<NaiveDate>,
     pub notes:      Option<String>,
+    pub status:     String,
     pub created_at: DateTime<Utc>,
 }
 
@@ -110,6 +131,7 @@ pub struct HonorBody {
     pub name:       String,
     pub awarded_at: Option<NaiveDate>,
     pub notes:      Option<String>,
+    pub status:     Option<String>,
 }
 
 // ── Mitgliederliste ───────────────────────────────────────────────────────────
@@ -140,7 +162,8 @@ pub async fn get_details(
         "SELECT d.id, d.user_id, d.date_of_birth, d.entry_date, d.exit_date,
                 d.personnel_number, d.notes, d.updated_at,
                 p.phone, p.email_private, p.address,
-                p.emergency_contact_name, p.emergency_contact_phone
+                p.emergency_contact_name, p.emergency_contact_phone,
+                p.updated_by_id, p.updated_by_name
          FROM member_details d
          LEFT JOIN member_profiles p ON p.user_id = d.user_id
          WHERE d.user_id = $1"
@@ -165,7 +188,8 @@ pub async fn get_details(
          SELECT ins.id, ins.user_id, ins.date_of_birth, ins.entry_date, ins.exit_date,
                 ins.personnel_number, ins.notes, ins.updated_at,
                 p.phone, p.email_private, p.address,
-                p.emergency_contact_name, p.emergency_contact_phone
+                p.emergency_contact_name, p.emergency_contact_phone,
+                p.updated_by_id, p.updated_by_name
          FROM ins
          LEFT JOIN member_profiles p ON p.user_id = ins.user_id"
     )
@@ -182,17 +206,26 @@ pub async fn update_details(
     Json(body): Json<UpdateDetailsBody>,
 ) -> AppResult<Json<MemberDetails>> {
     let details = sqlx::query_as::<_, MemberDetails>(
-        "INSERT INTO member_details (user_id, date_of_birth, entry_date, exit_date, personnel_number, notes)
-         VALUES ($1, $2, $3, $4, $5, $6)
-         ON CONFLICT (user_id) DO UPDATE SET
-             date_of_birth    = EXCLUDED.date_of_birth,
-             entry_date       = EXCLUDED.entry_date,
-             exit_date        = EXCLUDED.exit_date,
-             personnel_number = EXCLUDED.personnel_number,
-             notes            = EXCLUDED.notes,
-             updated_at       = NOW()
-         RETURNING id, user_id, date_of_birth, entry_date, exit_date,
-                   personnel_number, notes, updated_at"
+        "WITH upd AS (
+             INSERT INTO member_details (user_id, date_of_birth, entry_date, exit_date, personnel_number, notes)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             ON CONFLICT (user_id) DO UPDATE SET
+                 date_of_birth    = EXCLUDED.date_of_birth,
+                 entry_date       = EXCLUDED.entry_date,
+                 exit_date        = EXCLUDED.exit_date,
+                 personnel_number = EXCLUDED.personnel_number,
+                 notes            = EXCLUDED.notes,
+                 updated_at       = NOW()
+             RETURNING id, user_id, date_of_birth, entry_date, exit_date,
+                       personnel_number, notes, updated_at
+         )
+         SELECT upd.id, upd.user_id, upd.date_of_birth, upd.entry_date, upd.exit_date,
+                upd.personnel_number, upd.notes, upd.updated_at,
+                p.phone, p.email_private, p.address,
+                p.emergency_contact_name, p.emergency_contact_phone,
+                p.updated_by_id, p.updated_by_name
+         FROM upd
+         LEFT JOIN member_profiles p ON p.user_id = upd.user_id"
     )
     .bind(user_id)
     .bind(body.date_of_birth)
@@ -398,7 +431,7 @@ pub async fn list_honors(
     Path(user_id): Path<Uuid>,
 ) -> AppResult<Json<Vec<Honor>>> {
     let honors = sqlx::query_as::<_, Honor>(
-        "SELECT id, user_id, name, awarded_at, notes, created_at
+        "SELECT id, user_id, name, awarded_at, notes, status, created_at
          FROM honors WHERE user_id = $1
          ORDER BY awarded_at DESC NULLS LAST"
     )
@@ -422,7 +455,7 @@ pub async fn create_honor(
     let h = sqlx::query_as::<_, Honor>(
         "INSERT INTO honors (user_id, name, awarded_at, notes)
          VALUES ($1, $2, $3, $4)
-         RETURNING id, user_id, name, awarded_at, notes, created_at"
+         RETURNING id, user_id, name, awarded_at, notes, status, created_at"
     )
     .bind(user_id)
     .bind(&name)
@@ -445,13 +478,15 @@ pub async fn update_honor(
     }
 
     let h = sqlx::query_as::<_, Honor>(
-        "UPDATE honors SET name = $1, awarded_at = $2, notes = $3
-         WHERE id = $4 AND user_id = $5
-         RETURNING id, user_id, name, awarded_at, notes, created_at"
+        "UPDATE honors SET name = $1, awarded_at = $2, notes = $3,
+             status = COALESCE($4, status)
+         WHERE id = $5 AND user_id = $6
+         RETURNING id, user_id, name, awarded_at, notes, status, created_at"
     )
     .bind(&name)
     .bind(body.awarded_at)
     .bind(body.notes.as_deref().map(str::trim).filter(|s| !s.is_empty()))
+    .bind(body.status.as_deref())
     .bind(honor_id)
     .bind(user_id)
     .fetch_optional(&state.db)
@@ -737,6 +772,65 @@ pub async fn get_personal_stats(
     }))
 }
 
+// ── Kontaktdaten bearbeiten (Wehrleiter) ──────────────────────────────────────
+
+pub async fn update_member_profile(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(user_id): Path<Uuid>,
+    Json(body): Json<UpdateProfileBody>,
+) -> AppResult<Json<serde_json::Value>> {
+    // Aktuellen Admin-Namen ermitteln
+    let editor_name: Option<String> = sqlx::query_scalar(
+        "SELECT COALESCE(display_name, username) FROM users WHERE id = $1"
+    )
+    .bind(claims.sub)
+    .fetch_optional(&state.db)
+    .await?;
+
+    sqlx::query(
+        "INSERT INTO member_profiles (user_id, phone, email_private, address,
+             updated_by_id, updated_by_name)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT (user_id) DO UPDATE SET
+             phone           = EXCLUDED.phone,
+             email_private   = EXCLUDED.email_private,
+             address         = EXCLUDED.address,
+             updated_at      = NOW(),
+             updated_by_id   = EXCLUDED.updated_by_id,
+             updated_by_name = EXCLUDED.updated_by_name"
+    )
+    .bind(user_id)
+    .bind(body.phone.as_deref().map(str::trim).filter(|s| !s.is_empty()))
+    .bind(body.email_private.as_deref().map(str::trim).filter(|s| !s.is_empty()))
+    .bind(body.address.as_deref().map(str::trim).filter(|s| !s.is_empty()))
+    .bind(claims.sub)
+    .bind(editor_name.as_deref())
+    .execute(&state.db)
+    .await?;
+
+    Ok(Json(serde_json::json!({ "message": "Kontaktdaten gespeichert" })))
+}
+
+// ── Notfallkontakte lesen (Wehrleiter) ────────────────────────────────────────
+
+pub async fn list_member_emergency_contacts(
+    State(state): State<AppState>,
+    Path(user_id): Path<Uuid>,
+) -> AppResult<Json<Vec<EmergencyContact>>> {
+    let contacts = sqlx::query_as::<_, EmergencyContact>(
+        "SELECT id, user_id, name, phone, relationship, sort_order, created_at
+         FROM emergency_contacts
+         WHERE user_id = $1
+         ORDER BY sort_order ASC, created_at ASC"
+    )
+    .bind(user_id)
+    .fetch_all(&state.db)
+    .await?;
+
+    Ok(Json(contacts))
+}
+
 // ── Router ────────────────────────────────────────────────────────────────────
 
 pub fn router(state: AppState) -> Router<AppState> {
@@ -754,6 +848,8 @@ pub fn router(state: AppState) -> Router<AppState> {
         .route("/members/:id/attendance/:aid",                  put(update_attendance).delete(delete_attendance))
         .route("/members/:id/attendance/stats",                 get(get_attendance_stats))
         .route("/members/:id/attendance/export",                get(export_attendance_csv))
+        .route("/members/:id/profile",                          put(update_member_profile))
+        .route("/members/:id/emergency-contacts",               get(list_member_emergency_contacts))
         .route_layer(middleware::from_fn_with_state(state.clone(), require_module("personal")))
         .route_layer(middleware::from_fn_with_state(state, require_auth))
 }

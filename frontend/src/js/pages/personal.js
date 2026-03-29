@@ -218,34 +218,40 @@ function renderStammdaten(userId, details) {
     <div class="card" style="max-width:560px;margin-top:16px">
       <div class="card__header" style="display:flex;justify-content:space-between;align-items:center">
         <span>Kontaktdaten</span>
-        <span style="font-size:11px;color:#7d8590">Vom Mitglied selbst pflegbar</span>
+        <span style="font-size:11px;color:#7d8590">Vom Mitglied pflegbar — hier überschreibbar</span>
       </div>
       <div class="card__body">
+        ${details?.updated_by_name
+          ? `<div style="background:#1c2335;border:1px solid #f0a500;border-radius:8px;padding:10px 14px;font-size:12px;color:#f0a500;margin-bottom:12px">
+               Zuletzt bearbeitet von ${esc(details.updated_by_name)}
+             </div>`
+          : ''}
         <div class="form-grid">
           <div class="form-group">
             <label>Telefon</label>
-            <input type="text" value="${esc(details?.phone || '')}" disabled style="opacity:0.7;cursor:default" />
+            <input type="text" id="cd-phone" maxlength="30" value="${esc(details?.phone || '')}" placeholder="z.B. 0170 1234567" />
           </div>
           <div class="form-group">
             <label>Private E-Mail</label>
-            <input type="text" value="${esc(details?.email_private || '')}" disabled style="opacity:0.7;cursor:default" />
+            <input type="email" id="cd-email" maxlength="100" value="${esc(details?.email_private || '')}" placeholder="max@beispiel.de" />
           </div>
           <div class="form-group form-group--full">
             <label>Adresse</label>
-            <input type="text" value="${esc(details?.address || '')}" disabled style="opacity:0.7;cursor:default" />
-          </div>
-          <div class="form-group">
-            <label>Notfallkontakt – Name</label>
-            <input type="text" value="${esc(details?.emergency_contact_name || '')}" disabled style="opacity:0.7;cursor:default" />
-          </div>
-          <div class="form-group">
-            <label>Notfallkontakt – Telefon</label>
-            <input type="text" value="${esc(details?.emergency_contact_phone || '')}" disabled style="opacity:0.7;cursor:default" />
+            <input type="text" id="cd-address" maxlength="200" value="${esc(details?.address || '')}" placeholder="Musterstraße 1, 12345 Musterstadt" />
           </div>
         </div>
-        ${!details?.phone && !details?.email_private && !details?.emergency_contact_name
-          ? '<p style="color:#7d8590;font-size:12px;margin-top:8px">Noch keine Kontaktdaten hinterlegt.</p>'
-          : ''}
+        <div class="btn-group" style="margin-top:16px">
+          <button class="btn btn--primary" id="btn-save-contact-data">Kontaktdaten speichern</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="max-width:560px;margin-top:16px">
+      <div class="card__header">Notfallkontakte</div>
+      <div class="card__body">
+        <div id="member-emergency-contacts-list">
+          <p style="color:#7d8590;font-size:13px">Lade...</p>
+        </div>
       </div>
     </div>
   `;
@@ -262,6 +268,53 @@ function renderStammdaten(userId, details) {
       toast('Stammdaten gespeichert');
     } catch (e) { toast(e.message, 'error'); }
   });
+
+  document.getElementById('btn-save-contact-data').addEventListener('click', async () => {
+    try {
+      await api.updateMemberProfile(userId, {
+        phone:         document.getElementById('cd-phone').value.trim()   || null,
+        email_private: document.getElementById('cd-email').value.trim()   || null,
+        address:       document.getElementById('cd-address').value.trim() || null,
+      });
+      toast('Kontaktdaten gespeichert');
+    } catch (e) { toast(e.message, 'error'); }
+  });
+
+  // Notfallkontakte laden (read-only)
+  loadMemberEmergencyContacts(userId);
+}
+
+async function loadMemberEmergencyContacts(userId) {
+  const listEl = document.getElementById('member-emergency-contacts-list');
+  if (!listEl) return;
+
+  try {
+    const contacts = await api.getMemberEmergencyContacts(userId);
+
+    if (!contacts.length) {
+      listEl.innerHTML = '<p style="color:#7d8590;font-size:13px">Noch keine Notfallkontakte hinterlegt.</p>';
+      return;
+    }
+
+    const rows = contacts.map(c => `
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:6px;font-size:13px;padding:8px 0;border-bottom:1px solid #21273d">
+        <div><strong>${esc(c.name)}</strong></div>
+        <div style="color:#7d8590">${esc(c.phone)}</div>
+        <div style="color:#7d8590">${c.relationship ? esc(c.relationship) : '–'}</div>
+      </div>
+    `).join('');
+
+    listEl.innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:4px">
+        <div style="font-size:11px;color:#7d8590;font-weight:600">Name</div>
+        <div style="font-size:11px;color:#7d8590;font-weight:600">Telefon</div>
+        <div style="font-size:11px;color:#7d8590;font-weight:600">Beziehung</div>
+      </div>
+      ${rows}
+    `;
+  } catch (e) {
+    listEl.innerHTML = `<p style="color:#ff8a80">${esc(e.message)}</p>`;
+  }
 }
 
 // ── Tab: Qualifikationen ──────────────────────────────────────────────────────
@@ -593,6 +646,13 @@ function renderEhrungen(userId, honors) {
             <label>Verliehen am</label>
             <input type="date" id="h-awarded" />
           </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select id="h-status">
+              <option value="aktiv">Aktiv</option>
+              <option value="zurueckgezogen">Zurückgezogen</option>
+            </select>
+          </div>
           <div class="form-group form-group--full">
             <label>Hinweis</label>
             <input type="text" id="h-notes" maxlength="200" />
@@ -613,6 +673,7 @@ function renderEhrungen(userId, honors) {
     document.getElementById('honor-modal-title').textContent = h ? 'Ehrung bearbeiten' : 'Ehrung hinzufügen';
     document.getElementById('h-name').value    = h?.name || '';
     document.getElementById('h-awarded').value = h?.awarded_at || '';
+    document.getElementById('h-status').value  = h?.status || 'aktiv';
     document.getElementById('h-notes').value   = h?.notes || '';
     document.getElementById('honor-modal').style.display = 'flex';
   };
@@ -628,6 +689,7 @@ function renderEhrungen(userId, honors) {
       const body = {
         name,
         awarded_at: document.getElementById('h-awarded').value || null,
+        status:     document.getElementById('h-status').value,
         notes:      document.getElementById('h-notes').value.trim() || null,
       };
       if (editHonorId) {
@@ -650,11 +712,17 @@ function renderEhrungen(userId, honors) {
 }
 
 function renderHonorTable(honors) {
-  const rows = honors.map(h => `
+  const rows = honors.map(h => {
+    const isActive = h.status === 'aktiv';
+    const statusBadge = isActive
+      ? `<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;background:#14532d;color:#4ade80">Aktiv</span>`
+      : `<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;background:#1f2937;color:#9ca3af">Zurückgezogen</span>`;
+    return `
     <tr data-hid="${h.id}" data-name="${esc(h.name)}"
-        data-awarded="${h.awarded_at || ''}" data-notes="${esc(h.notes || '')}">
+        data-awarded="${h.awarded_at || ''}" data-status="${h.status || 'aktiv'}" data-notes="${esc(h.notes || '')}">
       <td style="padding:10px 16px"><strong>${esc(h.name)}</strong></td>
       <td style="padding:10px 16px;color:#7d8590">${h.awarded_at ? formatDate(h.awarded_at) : '–'}</td>
+      <td style="padding:10px 16px">${statusBadge}</td>
       <td style="padding:10px 16px;color:#7d8590">${esc(h.notes || '–')}</td>
       <td style="padding:10px 16px">
         <div class="btn-group">
@@ -662,13 +730,15 @@ function renderHonorTable(honors) {
           <button class="btn btn--danger btn--sm"  data-action="delete-honor">Löschen</button>
         </div>
       </td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 
   return `
     <table style="width:100%;border-collapse:collapse;font-size:13px">
       <thead><tr style="background:#0d1117">
         <th style="padding:10px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;text-align:left">Ehrung</th>
         <th style="padding:10px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;text-align:left">Verliehen am</th>
+        <th style="padding:10px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;text-align:left">Status</th>
         <th style="padding:10px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;text-align:left">Hinweis</th>
         <th style="padding:10px 16px;border-bottom:1px solid #21273d"></th>
       </tr></thead>
@@ -680,7 +750,7 @@ function bindHonorActions(userId, openModal) {
   document.querySelectorAll('[data-action="edit-honor"]').forEach(btn => {
     btn.addEventListener('click', () => {
       const tr = btn.closest('tr');
-      openModal({ id: tr.dataset.hid, name: tr.dataset.name, awarded_at: tr.dataset.awarded, notes: tr.dataset.notes });
+      openModal({ id: tr.dataset.hid, name: tr.dataset.name, awarded_at: tr.dataset.awarded, status: tr.dataset.status, notes: tr.dataset.notes });
     });
   });
   document.querySelectorAll('[data-action="delete-honor"]').forEach(btn => {
