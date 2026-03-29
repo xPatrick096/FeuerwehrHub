@@ -2,18 +2,20 @@ import { api } from '../api.js';
 import { toast } from '../toast.js';
 import { renderShell, setShellInfo } from '../shell.js';
 import { esc } from '../utils.js';
+import { icon, renderIcons } from '../icons.js';
 
 const ROLE_LABELS = {
-  superuser: '⭐ Superuser',
-  admin:     '🔧 Admin',
-  user:      '👤 Benutzer',
+  superuser: 'Superuser',
+  admin:     'Admin',
+  user:      'Benutzer',
 };
 
 const MODULE_LABELS = {
-  lager:           '🏪 Lager',
-  personal:        '👥 Personal',
-  fahrzeuge:       '🚗 Fahrzeuge',
-  einsatzberichte: '🚨 Einsatzberichte',
+  lager:           'Lager (Schreiben)',
+  'lager.approve': 'Lager (Genehmigen)',
+  personal:        'Personal',
+  fahrzeuge:       'Fahrzeuge',
+  einsatzberichte: 'Einsatzberichte',
 };
 
 export async function renderAdmin() {
@@ -38,7 +40,7 @@ export async function renderAdmin() {
     </div>
 
     <div id="update-banner" style="display:none;background:#1a2a1a;border:1px solid #3fb950;border-radius:8px;padding:10px 16px;margin-bottom:16px;font-size:13px;color:#3fb950;align-items:center;gap:10px">
-      <span>⬆️</span>
+      <span>${icon('arrow-up-circle', 16)}</span>
       <span id="update-banner-text"></span>
       <a id="update-banner-link" href="#" target="_blank" style="color:#3fb950;font-weight:600;text-decoration:underline">Releases ansehen</a>
       <button id="update-banner-btn" onclick="triggerUpdate()" style="margin-left:auto;background:#3fb950;color:#0d1117;border:none;border-radius:6px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer">Update installieren</button>
@@ -47,7 +49,7 @@ export async function renderAdmin() {
     <div id="update-modal" class="modal-overlay">
       <div class="modal" style="max-width:580px">
         <div class="modal__header">
-          <span>⬆️ Update wird installiert</span>
+          <span>${icon('arrow-up-circle', 16)} Update wird installiert</span>
         </div>
         <div class="modal__body">
           <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
@@ -420,12 +422,13 @@ export async function renderAdmin() {
     const deleteBtn = document.getElementById('btn-delete-pdf');
     if (!statusEl) return;
     if (hasPdf) {
-      statusEl.innerHTML = '<span style="color:#3fb950">✅ PDF-Vorlage ist hinterlegt</span>';
+      statusEl.innerHTML = `<span style="color:#3fb950">${icon('check-circle', 14)} PDF-Vorlage ist hinterlegt</span>`;
       if (deleteBtn) deleteBtn.style.display = '';
     } else {
-      statusEl.innerHTML = '<span style="color:#ff8a80">⚠️ Noch keine PDF-Vorlage hochgeladen</span>';
+      statusEl.innerHTML = `<span style="color:#ff8a80">${icon('alert-triangle', 14)} Noch keine PDF-Vorlage hochgeladen</span>`;
       if (deleteBtn) deleteBtn.style.display = 'none';
     }
+    renderIcons(statusEl);
   };
 
   fetch('/api/settings/pdf', { method: 'HEAD' })
@@ -465,8 +468,9 @@ export async function renderAdmin() {
         <img src="${saved}" style="width:56px;height:56px;object-fit:contain;border:1px solid #21273d;border-radius:12px;padding:4px;background:#161b27;">
         <span style="font-size:12px;color:#3fb950;font-weight:600;">✓ Eigenes Wappen aktiv</span>`;
     } else {
-      el.innerHTML = `<span style="font-size:12px;color:#7d8590">🔥 Standard-Logo (Flamme) aktiv</span>`;
+      el.innerHTML = `<span style="font-size:12px;color:#7d8590">${icon('flame', 14)} Standard-Logo (Flamme) aktiv</span>`;
     }
+    renderIcons(el);
   };
   updateLogoPreview();
 
@@ -533,6 +537,8 @@ export async function renderAdmin() {
 
   // Rollen-Tab
   await loadRoles(me);
+
+  renderIcons(document.getElementById('page-content'));
 
   document.getElementById('btn-refresh-audit').addEventListener('click', loadAuditLog);
   document.getElementById('btn-refresh-container-log').addEventListener('click', loadContainerLog);
@@ -933,7 +939,7 @@ async function loadUsers(me, roles = []) {
                        </button>`
                     : '<span style="font-size:11px;color:#888">alle</span>'}
                 </td>
-                <td style="text-align:center">${u.totp_enabled ? '✅' : '—'}</td>
+                <td style="text-align:center">${u.totp_enabled ? `${icon('lock', 14)}` : '—'}</td>
                 <td style="font-size:12px;color:#666">
                   ${new Date(u.created_at).toLocaleDateString('de-DE')}
                 </td>
@@ -980,11 +986,11 @@ async function loadUsers(me, roles = []) {
 }
 
 const MODULE_DEFS = [
-  { key: 'lager',           icon: '🏪', label: 'Lager',           desc: 'Beschaffungsaufträge, Bestellübersicht, Artikelstamm' },
-  { key: 'personal',        icon: '👥', label: 'Personal',        desc: 'Mitgliederverwaltung, Qualifikationen, Ehrungen' },
-  { key: 'einsatzberichte', icon: '🚒', label: 'Einsatzberichte', desc: 'Einsatzberichte erfassen und verwalten' },
-  { key: 'fahrzeuge',       icon: '🚗', label: 'Fahrzeuge',       desc: 'Stammdaten, Fristen &amp; Prüfungen, Einsatzstatus' },
-  { key: 'jugendfeuerwehr', icon: '🧒', label: 'Jugendfeuerwehr', desc: 'JF-Mitglieder, Termine, Wettbewerbe',                  soon: true },
+  { key: 'lager',           iconName: 'package',         label: 'Lager',           desc: 'Beschaffungsaufträge, Bestellübersicht, Artikelstamm' },
+  { key: 'personal',        iconName: 'users',           label: 'Personal',        desc: 'Mitgliederverwaltung, Qualifikationen, Ehrungen' },
+  { key: 'einsatzberichte', iconName: 'truck',           label: 'Einsatzberichte', desc: 'Einsatzberichte erfassen und verwalten' },
+  { key: 'fahrzeuge',       iconName: 'car',             label: 'Fahrzeuge',       desc: 'Stammdaten, Fristen &amp; Prüfungen, Einsatzstatus' },
+  { key: 'jugendfeuerwehr', iconName: 'users',           label: 'Jugendfeuerwehr', desc: 'JF-Mitglieder, Termine, Wettbewerbe',                  soon: true },
 ];
 
 async function loadModules() {
@@ -1005,7 +1011,7 @@ async function loadModules() {
           <div style="display:flex;align-items:center;justify-content:space-between;
                       padding:14px 0;border-bottom:1px solid #f0f0f0">
             <div style="display:flex;align-items:center;gap:12px">
-              <span style="font-size:22px">${m.icon}</span>
+              <span>${icon(m.iconName, 22)}</span>
               <div>
                 <div style="font-weight:600;font-size:14px">${m.label}
                   ${m.soon ? '<span style="font-size:11px;color:#999;margin-left:6px;font-weight:400">Demnächst</span>' : ''}
@@ -1026,6 +1032,8 @@ async function loadModules() {
         <button class="btn btn--primary" id="btn-save-modules">Änderungen speichern</button>
       </div>
     `;
+
+    renderIcons(wrap);
 
     document.getElementById('btn-save-modules').addEventListener('click', async () => {
       const updated = {};
@@ -1056,14 +1064,14 @@ async function loadAuditLog() {
     }
 
     const ACTION_LABELS = {
-      LOGIN_SUCCESS:    '✅ Login erfolgreich',
-      LOGIN_FAILED:     '⚠️ Login fehlgeschlagen',
-      ACCOUNT_LOCKED:   '🔒 Account gesperrt',
-      USER_CREATED:     '➕ Benutzer angelegt',
-      USER_DELETED:     '🗑️ Benutzer gelöscht',
-      PASSWORD_RESET:   '🔑 Passwort zurückgesetzt',
-      ROLE_CHANGED:     '🔧 Systemrolle geändert',
-      SETTINGS_UPDATED: '⚙️ Einstellungen geändert',
+      LOGIN_SUCCESS:    `${icon('check-circle', 14)} Login erfolgreich`,
+      LOGIN_FAILED:     `${icon('alert-triangle', 14)} Login fehlgeschlagen`,
+      ACCOUNT_LOCKED:   `${icon('lock', 14)} Account gesperrt`,
+      USER_CREATED:     `${icon('plus', 14)} Benutzer angelegt`,
+      USER_DELETED:     `${icon('trash-2', 14)} Benutzer gelöscht`,
+      PASSWORD_RESET:   `${icon('key', 14)} Passwort zurückgesetzt`,
+      ROLE_CHANGED:     `${icon('wrench', 14)} Systemrolle geändert`,
+      SETTINGS_UPDATED: `${icon('settings', 14)} Einstellungen geändert`,
     };
 
     wrap.innerHTML = `
@@ -1090,6 +1098,7 @@ async function loadAuditLog() {
         </tbody>
       </table>
     `;
+    renderIcons(wrap);
   } catch (err) {
     wrap.innerHTML = `<p style="color:red;font-size:13px">Fehler: ${err.message}</p>`;
   }

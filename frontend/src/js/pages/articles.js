@@ -2,6 +2,7 @@ import { api } from '../api.js';
 import { toast } from '../toast.js';
 import { renderShell, setShellInfo } from '../shell.js';
 import { esc } from '../utils.js';
+import { icon, renderIcons } from '../icons.js';
 
 export async function renderArticles() {
   const [settings, user, units] = await Promise.all([
@@ -17,7 +18,7 @@ export async function renderArticles() {
         <h2>Artikelstamm</h2>
         <p>Bekannte Artikel verwalten und als Vorlage für Bestellungen nutzen</p>
       </div>
-      <button class="btn btn--primary" id="btn-new-article">➕ Neuer Artikel</button>
+      <button class="btn btn--primary" id="btn-new-article">${icon('plus', 14)} Neuer Artikel</button>
     </div>
     <div class="card">
       <div class="card__header">Artikel</div>
@@ -85,6 +86,8 @@ export async function renderArticles() {
     </div>
   `;
 
+  renderIcons(document.getElementById('page-content'));
+
   let editId = null;
 
   async function load() {
@@ -107,8 +110,8 @@ export async function renderArticles() {
         bestandHtml = `<span style="color:#4c5462">—</span>`;
       } else {
         const color = low ? '#ff8a80' : ok ? '#3fb950' : '#e6edf3';
-        const icon  = low ? '⚠️ ' : ok ? '✅ ' : '';
-        bestandHtml = `<span style="color:${color};font-weight:600">${icon}${ist} / ${soll}</span>`;
+        const stockIcon = low ? `${icon('alert-triangle', 13)} ` : ok ? `${icon('check-circle', 13)} ` : '';
+        bestandHtml = `<span style="color:${color};font-weight:600">${stockIcon}${ist} / ${soll}</span>`;
       }
 
       return `
@@ -128,14 +131,15 @@ export async function renderArticles() {
                 data-current-stock="${ist}"
                 data-stock="${soll}"
                 data-notes="${esc(a.notes||'')}">
-                ✏️ Bearbeiten
+                ${icon('file-pen', 14)} Bearbeiten
               </button>
-              <button class="btn btn--danger btn--sm" data-action="delete" data-id="${a.id}">🗑</button>
+              <button class="btn btn--danger btn--sm" data-action="delete" data-id="${a.id}">${icon('trash-2', 14)}</button>
             </div>
           </td>
         </tr>
       `;
     }).join('');
+    renderIcons(tbody);
   }
 
   function openModal(article = null) {

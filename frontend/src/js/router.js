@@ -30,7 +30,9 @@ export function initRouter() {
       if (requiredPerm) {
         const user = await api.me().catch(() => null);
         const isAdmin = user?.role === 'admin' || user?.role === 'superuser';
-        const hasPerm = isAdmin || (user?.permissions || []).includes(requiredPerm);
+        const perms = user?.permissions || [];
+        const allowed = Array.isArray(requiredPerm) ? requiredPerm : [requiredPerm];
+        const hasPerm = isAdmin || allowed.some(p => perms.includes(p));
         if (!hasPerm) {
           window.location.hash = '#/'; // → Startseite, immer zugänglich
           return;

@@ -55,8 +55,12 @@ export const api = {
   createOrder:  (body)   => request('POST',   '/orders', body),
   updateOrder:  (id, b)  => request('PUT',    `/orders/${id}`, b),
   deleteOrder:  (id)     => request('DELETE', `/orders/${id}`),
-  addDelivery:  (id, b)  => request('POST',   `/orders/${id}/delivery`, b),
-  setStatus:    (id, s)  => request('POST',   `/orders/${id}/status`, { status: s }),
+  addDelivery:    (id, b)  => request('POST',   `/orders/${id}/delivery`, b),
+  setStatus:      (id, s)  => request('POST',   `/orders/${id}/status`, { status: s }),
+  submitOrder:    (id)     => request('POST',   `/orders/${id}/submit`),
+  approveOrder:   (id)     => request('POST',   `/orders/${id}/approve`),
+  rejectOrder:    (id, r)  => request('POST',   `/orders/${id}/reject`, { reason: r }),
+  resubmitOrder:  (id)     => request('POST',   `/orders/${id}/resubmit`),
   getStats:     ()       => request('GET',    '/orders/stats'),
 
   // Artikel
@@ -133,6 +137,31 @@ export const api = {
   updateMyProfile:     (body)      => request('PUT',    '/me/profile', body),
   getMyQualifications: ()          => request('GET',    '/me/qualifications'),
   getMyEquipment:      ()          => request('GET',    '/me/equipment'),
+
+  // Mein Bereich - Notfallkontakte
+  getMyEmergencyContacts:   ()         => request('GET',    '/me/emergency-contacts'),
+  createMyEmergencyContact: (b)        => request('POST',   '/me/emergency-contacts', b),
+  updateMyEmergencyContact: (id, b)    => request('PUT',    `/me/emergency-contacts/${id}`, b),
+  deleteMyEmergencyContact: (id)       => request('DELETE', `/me/emergency-contacts/${id}`),
+  getMyHonors:              ()         => request('GET',    '/me/honors'),
+
+  // Personal - Kontaktdaten
+  updateMemberProfile:        (id, b)  => request('PUT',    `/personal/members/${id}/profile`, b),
+  getMemberEmergencyContacts: (id)     => request('GET',    `/personal/members/${id}/emergency-contacts`),
+
+  // Termine (Personal-Modul)
+  getTermine:              ()            => request('GET',    '/personal/termine'),
+  createTermin:            (b)           => request('POST',   '/personal/termine', b),
+  updateTermin:            (id, b)       => request('PUT',    `/personal/termine/${id}`, b),
+  deleteTermin:            (id)          => request('DELETE', `/personal/termine/${id}`),
+  getTerminAssignments:    (id)          => request('GET',    `/personal/termine/${id}/assignments`),
+  setTerminAssignments:    (id, b)       => request('POST',   `/personal/termine/${id}/assignments`, b),
+  getTerminTypen:          ()            => request('GET',    '/personal/termin-typen'),
+  createTerminTyp:         (b)           => request('POST',   '/personal/termin-typen', b),
+  deleteTerminTyp:         (id)          => request('DELETE', `/personal/termin-typen/${id}`),
+
+  // Mein Bereich - Termine
+  getMyTermine:            ()            => request('GET',    '/me/termine'),
 
   // Ankündigungen
   getAnnouncements:    ()          => request('GET',    '/announcements'),

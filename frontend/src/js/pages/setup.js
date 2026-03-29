@@ -1,6 +1,7 @@
 import { api } from '../api.js';
 import { toast } from '../toast.js';
 import { navigate } from '../router.js';
+import { icon, renderIcons } from '../icons.js';
 
 export function renderSetup() {
   const app = document.getElementById('app');
@@ -9,7 +10,7 @@ export function renderSetup() {
     <div class="auth-page">
       <div class="auth-card">
         <div class="auth-header">
-          <div class="auth-emblem">🚒</div>
+          <div class="auth-emblem">${icon('truck', 32)}</div>
           <h1>Ersteinrichtung</h1>
           <p>FeuerwehrHub</p>
         </div>
@@ -42,6 +43,7 @@ export function renderSetup() {
   `;
 
   document.getElementById('btn-setup').addEventListener('click', doSetup);
+  renderIcons(document.getElementById('app'));
 }
 
 async function doSetup() {

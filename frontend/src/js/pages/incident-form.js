@@ -4,6 +4,7 @@
  */
 
 import { esc } from '../utils.js';
+import { icon } from '../icons.js';
 
 export const GF_LEVEL = 30;
 export const WL_LEVEL = 50;
@@ -73,9 +74,9 @@ export function buildTabsHTML(tabContainerStyle = '', opts = {}) {
     { idx: 3, label: 'Bericht'          },
     { idx: 4, label: 'Einsatzmittel'    },
     { idx: 5, label: 'Polizei'          },
-    { idx: 6, label: '🚒 Fahrzeuge',   show: showVehicles    },
-    { idx: 7, label: '👥 Personal',    show: showPersonnel   },
-    { idx: 8, label: '📎 Anhänge',     show: showAttachments },
+    { idx: 6, label: `${icon('truck', 14)} Fahrzeuge`,   show: showVehicles    },
+    { idx: 7, label: `${icon('users', 14)} Personal`,    show: showPersonnel   },
+    { idx: 8, label: `${icon('paperclip', 14)} Anhänge`, show: showAttachments },
   ];
   const visibleTabs = allTabs.filter(t => t.show !== false);
   return `

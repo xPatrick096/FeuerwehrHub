@@ -6,6 +6,7 @@
 import { api } from '../api.js';
 import { toast } from '../toast.js';
 import { esc } from '../utils.js';
+import { icon, renderIcons } from '../icons.js';
 
 // ── Fahrzeuge Tab ─────────────────────────────────────────────────────────────
 
@@ -406,7 +407,7 @@ function _renderAttachmentsTab(wrap, incidentId, attachments, readonly) {
     <div id="attach-drop-zone"
          style="border:2px dashed #21273d;border-radius:8px;padding:24px;text-align:center;cursor:pointer;
                 transition:border-color 0.15s">
-      <div style="font-size:28px">📎</div>
+      <div>${icon('paperclip', 28)}</div>
       <div style="font-size:13px;color:#7d8590;margin-top:6px">Datei hierher ziehen oder klicken zum Auswählen</div>
       <div style="font-size:11px;color:#7d8590;margin-top:2px">Bilder (JPEG/PNG/GIF/WebP), PDF, Word (docx), ODT, Text — max. 20 MB</div>
       <input type="file" id="attach-file-input" style="display:none"
@@ -418,6 +419,7 @@ function _renderAttachmentsTab(wrap, incidentId, attachments, readonly) {
   `;
 
   wrap.innerHTML = listHTML + uploadHTML;
+  renderIcons(wrap);
 
   // Download
   wrap.querySelectorAll('[data-action="download"]').forEach(btn => {
@@ -465,11 +467,11 @@ function _renderAttachmentsTab(wrap, incidentId, attachments, readonly) {
 }
 
 function _fileIcon(mime) {
-  if (mime.startsWith('image/'))    return '🖼️';
-  if (mime === 'application/pdf')   return '📄';
-  if (mime.includes('word') || mime.includes('officedocument')) return '📝';
-  if (mime === 'text/plain')        return '📋';
-  return '📎';
+  if (mime.startsWith('image/'))    return icon('image', 20);
+  if (mime === 'application/pdf')   return icon('file-text', 20);
+  if (mime.includes('word') || mime.includes('officedocument')) return icon('file-pen', 20);
+  if (mime === 'text/plain')        return icon('clipboard-list', 20);
+  return icon('paperclip', 20);
 }
 
 async function _downloadAttachment(incidentId, attachmentId, filename) {

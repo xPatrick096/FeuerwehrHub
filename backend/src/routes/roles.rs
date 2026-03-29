@@ -15,7 +15,7 @@ use crate::{
     AppState,
 };
 
-const KNOWN_MODULES: &[&str] = &["lager", "personal", "fahrzeuge", "einsatzberichte"];
+const KNOWN_MODULES: &[&str] = &["lager", "lager.approve", "personal", "fahrzeuge", "einsatzberichte"];
 
 #[derive(Serialize, sqlx::FromRow)]
 pub struct Role {
