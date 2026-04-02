@@ -424,6 +424,7 @@ async function loadMitglieder(isAdmin) {
       <h3>Mitglieder</h3>
       <div style="display:flex;gap:.5rem">
         <button class="btn btn--ghost btn--sm" id="btn-mitglieder-csv">${icon('download', 14)} CSV</button>
+        <button class="btn btn--ghost btn--sm" id="btn-jahresversammlung">${icon('printer', 14)} Jahresversammlung</button>
         ${isAdmin ? `<button class="btn btn--primary" id="btn-new-mitglied">${icon('plus', 14)} Mitglied anlegen</button>` : ''}
       </div>
     </div>
@@ -445,6 +446,7 @@ async function loadMitglieder(isAdmin) {
   document.getElementById('filter-status').addEventListener('change', () => renderMitgliederTable(isAdmin));
   document.getElementById('filter-name').addEventListener('input', () => renderMitgliederTable(isAdmin));
   document.getElementById('btn-mitglieder-csv').addEventListener('click', () => exportMitgliederCsv());
+  document.getElementById('btn-jahresversammlung').addEventListener('click', () => printJahresversammlungsliste());
   await refreshMitglieder(isAdmin);
   loadEhrungen();
 }
@@ -924,6 +926,63 @@ function exportMitgliederCsv() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href = url; a.download = 'mitglieder.csv'; a.click();
   URL.revokeObjectURL(url);
+}
+
+async function printJahresversammlungsliste() {
+  const year = new Date().getFullYear();
+  let beitraege = [];
+  try { beitraege = await api.getBeitraege({ jahr: year }) || []; } catch (_) {}
+  const bMap = {};
+  beitraege.forEach(b => { bMap[b.mitglied_id] = b; });
+
+  const STATUS_LABELS = { aktiv: 'Aktiv', passiv: 'Passiv', ehren: 'Ehrenmitglied', jugend: 'Jugend' };
+  const BEITRAG_LABELS = { bezahlt: '✓ Bezahlt', offen: '⚠ Offen', befreit: '– Befreit' };
+  const BEITRAG_COLORS = { bezahlt: '#2d6a4f', offen: '#7d4e00', befreit: '#444' };
+
+  const mitglieder = _mitgliederCache
+    .filter(m => !m.archiviert)
+    .sort((a, b) => a.nachname.localeCompare(b.nachname, 'de'));
+
+  const rows = mitglieder.map(m => {
+    const b = bMap[m.id];
+    const bLabel = b ? (BEITRAG_LABELS[b.status] || b.status) : '—';
+    const bColor = b ? (BEITRAG_COLORS[b.status] || '#444') : '#888';
+    return `<tr>
+      <td>${esc(m.mitgliedsnummer || '—')}</td>
+      <td><strong>${esc(m.nachname)}, ${esc(m.vorname)}</strong></td>
+      <td>${STATUS_LABELS[m.status] || m.status}</td>
+      <td>${m.eintrittsdatum ? new Date(m.eintrittsdatum).toLocaleDateString('de-DE') : '—'}</td>
+      <td style="color:${bColor}">${bLabel}</td>
+      <td style="width:60px;border-bottom:1px solid #ccc">&nbsp;</td>
+    </tr>`;
+  }).join('');
+
+  const win = window.open('', '_blank', 'width=900,height=700');
+  win.document.write(`<!DOCTYPE html><html lang="de"><head>
+    <meta charset="UTF-8"><title>Mitgliederliste ${year}</title>
+    <style>
+      body { font-family: Arial, sans-serif; font-size: 12px; color: #000; margin: 15mm 20mm; }
+      h2 { margin: 0 0 2px; font-size: 16px; }
+      p.meta { margin: 0 0 14px; color: #555; font-size: 11px; }
+      table { width: 100%; border-collapse: collapse; }
+      th { background: #f0f0f0; padding: 6px 8px; text-align: left; border-bottom: 2px solid #999; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; }
+      td { padding: 5px 8px; border-bottom: 1px solid #e0e0e0; vertical-align: middle; }
+      tr:last-child td { border-bottom: 2px solid #999; }
+      @media print { body { margin: 10mm 15mm; } }
+    </style>
+  </head><body>
+    <h2>Mitgliederliste ${year}</h2>
+    <p class="meta">${mitglieder.length} Mitglieder &nbsp;·&nbsp; Stand: ${new Date().toLocaleDateString('de-DE')}</p>
+    <table>
+      <thead><tr>
+        <th>Nr.</th><th>Name</th><th>Status</th><th>Eingetreten</th><th>Beitrag ${year}</th><th>Unterschrift</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </body></html>`);
+  win.document.close();
+  win.focus();
+  win.print();
 }
 
 async function loadEhrungen() {
@@ -2700,6 +2759,7 @@ async function refreshBuchungen(isAdmin, filter = {}) {
           </select>
         </div>
         <button class="btn btn--secondary btn--sm" id="btn-buchung-filter">Filtern</button>
+        <button class="btn btn--ghost btn--sm" id="btn-buchungen-csv">${icon('download', 12)} CSV</button>
         ${isAdmin ? `<button class="btn btn--primary btn--sm" id="btn-new-buchung" style="margin-left:auto">+ Buchung</button>` : ''}
       </div>
 
@@ -2756,6 +2816,7 @@ async function refreshBuchungen(isAdmin, filter = {}) {
         typ:  el.querySelector('#buchung-filter-typ').value || undefined,
       });
     });
+    el.querySelector('#btn-buchungen-csv')?.addEventListener('click', () => exportBuchungenCsv());
 
     if (isAdmin) {
       el.querySelector('#btn-new-buchung')?.addEventListener('click', () => openBuchungModal(null, isAdmin));
@@ -3080,6 +3141,29 @@ function openGenerierModal(isAdmin) {
       refreshBeitraege(isAdmin);
     } catch (e) { toast(e.message, 'error'); }
   });
+}
+
+function exportBuchungenCsv() {
+  if (!_buchungenCache.length) { toast('Keine Buchungen zum Exportieren', 'error'); return; }
+  const header = ['Datum', 'Bezeichnung', 'Kategorie', 'Typ', 'Betrag (EUR)', 'Beleg-Nr.', 'Mitglied', 'Notiz'];
+  const rows = _buchungenCache.map(b => [
+    new Date(b.datum).toLocaleDateString('de-DE'),
+    b.bezeichnung,
+    b.kategorie_name || '',
+    b.typ === 'einnahme' ? 'Einnahme' : 'Ausgabe',
+    b.betrag.toFixed(2).replace('.', ','),
+    b.beleg_nr || '',
+    b.mitglied_name || '',
+    b.notiz || '',
+  ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(';'));
+  const csv = '\uFEFF' + [header.join(';'), ...rows].join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `buchungen_${new Date().getFullYear()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

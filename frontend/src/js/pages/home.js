@@ -127,7 +127,7 @@ export async function renderHome() {
     loadPersonalWidget();
   }
   // Termine-Widget für alle eingeloggten Nutzer
-  loadTermineWidget();
+  loadTermineWidget(modules);
   if (isAdmin || (modules.einsatzberichte === true && canAccess(user, 'einsatzberichte'))) {
     loadIncidentWidget();
   }
@@ -369,7 +369,7 @@ async function loadIncidentWidget() {
 
 // ── Termine-Widget ────────────────────────────────────────────────────────────
 
-async function loadTermineWidget() {
+async function loadTermineWidget(modules = {}) {
   const widget  = document.getElementById('termine-widget');
   const content = document.getElementById('termine-widget-content');
   if (!widget || !content) return;
@@ -378,11 +378,24 @@ async function loadTermineWidget() {
   widget.style.flexDirection = 'column';
 
   try {
-    const termine = await api.getMyTermine();
+    const fetches = [api.getMyTermine()];
+    if (modules.verein) fetches.push(api.getEvents().catch(() => []));
+    const [myTermine, vereinEvents] = await Promise.all(fetches);
+
+    const vereinNorm = (vereinEvents || []).map(e => ({
+      id: e.id,
+      title: e.titel,
+      location: e.ort || null,
+      start_at: e.datum + 'T' + (e.uhrzeit ? e.uhrzeit + ':00' : '00:00:00'),
+      typ_color: null,
+      _source: 'verein',
+    }));
+
     const now     = new Date();
-    const upcoming = termine
+    const upcoming = [...myTermine, ...vereinNorm]
       .filter(t => new Date(t.start_at) >= now)
-      .slice(0, 5); // Nächste 5 Termine
+      .sort((a, b) => new Date(a.start_at) - new Date(b.start_at))
+      .slice(0, 5);
 
     if (!upcoming.length) {
       content.innerHTML = `<p style="color:#7d8590;font-size:13px;margin:0">Keine bevorstehenden Termine.</p>`;
@@ -391,9 +404,11 @@ async function loadTermineWidget() {
 
     content.innerHTML = upcoming.map(t => {
       const d = new Date(t.start_at);
-      const colorDot = t.typ_color
-        ? `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${t.typ_color};margin-right:5px;flex-shrink:0"></span>`
-        : '';
+      const colorDot = t._source === 'verein'
+        ? `<span style="display:inline-block;padding:1px 5px;border-radius:999px;font-size:9px;font-weight:600;background:#21273d;color:#7d8590;margin-right:5px;flex-shrink:0">Verein</span>`
+        : t.typ_color
+          ? `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${t.typ_color};margin-right:5px;flex-shrink:0"></span>`
+          : '';
       return `
         <div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid #21273d">
           <div style="min-width:40px;text-align:center;background:#0d1117;border-radius:5px;padding:4px 6px;flex-shrink:0">

@@ -31,7 +31,7 @@ export async function renderPersonal() {
       <div id="personal-typen-wrap" style="display:none"></div>
     `;
     renderIcons(content);
-    loadTermineView();
+    loadTermineView(settings?.modules || {});
   } else {
     content.innerHTML = `
       <div class="page-header">
@@ -982,33 +982,59 @@ function formatDateTime(dt) {
   });
 }
 
+const VEREIN_EVENT_COLORS = {
+  'Übung': '#f0a500',
+  'Versammlung': '#58a6ff',
+  'Fest': '#3fb950',
+  'Arbeitsdienst': '#e3b341',
+  'Sonstiges': '#6b7280',
+};
+
+let _vereinTermineCache = [];
+
+function normalizeVereinEvent(e) {
+  return {
+    _source: 'verein',
+    id: e.id,
+    title: e.titel,
+    location: e.ort || null,
+    start_at: e.datum + 'T' + (e.uhrzeit ? e.uhrzeit + ':00' : '00:00:00'),
+    end_at: null,
+    typ_name: e.typ,
+    typ_color: VEREIN_EVENT_COLORS[e.typ] || '#6b7280',
+    assignment_count: 0,
+  };
+}
+
 function typBadge(name, color) {
   if (!name) return '<span style="color:#4c5462;font-size:12px">–</span>';
   return `<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;background:${color}22;color:${color}">${esc(name)}</span>`;
 }
 
-async function loadTermineView() {
+async function loadTermineView(modules = {}) {
   const wrap = document.getElementById('personal-termine-wrap');
   wrap.innerHTML = '<p style="color:#7d8590;font-size:13px">Lade...</p>';
 
   try {
-    const [termine, typen, members] = await Promise.all([
-      api.getTermine(),
-      api.getTerminTypen(),
-      api.getPersonalMembers(),
-    ]);
+    const fetches = [api.getTermine(), api.getTerminTypen(), api.getPersonalMembers()];
+    if (modules.verein) fetches.push(api.getEvents().catch(() => []));
+    const [termine, typen, members, vereinEvents] = await Promise.all(fetches);
+
+    _vereinTermineCache = modules.verein ? (vereinEvents || []).map(normalizeVereinEvent) : [];
+    const all = [...termine.map(t => ({ ...t, _source: 'personal' })), ..._vereinTermineCache]
+      .sort((a, b) => new Date(a.start_at) - new Date(b.start_at));
 
     wrap.innerHTML = `
       <div class="card">
         <div class="card__header" style="display:flex;justify-content:space-between;align-items:center">
-          <span>Termine (${termine.length})</span>
+          <span>Termine (${all.length}${_vereinTermineCache.length ? ` · davon ${_vereinTermineCache.length} Vereins-Events` : ''})</span>
           <div style="display:flex;gap:8px">
             <button class="btn btn--outline btn--sm" id="btn-show-typen">${icon('tag', 13)} Termintypen</button>
             <button class="btn btn--primary btn--sm" id="btn-add-termin">+ Termin erstellen</button>
           </div>
         </div>
         <div id="termine-list">
-          ${termine.length ? renderTerminTable(termine) : '<div style="padding:16px"><p style="color:#7d8590;font-size:13px">Noch keine Termine eingetragen.</p></div>'}
+          ${all.length ? renderTerminTable(all) : '<div style="padding:16px"><p style="color:#7d8590;font-size:13px">Noch keine Termine eingetragen.</p></div>'}
         </div>
       </div>
 
@@ -1037,13 +1063,18 @@ function renderTerminTable(termine) {
         <td style="padding:10px 16px">${typBadge(t.typ_name, t.typ_color || '#6b7280')}</td>
         <td style="padding:10px 16px;color:#7d8590;white-space:nowrap">${formatDateTime(t.start_at)}</td>
         <td style="padding:10px 16px;color:#7d8590;white-space:nowrap">${t.end_at ? formatDateTime(t.end_at) : '–'}</td>
-        <td style="padding:10px 16px;color:#7d8590;font-size:12px">${t.assignment_count > 0 ? `${t.assignment_count} Mitgl.` : '<span style="color:#4c5462">Alle</span>'}</td>
+        <td style="padding:10px 16px;color:#7d8590;font-size:12px">
+          ${t._source === 'verein'
+            ? `<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:600;background:#21273d;color:#7d8590">Verein</span>`
+            : t.assignment_count > 0 ? `${t.assignment_count} Mitgl.` : '<span style="color:#4c5462">Alle</span>'}
+        </td>
         <td style="padding:10px 16px">
+          ${t._source !== 'verein' ? `
           <div class="btn-group">
             <button class="btn btn--outline btn--sm" data-action="edit-termin">Bearbeiten</button>
             <button class="btn btn--outline btn--sm" data-action="assign-termin">${icon('users', 12)} Zuweisen</button>
             <button class="btn btn--danger btn--sm"  data-action="delete-termin">Löschen</button>
-          </div>
+          </div>` : `<a href="#/verein" style="font-size:11px;color:#7d8590;text-decoration:none">Verein →</a>`}
         </td>
       </tr>`;
   }).join('');
@@ -1275,8 +1306,10 @@ function bindTerminRowActions(openTerminModal, openAssignModal) {
 
 async function refreshTermine() {
   const updated = await api.getTermine();
-  document.getElementById('termine-list').innerHTML = updated.length
-    ? renderTerminTable(updated)
+  const all = [...updated.map(t => ({ ...t, _source: 'personal' })), ..._vereinTermineCache]
+    .sort((a, b) => new Date(a.start_at) - new Date(b.start_at));
+  document.getElementById('termine-list').innerHTML = all.length
+    ? renderTerminTable(all)
     : '<div style="padding:16px"><p style="color:#7d8590;font-size:13px">Noch keine Termine eingetragen.</p></div>';
   renderIcons(document.getElementById('termine-list'));
   // Bind actions neu (openModal und openAssignModal aus loadTermineView nicht zugänglich — nutze gespeicherte Referenz)
