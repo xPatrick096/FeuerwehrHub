@@ -588,6 +588,395 @@ pub async fn delete_document(
     Ok(Json(serde_json::json!({ "ok": true })))
 }
 
+// ── Mitglieder ────────────────────────────────────────────────────────────────
+
+#[derive(Serialize, sqlx::FromRow)]
+pub struct Mitglied {
+    pub id:              Uuid,
+    pub mitgliedsnummer: String,
+    pub vorname:         String,
+    pub nachname:        String,
+    pub email:           Option<String>,
+    pub telefon:         Option<String>,
+    pub geburtsdatum:    Option<NaiveDate>,
+    pub eintrittsdatum:  NaiveDate,
+    pub status:          String,
+    pub user_id:         Option<Uuid>,
+    pub austritt_datum:  Option<NaiveDate>,
+    pub austritt_grund:  Option<String>,
+    pub bemerkung:       Option<String>,
+    pub archiviert:      bool,
+    pub created_at:      DateTime<Utc>,
+}
+
+#[derive(Deserialize)]
+pub struct CreateMitglied {
+    pub vorname:        String,
+    pub nachname:       String,
+    pub email:          Option<String>,
+    pub telefon:        Option<String>,
+    pub geburtsdatum:   Option<NaiveDate>,
+    pub eintrittsdatum: NaiveDate,
+    pub status:         Option<String>,
+    pub user_id:        Option<Uuid>,
+    pub bemerkung:      Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct UpdateMitglied {
+    pub vorname:        Option<String>,
+    pub nachname:       Option<String>,
+    pub email:          Option<String>,
+    pub telefon:        Option<String>,
+    pub geburtsdatum:   Option<NaiveDate>,
+    pub eintrittsdatum: Option<NaiveDate>,
+    pub status:         Option<String>,
+    pub user_id:        Option<Uuid>,
+    pub austritt_datum: Option<NaiveDate>,
+    pub austritt_grund: Option<String>,
+    pub bemerkung:      Option<String>,
+    pub archiviert:     Option<bool>,
+}
+
+async fn next_mitgliedsnummer(db: &sqlx::PgPool) -> AppResult<String> {
+    let max: Option<i32> = sqlx::query_scalar(
+        "SELECT MAX(CAST(SPLIT_PART(mitgliedsnummer, '-', 2) AS INTEGER))
+         FROM verein_mitglieder WHERE mitgliedsnummer LIKE 'M-%'"
+    )
+    .fetch_one(db)
+    .await?;
+    Ok(format!("M-{:04}", max.unwrap_or(0) + 1))
+}
+
+pub async fn list_mitglieder(
+    State(state): State<AppState>,
+) -> AppResult<Json<Vec<Mitglied>>> {
+    let rows = sqlx::query_as::<_, Mitglied>(
+        "SELECT id, mitgliedsnummer, vorname, nachname, email, telefon, geburtsdatum,
+                eintrittsdatum, status, user_id, austritt_datum, austritt_grund,
+                bemerkung, archiviert, created_at
+         FROM verein_mitglieder
+         ORDER BY archiviert, nachname, vorname"
+    )
+    .fetch_all(&state.db)
+    .await?;
+    Ok(Json(rows))
+}
+
+pub async fn create_mitglied(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Json(body): Json<CreateMitglied>,
+) -> AppResult<Json<Mitglied>> {
+    if body.vorname.trim().is_empty() || body.nachname.trim().is_empty() {
+        return Err(AppError::BadRequest("Vor- und Nachname erforderlich".into()));
+    }
+    let nr = next_mitgliedsnummer(&state.db).await?;
+    let status = body.status.unwrap_or_else(|| "aktiv".into());
+
+    let row = sqlx::query_as::<_, Mitglied>(
+        "INSERT INTO verein_mitglieder
+            (mitgliedsnummer, vorname, nachname, email, telefon, geburtsdatum,
+             eintrittsdatum, status, user_id, bemerkung)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+         RETURNING id, mitgliedsnummer, vorname, nachname, email, telefon, geburtsdatum,
+                   eintrittsdatum, status, user_id, austritt_datum, austritt_grund,
+                   bemerkung, archiviert, created_at"
+    )
+    .bind(&nr)
+    .bind(&body.vorname)
+    .bind(&body.nachname)
+    .bind(&body.email)
+    .bind(&body.telefon)
+    .bind(body.geburtsdatum)
+    .bind(body.eintrittsdatum)
+    .bind(&status)
+    .bind(body.user_id)
+    .bind(&body.bemerkung)
+    .fetch_one(&state.db)
+    .await?;
+
+    audit::log(&state.db, Some(claims.sub), &claims.username,
+        "MITGLIED_CREATED", Some("verein_mitglieder"), Some(row.id), None).await;
+    Ok(Json(row))
+}
+
+pub async fn update_mitglied(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+    Json(body): Json<UpdateMitglied>,
+) -> AppResult<Json<Mitglied>> {
+    let row = sqlx::query_as::<_, Mitglied>(
+        "UPDATE verein_mitglieder SET
+            vorname        = COALESCE($1, vorname),
+            nachname       = COALESCE($2, nachname),
+            email          = $3,
+            telefon        = $4,
+            geburtsdatum   = $5,
+            eintrittsdatum = COALESCE($6, eintrittsdatum),
+            status         = COALESCE($7, status),
+            user_id        = $8,
+            austritt_datum = $9,
+            austritt_grund = $10,
+            bemerkung      = $11,
+            archiviert     = COALESCE($12, archiviert)
+         WHERE id = $13
+         RETURNING id, mitgliedsnummer, vorname, nachname, email, telefon, geburtsdatum,
+                   eintrittsdatum, status, user_id, austritt_datum, austritt_grund,
+                   bemerkung, archiviert, created_at"
+    )
+    .bind(body.vorname)
+    .bind(body.nachname)
+    .bind(body.email)
+    .bind(body.telefon)
+    .bind(body.geburtsdatum)
+    .bind(body.eintrittsdatum)
+    .bind(body.status)
+    .bind(body.user_id)
+    .bind(body.austritt_datum)
+    .bind(body.austritt_grund)
+    .bind(body.bemerkung)
+    .bind(body.archiviert)
+    .bind(id)
+    .fetch_optional(&state.db)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Mitglied nicht gefunden".into()))?;
+
+    audit::log(&state.db, Some(claims.sub), &claims.username,
+        "MITGLIED_UPDATED", Some("verein_mitglieder"), Some(id), None).await;
+    Ok(Json(row))
+}
+
+pub async fn delete_mitglied(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+) -> AppResult<Json<serde_json::Value>> {
+    let affected = sqlx::query(
+        "UPDATE verein_mitglieder SET archiviert = TRUE WHERE id = $1"
+    )
+    .bind(id)
+    .execute(&state.db)
+    .await?
+    .rows_affected();
+
+    if affected == 0 {
+        return Err(AppError::NotFound("Mitglied nicht gefunden".into()));
+    }
+    audit::log(&state.db, Some(claims.sub), &claims.username,
+        "MITGLIED_ARCHIVED", Some("verein_mitglieder"), Some(id), None).await;
+    Ok(Json(serde_json::json!({ "ok": true })))
+}
+
+// ── Qualifikationen ───────────────────────────────────────────────────────────
+
+#[derive(Serialize, sqlx::FromRow)]
+pub struct Qualifikation {
+    pub id:          Uuid,
+    pub mitglied_id: Uuid,
+    pub bezeichnung: String,
+    pub erworben_am: Option<NaiveDate>,
+    pub gueltig_bis: Option<NaiveDate>,
+    pub bemerkung:   Option<String>,
+    pub created_at:  DateTime<Utc>,
+}
+
+#[derive(Deserialize)]
+pub struct CreateQualifikation {
+    pub bezeichnung: String,
+    pub erworben_am: Option<NaiveDate>,
+    pub gueltig_bis: Option<NaiveDate>,
+    pub bemerkung:   Option<String>,
+}
+
+pub async fn list_qualifikationen(
+    State(state): State<AppState>,
+    Path(mitglied_id): Path<Uuid>,
+) -> AppResult<Json<Vec<Qualifikation>>> {
+    let rows = sqlx::query_as::<_, Qualifikation>(
+        "SELECT id, mitglied_id, bezeichnung, erworben_am, gueltig_bis, bemerkung, created_at
+         FROM verein_qualifikationen
+         WHERE mitglied_id = $1
+         ORDER BY erworben_am DESC NULLS LAST"
+    )
+    .bind(mitglied_id)
+    .fetch_all(&state.db)
+    .await?;
+    Ok(Json(rows))
+}
+
+pub async fn create_qualifikation(
+    State(state): State<AppState>,
+    Path(mitglied_id): Path<Uuid>,
+    Json(body): Json<CreateQualifikation>,
+) -> AppResult<Json<Qualifikation>> {
+    if body.bezeichnung.trim().is_empty() {
+        return Err(AppError::BadRequest("Bezeichnung erforderlich".into()));
+    }
+    let row = sqlx::query_as::<_, Qualifikation>(
+        "INSERT INTO verein_qualifikationen (mitglied_id, bezeichnung, erworben_am, gueltig_bis, bemerkung)
+         VALUES ($1,$2,$3,$4,$5)
+         RETURNING id, mitglied_id, bezeichnung, erworben_am, gueltig_bis, bemerkung, created_at"
+    )
+    .bind(mitglied_id)
+    .bind(&body.bezeichnung)
+    .bind(body.erworben_am)
+    .bind(body.gueltig_bis)
+    .bind(&body.bemerkung)
+    .fetch_one(&state.db)
+    .await?;
+    Ok(Json(row))
+}
+
+pub async fn delete_qualifikation(
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> AppResult<Json<serde_json::Value>> {
+    sqlx::query("DELETE FROM verein_qualifikationen WHERE id = $1")
+        .bind(id)
+        .execute(&state.db)
+        .await?;
+    Ok(Json(serde_json::json!({ "ok": true })))
+}
+
+// ── Auszeichnungen ────────────────────────────────────────────────────────────
+
+#[derive(Serialize, sqlx::FromRow)]
+pub struct Auszeichnung {
+    pub id:          Uuid,
+    pub mitglied_id: Uuid,
+    pub bezeichnung: String,
+    pub verliehen_am: Option<NaiveDate>,
+    pub begruendung: Option<String>,
+    pub created_at:  DateTime<Utc>,
+}
+
+#[derive(Deserialize)]
+pub struct CreateAuszeichnung {
+    pub bezeichnung:  String,
+    pub verliehen_am: Option<NaiveDate>,
+    pub begruendung:  Option<String>,
+}
+
+pub async fn list_auszeichnungen(
+    State(state): State<AppState>,
+    Path(mitglied_id): Path<Uuid>,
+) -> AppResult<Json<Vec<Auszeichnung>>> {
+    let rows = sqlx::query_as::<_, Auszeichnung>(
+        "SELECT id, mitglied_id, bezeichnung, verliehen_am, begruendung, created_at
+         FROM verein_auszeichnungen
+         WHERE mitglied_id = $1
+         ORDER BY verliehen_am DESC NULLS LAST"
+    )
+    .bind(mitglied_id)
+    .fetch_all(&state.db)
+    .await?;
+    Ok(Json(rows))
+}
+
+pub async fn create_auszeichnung(
+    State(state): State<AppState>,
+    Path(mitglied_id): Path<Uuid>,
+    Json(body): Json<CreateAuszeichnung>,
+) -> AppResult<Json<Auszeichnung>> {
+    if body.bezeichnung.trim().is_empty() {
+        return Err(AppError::BadRequest("Bezeichnung erforderlich".into()));
+    }
+    let row = sqlx::query_as::<_, Auszeichnung>(
+        "INSERT INTO verein_auszeichnungen (mitglied_id, bezeichnung, verliehen_am, begruendung)
+         VALUES ($1,$2,$3,$4)
+         RETURNING id, mitglied_id, bezeichnung, verliehen_am, begruendung, created_at"
+    )
+    .bind(mitglied_id)
+    .bind(&body.bezeichnung)
+    .bind(body.verliehen_am)
+    .bind(&body.begruendung)
+    .fetch_one(&state.db)
+    .await?;
+    Ok(Json(row))
+}
+
+pub async fn delete_auszeichnung(
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> AppResult<Json<serde_json::Value>> {
+    sqlx::query("DELETE FROM verein_auszeichnungen WHERE id = $1")
+        .bind(id)
+        .execute(&state.db)
+        .await?;
+    Ok(Json(serde_json::json!({ "ok": true })))
+}
+
+// ── Ehrungen-Übersicht ────────────────────────────────────────────────────────
+
+#[derive(Serialize, sqlx::FromRow)]
+pub struct Jubilar {
+    pub id:                  Uuid,
+    pub name:                String,
+    pub eintrittsdatum:      NaiveDate,
+    pub dienstjahre:         i32,
+    pub naechstes_jubilaeum: i32,
+}
+
+#[derive(Serialize, sqlx::FromRow)]
+pub struct AblaufendeQualifikation {
+    pub id:              Uuid,
+    pub mitglied_name:   String,
+    pub bezeichnung:     String,
+    pub gueltig_bis:     NaiveDate,
+    pub tage_verbleibend: i64,
+}
+
+pub async fn get_ehrungen(
+    State(state): State<AppState>,
+) -> AppResult<Json<serde_json::Value>> {
+    let jubilare = sqlx::query_as::<_, Jubilar>(
+        "SELECT
+            id,
+            vorname || ' ' || nachname AS name,
+            eintrittsdatum,
+            EXTRACT(YEAR FROM AGE(NOW(), eintrittsdatum))::int AS dienstjahre,
+            CASE
+                WHEN EXTRACT(YEAR FROM AGE(NOW(), eintrittsdatum))::int < 10  THEN 10
+                WHEN EXTRACT(YEAR FROM AGE(NOW(), eintrittsdatum))::int < 25  THEN 25
+                WHEN EXTRACT(YEAR FROM AGE(NOW(), eintrittsdatum))::int < 40  THEN 40
+                WHEN EXTRACT(YEAR FROM AGE(NOW(), eintrittsdatum))::int < 50  THEN 50
+                ELSE 0
+            END AS naechstes_jubilaeum
+         FROM verein_mitglieder
+         WHERE archiviert = FALSE
+           AND status IN ('aktiv','ehren')
+           AND EXTRACT(YEAR FROM AGE(NOW(), eintrittsdatum))::int >= 9
+           AND EXTRACT(YEAR FROM AGE(NOW(), eintrittsdatum))::int < 50
+         ORDER BY dienstjahre DESC"
+    )
+    .fetch_all(&state.db)
+    .await?;
+
+    let ablaufend = sqlx::query_as::<_, AblaufendeQualifikation>(
+        "SELECT
+            q.id,
+            m.vorname || ' ' || m.nachname AS mitglied_name,
+            q.bezeichnung,
+            q.gueltig_bis,
+            (q.gueltig_bis - CURRENT_DATE)::bigint AS tage_verbleibend
+         FROM verein_qualifikationen q
+         JOIN verein_mitglieder m ON m.id = q.mitglied_id
+         WHERE q.gueltig_bis IS NOT NULL
+           AND q.gueltig_bis <= CURRENT_DATE + INTERVAL '90 days'
+           AND m.archiviert = FALSE
+         ORDER BY q.gueltig_bis"
+    )
+    .fetch_all(&state.db)
+    .await?;
+
+    Ok(Json(serde_json::json!({
+        "jubilare": jubilare,
+        "ablaufende_qualifikationen": ablaufend,
+    })))
+}
+
 // ── Router ────────────────────────────────────────────────────────────────────
 
 pub fn router(state: AppState) -> Router<AppState> {
@@ -604,16 +993,28 @@ pub fn router(state: AppState) -> Router<AppState> {
         // Dokumente
         .route("/dokumente",       post(upload_document))
         .route("/dokumente/:id",   delete(delete_document))
+        // Mitglieder
+        .route("/mitglieder",      post(create_mitglied))
+        .route("/mitglieder/:id",  put(update_mitglied).delete(delete_mitglied))
+        // Qualifikationen
+        .route("/mitglieder/:id/qualifikationen", post(create_qualifikation))
+        .route("/qualifikationen/:id",            delete(delete_qualifikation))
+        // Auszeichnungen
+        .route("/mitglieder/:id/auszeichnungen",  post(create_auszeichnung))
+        .route("/auszeichnungen/:id",             delete(delete_auszeichnung))
         .route_layer(middleware::from_fn_with_state(state.clone(), require_auth));
 
     Router::new()
-        // Öffentlich (mit Auth)
-        .route("/briefkopf",             get(get_briefkopf))
-        .route("/logo",                  get(get_logo))
-        .route("/vorstand",              get(list_vorstand))
-        .route("/posts",                 get(list_posts))
-        .route("/dokumente",             get(list_documents))
-        .route("/dokumente/:id/download",get(download_document))
+        .route("/briefkopf",              get(get_briefkopf))
+        .route("/logo",                   get(get_logo))
+        .route("/vorstand",               get(list_vorstand))
+        .route("/posts",                  get(list_posts))
+        .route("/dokumente",              get(list_documents))
+        .route("/dokumente/:id/download", get(download_document))
+        .route("/mitglieder",             get(list_mitglieder))
+        .route("/mitglieder/:id/qualifikationen", get(list_qualifikationen))
+        .route("/mitglieder/:id/auszeichnungen",  get(list_auszeichnungen))
+        .route("/ehrungen",               get(get_ehrungen))
         .merge(protected)
         .route_layer(middleware::from_fn_with_state(state, require_auth))
 }

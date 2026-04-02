@@ -269,6 +269,25 @@ export const api = {
     });
   },
 
+  // Verein — Mitglieder
+  getMitglieder:       ()          => request('GET',    '/verein/mitglieder'),
+  createMitglied:      (body)      => request('POST',   '/verein/mitglieder', body),
+  updateMitglied:      (id, body)  => request('PUT',    `/verein/mitglieder/${id}`, body),
+  deleteMitglied:      (id)        => request('DELETE', `/verein/mitglieder/${id}`),
+
+  // Verein — Qualifikationen
+  getQualifikationen:    (mid)      => request('GET',    `/verein/mitglieder/${mid}/qualifikationen`),
+  createQualifikation:   (mid, b)   => request('POST',   `/verein/mitglieder/${mid}/qualifikationen`, b),
+  deleteQualifikation:   (id)       => request('DELETE', `/verein/qualifikationen/${id}`),
+
+  // Verein — Auszeichnungen
+  getAuszeichnungen:     (mid)      => request('GET',    `/verein/mitglieder/${mid}/auszeichnungen`),
+  createAuszeichnung:    (mid, b)   => request('POST',   `/verein/mitglieder/${mid}/auszeichnungen`, b),
+  deleteAuszeichnung:    (id)       => request('DELETE', `/verein/auszeichnungen/${id}`),
+
+  // Verein — Ehrungen-Übersicht
+  getEhrungen:           ()         => request('GET',    '/verein/ehrungen'),
+
   // Einsatzarten
   getIncidentTypes:    ()         => request('GET',    '/incident-types'),
   createIncidentType:  (body)     => request('POST',   '/incident-types', body),
