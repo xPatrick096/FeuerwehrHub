@@ -12,6 +12,7 @@ export async function renderHome() {
   const content = document.getElementById('page-content');
   const displayName = user?.display_name || user?.username || '';
   const isAdmin = user?.role === 'admin' || user?.role === 'superuser';
+  const modules = settings?.modules || {};
 
   content.innerHTML = `
     <div class="page-header">
@@ -119,7 +120,6 @@ export async function renderHome() {
   renderIcons(content);
   await loadAnnouncements(user, isAdmin);
 
-  const modules = settings?.modules || {};
   if (isAdmin || (modules.fahrzeuge === true && canAccess(user, 'fahrzeuge'))) {
     loadVehicleWidget();
   }
