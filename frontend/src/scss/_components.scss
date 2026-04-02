@@ -299,7 +299,8 @@ tr:hover td { background: $bg-card-hover; }
 
   &:hover { border-color: $rot-border; transform: translateY(-1px); }
 
-  &__number {
+  &__number,
+  &__value {
     font-size: $font-size-2xl;
     font-weight: 800;
     line-height: 1;

@@ -29,6 +29,15 @@ export async function renderHome() {
       <div id="announcements-list"><p style="color:#7d8590;font-size:13px">Lade...</p></div>
     </div>
 
+    ${modules.verein ? `
+    <div id="schwarzesbrett-section" style="margin-top:2rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h3 style="margin:0;font-size:15px;font-weight:600;color:#e6edf3">${icon('clipboard-list', 14)} Schwarzes Brett</h3>
+        <a href="#/verein" style="font-size:12px;color:#7d8590;text-decoration:none">Verwalten →</a>
+      </div>
+      <div id="schwarzesbrett-list"><p style="color:#7d8590;font-size:13px">Lade...</p></div>
+    </div>` : ''}
+
     <div class="widget-grid" id="widget-grid">
       <div id="vehicle-widget" class="widget-card widget-card--fahrzeuge" style="display:none">
         <div class="widget-card__header">
@@ -125,6 +134,10 @@ export async function renderHome() {
 
   if (isAdmin) {
     setupAnnouncementModal(user);
+  }
+
+  if (modules.verein) {
+    loadSchwarztesBrett(isAdmin);
   }
 }
 
@@ -413,4 +426,38 @@ function formatDate(iso) {
   return new Date(iso).toLocaleDateString('de-DE', {
     day: '2-digit', month: '2-digit', year: 'numeric',
   });
+}
+
+// ── Schwarzes Brett Widget ────────────────────────────────────────────────────
+
+async function loadSchwarztesBrett(isAdmin) {
+  const list = document.getElementById('schwarzesbrett-list');
+  if (!list) return;
+  try {
+    const posts = await api.getVereinPosts();
+    if (!posts?.length) {
+      list.innerHTML = `<p style="color:#7d8590;font-size:13px">Keine Beiträge vorhanden.</p>`;
+      return;
+    }
+    list.innerHTML = posts.map(p => `
+      <div class="card announcement-card" style="margin-bottom:12px">
+        <div class="card__header" style="display:flex;justify-content:space-between;align-items:center">
+          <span>
+            ${p.pinned ? `<span style="color:#d29922;margin-right:6px">${icon('pin', 13)}</span>` : ''}
+            <strong>${esc(p.title)}</strong>
+            ${p.visibility === 'vorstand' && isAdmin ? `<span class="badge badge--orange" style="margin-left:8px">Nur Vorstand</span>` : ''}
+          </span>
+          <span style="font-size:11px;color:#7d8590">
+            ${p.expires_at ? `Bis ${p.expires_at} · ` : ''}${esc(p.created_by_name)}
+          </span>
+        </div>
+        <div class="card__body" style="white-space:pre-wrap;font-size:14px;color:#e6edf3">
+          ${esc(p.content)}
+        </div>
+      </div>
+    `).join('');
+    renderIcons(list);
+  } catch (e) {
+    list.innerHTML = `<p style="color:#ff8a80;font-size:13px">Fehler: ${esc(e.message)}</p>`;
+  }
 }

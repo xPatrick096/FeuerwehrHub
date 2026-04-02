@@ -29,6 +29,8 @@ export async function renderVerein() {
       <button class="tab-btn" data-tab="aufgaben">${icon('check-square', 14)} Aufgaben</button>
       <button class="tab-btn" data-tab="veranstaltungen">${icon('calendar', 14)} Veranstaltungen</button>
       <button class="tab-btn" data-tab="protokolle">${icon('file-text', 14)} Protokolle</button>
+      ${isAdmin ? `<button class="tab-btn" data-tab="finanzen">${icon('dollar-sign', 14)} Finanzen</button>` : ''}
+      ${isAdmin ? `<button class="tab-btn" data-tab="jahresbericht">${icon('bar-chart', 14)} Jahresbericht</button>` : ''}
       ${isAdmin ? `<button class="tab-btn" data-tab="briefkopf">${icon('settings', 14)} Briefkopf</button>` : ''}
     </div>
 
@@ -40,7 +42,9 @@ export async function renderVerein() {
     <div id="tab-aufgaben"        class="tab-panel" style="display:none"></div>
     <div id="tab-veranstaltungen" class="tab-panel" style="display:none"></div>
     <div id="tab-protokolle"      class="tab-panel" style="display:none"></div>
-    ${isAdmin ? `<div id="tab-briefkopf" class="tab-panel" style="display:none"></div>` : ''}
+    ${isAdmin ? `<div id="tab-finanzen"      class="tab-panel" style="display:none"></div>` : ''}
+    ${isAdmin ? `<div id="tab-jahresbericht" class="tab-panel" style="display:none"></div>` : ''}
+    ${isAdmin ? `<div id="tab-briefkopf"     class="tab-panel" style="display:none"></div>` : ''}
   `;
 
   renderIcons(content);
@@ -62,7 +66,11 @@ export async function renderVerein() {
   loadAufgaben(isAdmin);
   loadVeranstaltungen(isAdmin);
   loadProtokolle(isAdmin);
-  if (isAdmin) loadBriefkopf();
+  if (isAdmin) {
+    loadFinanzen(isAdmin);
+    loadJahresbericht();
+    loadBriefkopf();
+  }
 }
 
 // ── Schwarzes Brett ───────────────────────────────────────────────────────────
@@ -2533,4 +2541,563 @@ function openProtokollModal(p, isAdmin) {
       refreshProtokolle(isAdmin);
     } catch (e) { toast(e.message, 'error'); }
   });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Phase 5 — Finanzen
+// ─────────────────────────────────────────────────────────────────────────────
+
+const BEITRAG_STATUS_LABELS = { offen: 'Offen', bezahlt: 'Bezahlt', befreit: 'Befreit' };
+const BEITRAG_STATUS_BADGE  = { offen: 'badge--orange', bezahlt: 'badge--green', befreit: 'badge--gray' };
+
+let _buchungenCache = [];
+let _beitraegeCache = [];
+let _kategorienCache = [];
+
+function fmtEuro(val) {
+  return new Intl.NumberFormat('de-DE', { style:'currency', currency:'EUR' }).format(val ?? 0);
+}
+
+async function loadFinanzen(isAdmin) {
+  const el = document.getElementById('tab-finanzen');
+  if (!el) return;
+  try {
+    _kategorienCache = await api.getFinanzKategorien() || [];
+    el.innerHTML = `
+      <div class="tab-bar" id="finanz-subtabs" style="margin-bottom:1rem">
+        <button class="tab-btn tab-btn--active" data-subtab="buchungen">Buchungen</button>
+        <button class="tab-btn" data-subtab="beitraege">Mitgliedsbeiträge</button>
+      </div>
+      <div id="subtab-buchungen"></div>
+      <div id="subtab-beitraege" style="display:none"></div>
+    `;
+    el.querySelectorAll('#finanz-subtabs .tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        el.querySelectorAll('#finanz-subtabs .tab-btn').forEach(b => b.classList.remove('tab-btn--active'));
+        el.querySelectorAll('[id^="subtab-"]').forEach(t => t.style.display = 'none');
+        btn.classList.add('tab-btn--active');
+        el.querySelector(`#subtab-${btn.dataset.subtab}`).style.display = '';
+      });
+    });
+    await refreshBuchungen(isAdmin);
+    await refreshBeitraege(isAdmin);
+  } catch (e) {
+    el.innerHTML = `<p class="error">${esc(e.message)}</p>`;
+  }
+}
+
+async function refreshBuchungen(isAdmin, filter = {}) {
+  const el = document.getElementById('subtab-buchungen');
+  if (!el) return;
+  try {
+    const [buchungen, summary] = await Promise.all([
+      api.getBuchungen(filter),
+      api.getFinanzSummary(filter),
+    ]);
+    _buchungenCache = buchungen || [];
+    const currentYear = new Date().getFullYear();
+
+    el.innerHTML = `
+      <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end;margin-bottom:1rem">
+        <div class="form-group" style="min-width:120px;margin:0">
+          <label>Jahr</label>
+          <select id="buchung-filter-jahr" class="form-control">
+            <option value="">Alle</option>
+            ${[currentYear, currentYear-1, currentYear-2].map(y => `<option value="${y}" ${filter.jahr == y ? 'selected':''}>${y}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group" style="min-width:130px;margin:0">
+          <label>Typ</label>
+          <select id="buchung-filter-typ" class="form-control">
+            <option value="">Alle</option>
+            <option value="einnahme" ${filter.typ==='einnahme'?'selected':''}>Einnahmen</option>
+            <option value="ausgabe"  ${filter.typ==='ausgabe'?'selected':''}>Ausgaben</option>
+          </select>
+        </div>
+        <button class="btn btn--secondary btn--sm" id="btn-buchung-filter">Filtern</button>
+        ${isAdmin ? `<button class="btn btn--primary btn--sm" id="btn-new-buchung" style="margin-left:auto">+ Buchung</button>` : ''}
+      </div>
+
+      <div class="stats-row" style="margin-bottom:1.5rem">
+        <div class="stat-card">
+          <div class="stat-card__label">Einnahmen</div>
+          <div class="stat-card__value" style="color:var(--gruen, #3fb950)">${fmtEuro(summary.einnahmen)}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card__label">Ausgaben</div>
+          <div class="stat-card__value" style="color:#ff8a80">${fmtEuro(summary.ausgaben)}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card__label">Saldo</div>
+          <div class="stat-card__value" style="color:${summary.saldo >= 0 ? 'var(--gruen, #3fb950)' : '#ff8a80'}">${fmtEuro(summary.saldo)}</div>
+        </div>
+      </div>
+
+      ${_buchungenCache.length === 0 ? '<p class="empty-state">Keine Buchungen gefunden</p>' : `
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead><tr>
+            <th>Datum</th><th>Bezeichnung</th><th>Kategorie</th><th>Typ</th><th>Betrag</th><th>Beleg</th><th></th>
+          </tr></thead>
+          <tbody>
+            ${_buchungenCache.map(b => `
+            <tr>
+              <td>${new Date(b.datum).toLocaleDateString('de-DE')}</td>
+              <td>
+                ${esc(b.bezeichnung)}
+                ${b.mitglied_name ? `<br><small style="color:#7d8590">${esc(b.mitglied_name)}</small>` : ''}
+                ${b.notiz ? `<br><small style="color:#7d8590">${esc(b.notiz)}</small>` : ''}
+              </td>
+              <td>${b.kategorie_name ? esc(b.kategorie_name) : '—'}</td>
+              <td><span class="badge ${b.typ === 'einnahme' ? 'badge--green' : 'badge--red'}">${b.typ === 'einnahme' ? 'Einnahme' : 'Ausgabe'}</span></td>
+              <td style="font-weight:600;color:${b.typ === 'einnahme' ? '#3fb950' : '#ff8a80'}">${fmtEuro(b.betrag)}</td>
+              <td>${b.beleg_nr ? esc(b.beleg_nr) : '—'}</td>
+              <td style="white-space:nowrap">
+                ${isAdmin ? `
+                  <button class="btn btn--ghost btn--xs" data-edit-buchung="${b.id}">${icon('edit', 12)}</button>
+                  <button class="btn btn--ghost btn--xs btn--danger" data-del-buchung="${b.id}">${icon('trash', 12)}</button>
+                ` : ''}
+              </td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`}
+    `;
+    renderIcons(el);
+
+    el.querySelector('#btn-buchung-filter')?.addEventListener('click', () => {
+      refreshBuchungen(isAdmin, {
+        jahr: el.querySelector('#buchung-filter-jahr').value || undefined,
+        typ:  el.querySelector('#buchung-filter-typ').value || undefined,
+      });
+    });
+
+    if (isAdmin) {
+      el.querySelector('#btn-new-buchung')?.addEventListener('click', () => openBuchungModal(null, isAdmin));
+      el.querySelectorAll('[data-edit-buchung]').forEach(btn => {
+        const b = _buchungenCache.find(x => x.id === btn.dataset.editBuchung);
+        btn.addEventListener('click', () => openBuchungModal(b, isAdmin));
+      });
+      el.querySelectorAll('[data-del-buchung]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('Buchung löschen?')) return;
+          try { await api.deleteBuchung(btn.dataset.delBuchung); toast('Gelöscht', 'success'); refreshBuchungen(isAdmin, filter); }
+          catch (e) { toast(e.message, 'error'); }
+        });
+      });
+    }
+  } catch (e) { el.innerHTML = `<p class="error">${esc(e.message)}</p>`; }
+}
+
+function openBuchungModal(b, isAdmin) {
+  const isEdit = !!b;
+  const modal = document.createElement('div');
+  modal.className = 'modal modal--open';
+  const katOpts = _kategorienCache.map(k =>
+    `<option value="${k.id}" ${b?.kategorie_id === k.id ? 'selected' : ''}>${esc(k.name)}</option>`
+  ).join('');
+  modal.innerHTML = `
+    <div class="modal__box">
+      <div class="modal__header">
+        <h3>${isEdit ? 'Buchung bearbeiten' : 'Neue Buchung'}</h3>
+        <button class="modal__close" id="close-buch">&times;</button>
+      </div>
+      <div class="modal__body">
+        <div class="form-grid">
+          <div class="form-group form-group--full">
+            <label>Bezeichnung *</label>
+            <input id="buch-bezeichnung" class="form-control" value="${b ? esc(b.bezeichnung) : ''}">
+          </div>
+          <div class="form-group">
+            <label>Typ *</label>
+            <select id="buch-typ">
+              <option value="einnahme" ${b?.typ === 'einnahme' ? 'selected' : ''}>Einnahme</option>
+              <option value="ausgabe"  ${b?.typ === 'ausgabe'  ? 'selected' : ''}>Ausgabe</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Betrag (€) *</label>
+            <input id="buch-betrag" type="number" min="0" step="0.01" class="form-control" value="${b ? b.betrag : ''}">
+          </div>
+          <div class="form-group">
+            <label>Datum</label>
+            <input id="buch-datum" type="date" class="form-control" value="${b?.datum || new Date().toISOString().slice(0,10)}">
+          </div>
+          <div class="form-group">
+            <label>Kategorie</label>
+            <select id="buch-kategorie">
+              <option value="">— keine —</option>
+              ${katOpts}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Beleg-Nr.</label>
+            <input id="buch-beleg" class="form-control" value="${b?.beleg_nr ? esc(b.beleg_nr) : ''}">
+          </div>
+          <div class="form-group form-group--full">
+            <label>Notiz</label>
+            <textarea id="buch-notiz" class="form-control" rows="2">${b?.notiz ? esc(b.notiz) : ''}</textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--secondary" id="close-buch2">Abbrechen</button>
+        <button class="btn btn--primary" id="save-buch">Speichern</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  const close = () => modal.remove();
+  modal.querySelector('#close-buch').addEventListener('click', close);
+  modal.querySelector('#close-buch2').addEventListener('click', close);
+  modal.querySelector('#save-buch').addEventListener('click', async () => {
+    const body = {
+      bezeichnung:  modal.querySelector('#buch-bezeichnung').value.trim(),
+      typ:          modal.querySelector('#buch-typ').value,
+      betrag:       parseFloat(modal.querySelector('#buch-betrag').value),
+      datum:        modal.querySelector('#buch-datum').value || null,
+      kategorie_id: modal.querySelector('#buch-kategorie').value || null,
+      beleg_nr:     modal.querySelector('#buch-beleg').value.trim() || null,
+      notiz:        modal.querySelector('#buch-notiz').value.trim() || null,
+    };
+    if (!body.bezeichnung || isNaN(body.betrag)) { toast('Bezeichnung und Betrag erforderlich', 'error'); return; }
+    try {
+      if (isEdit) await api.updateBuchung(b.id, body);
+      else        await api.createBuchung(body);
+      toast('Gespeichert', 'success');
+      modal.remove();
+      refreshBuchungen(isAdmin);
+    } catch (e) { toast(e.message, 'error'); }
+  });
+}
+
+async function refreshBeitraege(isAdmin, filter = {}) {
+  const el = document.getElementById('subtab-beitraege');
+  if (!el) return;
+  try {
+    _beitraegeCache = await api.getBeitraege(filter) || [];
+    const currentYear = new Date().getFullYear();
+
+    const offen   = _beitraegeCache.filter(b => b.status === 'offen').length;
+    const bezahlt = _beitraegeCache.filter(b => b.status === 'bezahlt').length;
+    const befreit = _beitraegeCache.filter(b => b.status === 'befreit').length;
+    const summe   = _beitraegeCache.reduce((s, b) => s + b.betrag, 0);
+    const eingang = _beitraegeCache.filter(b => b.status === 'bezahlt').reduce((s, b) => s + b.betrag, 0);
+
+    el.innerHTML = `
+      <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end;margin-bottom:1rem">
+        <div class="form-group" style="min-width:120px;margin:0">
+          <label>Jahr</label>
+          <select id="beit-filter-jahr" class="form-control">
+            <option value="">Alle</option>
+            ${[currentYear, currentYear-1, currentYear-2].map(y => `<option value="${y}" ${filter.jahr == y ? 'selected':''} >${y}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group" style="min-width:130px;margin:0">
+          <label>Status</label>
+          <select id="beit-filter-status" class="form-control">
+            <option value="">Alle</option>
+            ${Object.entries(BEITRAG_STATUS_LABELS).map(([k,v]) => `<option value="${k}" ${filter.typ===k?'selected':''}>${v}</option>`).join('')}
+          </select>
+        </div>
+        <button class="btn btn--secondary btn--sm" id="btn-beit-filter">Filtern</button>
+        ${isAdmin ? `
+          <button class="btn btn--primary btn--sm" id="btn-new-beit" style="margin-left:auto">+ Beitrag</button>
+          <button class="btn btn--secondary btn--sm" id="btn-gen-beit">Jahresbeiträge generieren</button>
+        ` : ''}
+      </div>
+
+      <div class="stats-row" style="margin-bottom:1.5rem">
+        <div class="stat-card"><div class="stat-card__label">Offen</div><div class="stat-card__value" style="color:#ffb74d">${offen}</div></div>
+        <div class="stat-card"><div class="stat-card__label">Bezahlt</div><div class="stat-card__value" style="color:#3fb950">${bezahlt}</div></div>
+        <div class="stat-card"><div class="stat-card__label">Befreit</div><div class="stat-card__value" style="color:#7d8590">${befreit}</div></div>
+        <div class="stat-card"><div class="stat-card__label">Eingang</div><div class="stat-card__value" style="color:#3fb950">${fmtEuro(eingang)} / ${fmtEuro(summe)}</div></div>
+      </div>
+
+      ${_beitraegeCache.length === 0 ? '<p class="empty-state">Keine Beiträge gefunden</p>' : `
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead><tr><th>Mitglied</th><th>Nr.</th><th>Jahr</th><th>Betrag</th><th>Status</th><th>Bezahlt am</th><th></th></tr></thead>
+          <tbody>
+            ${_beitraegeCache.map(b => `
+            <tr>
+              <td>${esc(b.mitglied_name)}</td>
+              <td>${b.mitglied_nr ? esc(b.mitglied_nr) : '—'}</td>
+              <td>${b.jahr}</td>
+              <td>${fmtEuro(b.betrag)}</td>
+              <td><span class="badge ${BEITRAG_STATUS_BADGE[b.status]}">${BEITRAG_STATUS_LABELS[b.status]}</span></td>
+              <td>${b.bezahlt_am ? new Date(b.bezahlt_am).toLocaleDateString('de-DE') : '—'}</td>
+              <td style="white-space:nowrap">
+                ${isAdmin ? `
+                  <button class="btn btn--ghost btn--xs" data-edit-beit="${b.id}">${icon('edit', 12)}</button>
+                  <button class="btn btn--ghost btn--xs btn--danger" data-del-beit="${b.id}">${icon('trash', 12)}</button>
+                ` : ''}
+              </td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`}
+    `;
+    renderIcons(el);
+
+    el.querySelector('#btn-beit-filter')?.addEventListener('click', () => {
+      refreshBeitraege(isAdmin, {
+        jahr: el.querySelector('#beit-filter-jahr').value || undefined,
+        typ:  el.querySelector('#beit-filter-status').value || undefined,
+      });
+    });
+
+    if (isAdmin) {
+      el.querySelector('#btn-new-beit')?.addEventListener('click', () => openBeitragModal(null, isAdmin));
+      el.querySelector('#btn-gen-beit')?.addEventListener('click', () => openGenerierModal(isAdmin));
+      el.querySelectorAll('[data-edit-beit]').forEach(btn => {
+        const b = _beitraegeCache.find(x => x.id === btn.dataset.editBeit);
+        btn.addEventListener('click', () => openBeitragModal(b, isAdmin));
+      });
+      el.querySelectorAll('[data-del-beit]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('Beitrag löschen?')) return;
+          try { await api.deleteBeitrag(btn.dataset.delBeit); toast('Gelöscht', 'success'); refreshBeitraege(isAdmin, filter); }
+          catch (e) { toast(e.message, 'error'); }
+        });
+      });
+    }
+  } catch (e) { el.innerHTML = `<p class="error">${esc(e.message)}</p>`; }
+}
+
+function openBeitragModal(b, isAdmin) {
+  const isEdit = !!b;
+  const modal = document.createElement('div');
+  modal.className = 'modal modal--open';
+  const mitgliederOpts = (_mitgliederCache || []).filter(m => !m.archiviert).map(m =>
+    `<option value="${m.id}" ${b?.mitglied_id === m.id ? 'selected' : ''}>${esc(m.nachname)}, ${esc(m.vorname)}</option>`
+  ).join('');
+  modal.innerHTML = `
+    <div class="modal__box">
+      <div class="modal__header">
+        <h3>${isEdit ? 'Beitrag bearbeiten' : 'Neuer Beitrag'}</h3>
+        <button class="modal__close" id="close-beit">&times;</button>
+      </div>
+      <div class="modal__body">
+        <div class="form-grid">
+          ${!isEdit ? `
+          <div class="form-group form-group--full">
+            <label>Mitglied *</label>
+            <select id="beit-mitglied"><option value="">— wählen —</option>${mitgliederOpts}</select>
+          </div>` : `<p style="margin:0;font-weight:600">${esc(b.mitglied_name)}</p>`}
+          <div class="form-group">
+            <label>Jahr *</label>
+            <input id="beit-jahr" type="number" min="2000" max="2100" class="form-control" value="${b?.jahr || new Date().getFullYear()}">
+          </div>
+          <div class="form-group">
+            <label>Betrag (€) *</label>
+            <input id="beit-betrag" type="number" min="0" step="0.01" class="form-control" value="${b ? b.betrag : ''}">
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select id="beit-status">
+              ${Object.entries(BEITRAG_STATUS_LABELS).map(([k,v]) =>
+                `<option value="${k}" ${b?.status === k ? 'selected' : ''}>${v}</option>`
+              ).join('')}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Bezahlt am</label>
+            <input id="beit-bezahlt" type="date" class="form-control" value="${b?.bezahlt_am || ''}">
+          </div>
+          <div class="form-group form-group--full">
+            <label>Notiz</label>
+            <textarea id="beit-notiz" class="form-control" rows="2">${b?.notiz ? esc(b.notiz) : ''}</textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--secondary" id="close-beit2">Abbrechen</button>
+        <button class="btn btn--primary" id="save-beit">Speichern</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  const close = () => modal.remove();
+  modal.querySelector('#close-beit').addEventListener('click', close);
+  modal.querySelector('#close-beit2').addEventListener('click', close);
+  modal.querySelector('#save-beit').addEventListener('click', async () => {
+    const betrag    = parseFloat(modal.querySelector('#beit-betrag').value);
+    const bezahltAm = modal.querySelector('#beit-bezahlt').value || null;
+    const status    = modal.querySelector('#beit-status').value;
+    if (isNaN(betrag)) { toast('Betrag erforderlich', 'error'); return; }
+    // Auto-setze bezahlt_am wenn status → bezahlt
+    const resolvedBezahlt = status === 'bezahlt' && !bezahltAm
+      ? new Date().toISOString().slice(0,10)
+      : bezahltAm;
+    try {
+      if (isEdit) {
+        await api.updateBeitrag(b.id, {
+          betrag, bezahlt_am: resolvedBezahlt, status,
+          notiz: modal.querySelector('#beit-notiz').value.trim() || null,
+        });
+      } else {
+        const mitglied_id = modal.querySelector('#beit-mitglied').value;
+        const jahr        = parseInt(modal.querySelector('#beit-jahr').value);
+        if (!mitglied_id || !jahr) { toast('Mitglied und Jahr erforderlich', 'error'); return; }
+        await api.createBeitrag({ mitglied_id, jahr, betrag, bezahlt_am: resolvedBezahlt, status,
+          notiz: modal.querySelector('#beit-notiz').value.trim() || null });
+      }
+      toast('Gespeichert', 'success');
+      modal.remove();
+      refreshBeitraege(isAdmin);
+    } catch (e) { toast(e.message, 'error'); }
+  });
+}
+
+function openGenerierModal(isAdmin) {
+  const modal = document.createElement('div');
+  modal.className = 'modal modal--open';
+  modal.innerHTML = `
+    <div class="modal__box">
+      <div class="modal__header">
+        <h3>Jahresbeiträge generieren</h3>
+        <button class="modal__close" id="close-gen">&times;</button>
+      </div>
+      <div class="modal__body">
+        <p style="color:#7d8590;font-size:13px;margin:0 0 1rem">
+          Erstellt Beitragseinträge für alle aktiven Mitglieder die noch keinen Eintrag für das gewählte Jahr haben.
+        </p>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Jahr *</label>
+            <input id="gen-jahr" type="number" min="2000" max="2100" class="form-control" value="${new Date().getFullYear()}">
+          </div>
+          <div class="form-group">
+            <label>Betrag (€) *</label>
+            <input id="gen-betrag" type="number" min="0" step="0.01" class="form-control" placeholder="z.B. 30.00">
+          </div>
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--secondary" id="close-gen2">Abbrechen</button>
+        <button class="btn btn--primary" id="save-gen">Generieren</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  const close = () => modal.remove();
+  modal.querySelector('#close-gen').addEventListener('click', close);
+  modal.querySelector('#close-gen2').addEventListener('click', close);
+  modal.querySelector('#save-gen').addEventListener('click', async () => {
+    const jahr   = parseInt(modal.querySelector('#gen-jahr').value);
+    const betrag = parseFloat(modal.querySelector('#gen-betrag').value);
+    if (!jahr || isNaN(betrag)) { toast('Jahr und Betrag erforderlich', 'error'); return; }
+    try {
+      const res = await api.generateBeitraege({ jahr, betrag });
+      toast(`${res.created} Beiträge für ${res.jahr} erstellt`, 'success');
+      modal.remove();
+      refreshBeitraege(isAdmin);
+    } catch (e) { toast(e.message, 'error'); }
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Phase 5 — Jahresbericht
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function loadJahresbericht() {
+  const el = document.getElementById('tab-jahresbericht');
+  if (!el) return;
+
+  const currentYear = new Date().getFullYear();
+  el.innerHTML = `
+    <div class="section-header" style="margin-bottom:1rem">
+      <h3>Jahresbericht</h3>
+      <div style="display:flex;gap:.5rem;align-items:center">
+        <select id="jb-jahr" class="form-control" style="width:100px">
+          ${[currentYear, currentYear-1, currentYear-2].map(y => `<option value="${y}">${y}</option>`).join('')}
+        </select>
+        <button class="btn btn--primary btn--sm" id="btn-jb-load">Laden</button>
+      </div>
+    </div>
+    <div id="jb-content"><p class="empty-state">Jahr wählen und auf Laden klicken</p></div>
+  `;
+
+  el.querySelector('#btn-jb-load').addEventListener('click', () => {
+    const jahr = parseInt(el.querySelector('#jb-jahr').value);
+    renderJahresbericht(jahr);
+  });
+}
+
+async function renderJahresbericht(jahr) {
+  const el = document.getElementById('jb-content');
+  if (!el) return;
+  el.innerHTML = `<p style="color:#7d8590">Lade Daten...</p>`;
+  try {
+    const [summary, buchungen, beitraege, mitglieder, events] = await Promise.all([
+      api.getFinanzSummary({ jahr }),
+      api.getBuchungen({ jahr }),
+      api.getBeitraege({ jahr }),
+      api.getMitglieder(),
+      api.getEvents(),
+    ]);
+
+    const aktiveMitglieder = (mitglieder || []).filter(m => !m.archiviert && m.status === 'aktiv');
+    const eventsJahr = (events || []).filter(e => new Date(e.datum_von).getFullYear() === jahr);
+    const beitragBezahlt = beitraege.filter(b => b.status === 'bezahlt').length;
+    const beitragOffen   = beitraege.filter(b => b.status === 'offen').length;
+
+    el.innerHTML = `
+      <div id="jahresbericht-print">
+        <div class="no-print" style="margin-bottom:1rem">
+          <button class="btn btn--ghost" onclick="window.print()">${icon('printer', 14)} Drucken / PDF</button>
+        </div>
+
+        <h2 style="margin:0 0 .25rem">Jahresbericht ${jahr}</h2>
+        <p style="color:#7d8590;font-size:13px;margin:0 0 2rem">Erstellt am ${new Date().toLocaleDateString('de-DE')}</p>
+
+        <h3 style="margin:0 0 .75rem;border-bottom:1px solid var(--border,#21273d);padding-bottom:.5rem">Mitglieder</h3>
+        <div class="stats-row" style="margin-bottom:2rem">
+          <div class="stat-card"><div class="stat-card__label">Aktive Mitglieder</div><div class="stat-card__value">${aktiveMitglieder.length}</div></div>
+          <div class="stat-card"><div class="stat-card__label">Gesamt</div><div class="stat-card__value">${(mitglieder||[]).filter(m=>!m.archiviert).length}</div></div>
+        </div>
+
+        <h3 style="margin:0 0 .75rem;border-bottom:1px solid var(--border,#21273d);padding-bottom:.5rem">Veranstaltungen ${jahr}</h3>
+        <div class="stats-row" style="margin-bottom:2rem">
+          <div class="stat-card"><div class="stat-card__label">Gesamt</div><div class="stat-card__value">${eventsJahr.length}</div></div>
+          ${Object.entries({ uebung:'Übungen', versammlung:'Versammlungen', fest:'Feste', arbeitsdienst:'Arbeitsdienste' }).map(([k,v]) => {
+            const n = eventsJahr.filter(e => e.typ === k).length;
+            return `<div class="stat-card"><div class="stat-card__label">${v}</div><div class="stat-card__value">${n}</div></div>`;
+          }).join('')}
+        </div>
+
+        <h3 style="margin:0 0 .75rem;border-bottom:1px solid var(--border,#21273d);padding-bottom:.5rem">Finanzen ${jahr}</h3>
+        <div class="stats-row" style="margin-bottom:1rem">
+          <div class="stat-card"><div class="stat-card__label">Einnahmen</div><div class="stat-card__value" style="color:#3fb950">${fmtEuro(summary.einnahmen)}</div></div>
+          <div class="stat-card"><div class="stat-card__label">Ausgaben</div><div class="stat-card__value" style="color:#ff8a80">${fmtEuro(summary.ausgaben)}</div></div>
+          <div class="stat-card"><div class="stat-card__label">Saldo</div><div class="stat-card__value" style="color:${summary.saldo >= 0 ? '#3fb950' : '#ff8a80'}">${fmtEuro(summary.saldo)}</div></div>
+        </div>
+
+        ${beitraege.length > 0 ? `
+        <p style="color:#7d8590;font-size:13px;margin:.5rem 0 2rem">Mitgliedsbeiträge: ${beitragBezahlt} bezahlt, ${beitragOffen} ausstehend</p>` : ''}
+
+        ${buchungen.length > 0 ? `
+        <h4 style="margin:0 0 .5rem">Buchungsübersicht</h4>
+        <div class="table-wrapper" style="margin-bottom:2rem">
+          <table class="data-table">
+            <thead><tr><th>Datum</th><th>Bezeichnung</th><th>Kategorie</th><th>Typ</th><th>Betrag</th></tr></thead>
+            <tbody>
+              ${buchungen.map(b => `
+              <tr>
+                <td>${new Date(b.datum).toLocaleDateString('de-DE')}</td>
+                <td>${esc(b.bezeichnung)}</td>
+                <td>${b.kategorie_name ? esc(b.kategorie_name) : '—'}</td>
+                <td>${b.typ === 'einnahme' ? 'Einnahme' : 'Ausgabe'}</td>
+                <td style="color:${b.typ==='einnahme'?'#3fb950':'#ff8a80'}">${fmtEuro(b.betrag)}</td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>` : ''}
+      </div>
+    `;
+    renderIcons(el);
+  } catch (e) {
+    el.innerHTML = `<p class="error">${esc(e.message)}</p>`;
+  }
 }

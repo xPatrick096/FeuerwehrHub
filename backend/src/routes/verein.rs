@@ -1974,6 +1974,399 @@ pub async fn delete_top(
     Ok(Json(serde_json::json!({ "ok": true })))
 }
 
+// ── Finanzen ─────────────────────────────────────────────────────────────────
+
+#[derive(Serialize, sqlx::FromRow)]
+pub struct FinanzKategorie {
+    pub id:         Uuid,
+    pub name:       String,
+    pub typ:        String,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Deserialize)]
+pub struct CreateKategorie {
+    pub name: String,
+    pub typ:  Option<String>,
+}
+
+#[derive(Serialize, sqlx::FromRow)]
+pub struct Buchung {
+    pub id:             Uuid,
+    pub datum:          NaiveDate,
+    pub bezeichnung:    String,
+    pub betrag:         f64,
+    pub typ:            String,
+    pub kategorie_id:   Option<Uuid>,
+    pub kategorie_name: Option<String>,
+    pub mitglied_id:    Option<Uuid>,
+    pub mitglied_name:  Option<String>,
+    pub beleg_nr:       Option<String>,
+    pub notiz:          Option<String>,
+    pub erstellt_von:   Option<Uuid>,
+    pub created_at:     DateTime<Utc>,
+}
+
+#[derive(Deserialize)]
+pub struct CreateBuchung {
+    pub datum:        Option<NaiveDate>,
+    pub bezeichnung:  String,
+    pub betrag:       f64,
+    pub typ:          String,
+    pub kategorie_id: Option<Uuid>,
+    pub mitglied_id:  Option<Uuid>,
+    pub beleg_nr:     Option<String>,
+    pub notiz:        Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct UpdateBuchung {
+    pub datum:        Option<NaiveDate>,
+    pub bezeichnung:  Option<String>,
+    pub betrag:       Option<f64>,
+    pub typ:          Option<String>,
+    pub kategorie_id: Option<Uuid>,
+    pub mitglied_id:  Option<Uuid>,
+    pub beleg_nr:     Option<String>,
+    pub notiz:        Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct BuchungFilter {
+    pub jahr:         Option<i32>,
+    pub typ:          Option<String>,
+    pub kategorie_id: Option<Uuid>,
+}
+
+#[derive(Serialize)]
+pub struct FinanzSummary {
+    pub einnahmen: f64,
+    pub ausgaben:  f64,
+    pub saldo:     f64,
+    pub jahr:      Option<i32>,
+}
+
+#[derive(Serialize, sqlx::FromRow)]
+pub struct Beitrag {
+    pub id:            Uuid,
+    pub mitglied_id:   Uuid,
+    pub mitglied_name: String,
+    pub mitglied_nr:   Option<String>,
+    pub jahr:          i32,
+    pub betrag:        f64,
+    pub bezahlt_am:    Option<NaiveDate>,
+    pub status:        String,
+    pub notiz:         Option<String>,
+    pub created_at:    DateTime<Utc>,
+}
+
+#[derive(Deserialize)]
+pub struct CreateBeitrag {
+    pub mitglied_id: Uuid,
+    pub jahr:        i32,
+    pub betrag:      f64,
+    pub bezahlt_am:  Option<NaiveDate>,
+    pub status:      Option<String>,
+    pub notiz:       Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct UpdateBeitrag {
+    pub betrag:     Option<f64>,
+    pub bezahlt_am: Option<NaiveDate>,
+    pub status:     Option<String>,
+    pub notiz:      Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct GenerateBeitraegeBody {
+    pub jahr:   i32,
+    pub betrag: f64,
+}
+
+pub async fn list_finanz_kategorien(
+    State(state): State<AppState>,
+) -> AppResult<Json<Vec<FinanzKategorie>>> {
+    let rows = sqlx::query_as::<_, FinanzKategorie>(
+        "SELECT id, name, typ, created_at FROM verein_finanz_kategorien ORDER BY name"
+    )
+    .fetch_all(&state.db).await?;
+    Ok(Json(rows))
+}
+
+pub async fn create_finanz_kategorie(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Json(body): Json<CreateKategorie>,
+) -> AppResult<Json<FinanzKategorie>> {
+    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+    let row = sqlx::query_as::<_, FinanzKategorie>(
+        "INSERT INTO verein_finanz_kategorien (name, typ) VALUES ($1, $2)
+         RETURNING id, name, typ, created_at"
+    )
+    .bind(&body.name)
+    .bind(body.typ.as_deref().unwrap_or("ausgabe"))
+    .fetch_one(&state.db).await?;
+    Ok(Json(row))
+}
+
+pub async fn delete_finanz_kategorie(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+) -> AppResult<Json<serde_json::Value>> {
+    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+    let n = sqlx::query("DELETE FROM verein_finanz_kategorien WHERE id = $1")
+        .bind(id).execute(&state.db).await?.rows_affected();
+    if n == 0 { return Err(AppError::NotFound); }
+    Ok(Json(serde_json::json!({ "deleted": id })))
+}
+
+pub async fn list_buchungen(
+    State(state): State<AppState>,
+    axum::extract::Query(filter): axum::extract::Query<BuchungFilter>,
+) -> AppResult<Json<Vec<Buchung>>> {
+    let rows = sqlx::query_as::<_, Buchung>(
+        "SELECT b.id, b.datum, b.bezeichnung, b.betrag, b.typ,
+                b.kategorie_id, k.name AS kategorie_name,
+                b.mitglied_id,
+                CONCAT(m.vorname, ' ', m.nachname) AS mitglied_name,
+                b.beleg_nr, b.notiz, b.erstellt_von, b.created_at
+         FROM verein_buchungen b
+         LEFT JOIN verein_finanz_kategorien k ON k.id = b.kategorie_id
+         LEFT JOIN verein_mitglieder m ON m.id = b.mitglied_id
+         WHERE ($1::int IS NULL OR EXTRACT(YEAR FROM b.datum) = $1)
+           AND ($2::text IS NULL OR b.typ = $2)
+           AND ($3::uuid IS NULL OR b.kategorie_id = $3)
+         ORDER BY b.datum DESC, b.created_at DESC"
+    )
+    .bind(filter.jahr)
+    .bind(&filter.typ)
+    .bind(filter.kategorie_id)
+    .fetch_all(&state.db).await?;
+    Ok(Json(rows))
+}
+
+pub async fn create_buchung(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Json(body): Json<CreateBuchung>,
+) -> AppResult<Json<Buchung>> {
+    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+    if body.bezeichnung.trim().is_empty() {
+        return Err(AppError::BadRequest("Bezeichnung erforderlich".into()));
+    }
+    let row = sqlx::query_as::<_, Buchung>(
+        "INSERT INTO verein_buchungen (datum, bezeichnung, betrag, typ, kategorie_id, mitglied_id, beleg_nr, notiz, erstellt_von)
+         VALUES (COALESCE($1, CURRENT_DATE), $2, $3, $4, $5, $6, $7, $8, $9)
+         RETURNING id, datum, bezeichnung, betrag, typ,
+                   kategorie_id,
+                   (SELECT name FROM verein_finanz_kategorien WHERE id = $5) AS kategorie_name,
+                   mitglied_id,
+                   (SELECT CONCAT(vorname, ' ', nachname) FROM verein_mitglieder WHERE id = $6) AS mitglied_name,
+                   beleg_nr, notiz, erstellt_von, created_at"
+    )
+    .bind(body.datum)
+    .bind(&body.bezeichnung)
+    .bind(body.betrag)
+    .bind(&body.typ)
+    .bind(body.kategorie_id)
+    .bind(body.mitglied_id)
+    .bind(&body.beleg_nr)
+    .bind(&body.notiz)
+    .bind(claims.sub)
+    .fetch_one(&state.db).await?;
+    audit::log(&state.db, claims.sub,
+        "BUCHUNG_CREATED", Some("verein_buchungen"), Some(row.id), None).await;
+    Ok(Json(row))
+}
+
+pub async fn update_buchung(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+    Json(body): Json<UpdateBuchung>,
+) -> AppResult<Json<Buchung>> {
+    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+    let row = sqlx::query_as::<_, Buchung>(
+        "UPDATE verein_buchungen SET
+             datum        = COALESCE($1, datum),
+             bezeichnung  = COALESCE($2, bezeichnung),
+             betrag       = COALESCE($3, betrag),
+             typ          = COALESCE($4, typ),
+             kategorie_id = $5,
+             mitglied_id  = $6,
+             beleg_nr     = $7,
+             notiz        = $8
+         WHERE id = $9
+         RETURNING id, datum, bezeichnung, betrag, typ,
+                   kategorie_id,
+                   (SELECT name FROM verein_finanz_kategorien WHERE id = $5) AS kategorie_name,
+                   mitglied_id,
+                   (SELECT CONCAT(vorname, ' ', nachname) FROM verein_mitglieder WHERE id = $6) AS mitglied_name,
+                   beleg_nr, notiz, erstellt_von, created_at"
+    )
+    .bind(body.datum)
+    .bind(&body.bezeichnung)
+    .bind(body.betrag)
+    .bind(&body.typ)
+    .bind(body.kategorie_id)
+    .bind(body.mitglied_id)
+    .bind(&body.beleg_nr)
+    .bind(&body.notiz)
+    .bind(id)
+    .fetch_optional(&state.db).await?
+    .ok_or(AppError::NotFound)?;
+    Ok(Json(row))
+}
+
+pub async fn delete_buchung(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+) -> AppResult<Json<serde_json::Value>> {
+    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+    let n = sqlx::query("DELETE FROM verein_buchungen WHERE id = $1")
+        .bind(id).execute(&state.db).await?.rows_affected();
+    if n == 0 { return Err(AppError::NotFound); }
+    Ok(Json(serde_json::json!({ "deleted": id })))
+}
+
+pub async fn get_finanz_summary(
+    State(state): State<AppState>,
+    axum::extract::Query(filter): axum::extract::Query<BuchungFilter>,
+) -> AppResult<Json<FinanzSummary>> {
+    let (einnahmen, ausgaben): (f64, f64) = sqlx::query_as::<_, (f64, f64)>(
+        "SELECT
+             COALESCE(SUM(betrag) FILTER (WHERE typ = 'einnahme'), 0.0),
+             COALESCE(SUM(betrag) FILTER (WHERE typ = 'ausgabe'),  0.0)
+         FROM verein_buchungen
+         WHERE ($1::int IS NULL OR EXTRACT(YEAR FROM datum) = $1)"
+    )
+    .bind(filter.jahr)
+    .fetch_one(&state.db).await?;
+    Ok(Json(FinanzSummary {
+        einnahmen,
+        ausgaben,
+        saldo: einnahmen - ausgaben,
+        jahr: filter.jahr,
+    }))
+}
+
+pub async fn list_beitraege(
+    State(state): State<AppState>,
+    axum::extract::Query(filter): axum::extract::Query<BuchungFilter>,
+) -> AppResult<Json<Vec<Beitrag>>> {
+    let rows = sqlx::query_as::<_, Beitrag>(
+        "SELECT b.id, b.mitglied_id,
+                CONCAT(m.vorname, ' ', m.nachname) AS mitglied_name,
+                m.mitgliedsnummer AS mitglied_nr,
+                b.jahr, b.betrag, b.bezahlt_am, b.status, b.notiz, b.created_at
+         FROM verein_beitraege b
+         JOIN verein_mitglieder m ON m.id = b.mitglied_id
+         WHERE ($1::int IS NULL OR b.jahr = $1)
+           AND ($2::text IS NULL OR b.status = $2)
+           AND m.archiviert = FALSE
+         ORDER BY m.nachname, m.vorname, b.jahr DESC"
+    )
+    .bind(filter.jahr)
+    .bind(&filter.typ)  // wir missbrauchen 'typ' als status-filter im frontend
+    .fetch_all(&state.db).await?;
+    Ok(Json(rows))
+}
+
+pub async fn create_beitrag(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Json(body): Json<CreateBeitrag>,
+) -> AppResult<Json<Beitrag>> {
+    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+    let row = sqlx::query_as::<_, Beitrag>(
+        "INSERT INTO verein_beitraege (mitglied_id, jahr, betrag, bezahlt_am, status, notiz)
+         VALUES ($1, $2, $3, $4, COALESCE($5, 'offen'), $6)
+         RETURNING id, mitglied_id,
+                   (SELECT CONCAT(vorname, ' ', nachname) FROM verein_mitglieder WHERE id = $1) AS mitglied_name,
+                   (SELECT mitgliedsnummer FROM verein_mitglieder WHERE id = $1) AS mitglied_nr,
+                   jahr, betrag, bezahlt_am, status, notiz, created_at"
+    )
+    .bind(body.mitglied_id)
+    .bind(body.jahr)
+    .bind(body.betrag)
+    .bind(body.bezahlt_am)
+    .bind(&body.status)
+    .bind(&body.notiz)
+    .fetch_one(&state.db).await?;
+    Ok(Json(row))
+}
+
+pub async fn update_beitrag(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+    Json(body): Json<UpdateBeitrag>,
+) -> AppResult<Json<Beitrag>> {
+    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+    let row = sqlx::query_as::<_, Beitrag>(
+        "UPDATE verein_beitraege SET
+             betrag     = COALESCE($1, betrag),
+             bezahlt_am = $2,
+             status     = COALESCE($3, status),
+             notiz      = $4
+         WHERE id = $5
+         RETURNING id, mitglied_id,
+                   (SELECT CONCAT(vorname, ' ', nachname) FROM verein_mitglieder WHERE id = mitglied_id) AS mitglied_name,
+                   (SELECT mitgliedsnummer FROM verein_mitglieder WHERE id = mitglied_id) AS mitglied_nr,
+                   jahr, betrag, bezahlt_am, status, notiz, created_at"
+    )
+    .bind(body.betrag)
+    .bind(body.bezahlt_am)
+    .bind(&body.status)
+    .bind(&body.notiz)
+    .bind(id)
+    .fetch_optional(&state.db).await?
+    .ok_or(AppError::NotFound)?;
+    Ok(Json(row))
+}
+
+pub async fn delete_beitrag(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+) -> AppResult<Json<serde_json::Value>> {
+    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+    let n = sqlx::query("DELETE FROM verein_beitraege WHERE id = $1")
+        .bind(id).execute(&state.db).await?.rows_affected();
+    if n == 0 { return Err(AppError::NotFound); }
+    Ok(Json(serde_json::json!({ "deleted": id })))
+}
+
+pub async fn generate_beitraege(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Json(body): Json<GenerateBeitraegeBody>,
+) -> AppResult<Json<serde_json::Value>> {
+    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+    // Alle aktiven Mitglieder die noch keinen Beitrag für das Jahr haben
+    let inserted: i64 = sqlx::query_scalar(
+        "WITH ins AS (
+             INSERT INTO verein_beitraege (mitglied_id, jahr, betrag)
+             SELECT m.id, $1, $2
+             FROM verein_mitglieder m
+             WHERE m.archiviert = FALSE
+               AND m.status = 'aktiv'
+               AND NOT EXISTS (
+                   SELECT 1 FROM verein_beitraege b
+                   WHERE b.mitglied_id = m.id AND b.jahr = $1
+               )
+             RETURNING id
+         ) SELECT COUNT(*) FROM ins"
+    )
+    .bind(body.jahr)
+    .bind(body.betrag)
+    .fetch_one(&state.db).await?;
+    Ok(Json(serde_json::json!({ "created": inserted, "jahr": body.jahr })))
+}
+
 // ── Router ────────────────────────────────────────────────────────────────────
 
 pub fn router(state: AppState) -> Router<AppState> {
@@ -2020,6 +2413,14 @@ pub fn router(state: AppState) -> Router<AppState> {
         .route("/protokolle/:id",     put(update_protokoll).delete(delete_protokoll))
         .route("/protokolle/:id/tops",         post(create_top))
         .route("/protokoll-tops/:id",          put(update_top).delete(delete_top))
+        // Finanzen
+        .route("/finanz/kategorien",           post(create_finanz_kategorie))
+        .route("/finanz/kategorien/:id",       delete(delete_finanz_kategorie))
+        .route("/finanz/buchungen",            post(create_buchung))
+        .route("/finanz/buchungen/:id",        put(update_buchung).delete(delete_buchung))
+        .route("/finanz/beitraege",            post(create_beitrag))
+        .route("/finanz/beitraege/generieren", post(generate_beitraege))
+        .route("/finanz/beitraege/:id",        put(update_beitrag).delete(delete_beitrag))
         .route_layer(middleware::from_fn_with_state(state.clone(), require_auth));
 
     Router::new()
@@ -2042,6 +2443,10 @@ pub fn router(state: AppState) -> Router<AppState> {
         .route("/events/:id/antworten/csv", get(export_event_csv))
         .route("/protokolle",             get(list_protokolle))
         .route("/protokolle/:id",         get(get_protokoll))
+        .route("/finanz/kategorien",      get(list_finanz_kategorien))
+        .route("/finanz/buchungen",       get(list_buchungen))
+        .route("/finanz/summary",         get(get_finanz_summary))
+        .route("/finanz/beitraege",       get(list_beitraege))
         .merge(protected)
         .route_layer(middleware::from_fn_with_state(state, require_auth))
 }

@@ -314,6 +314,21 @@ export const api = {
   updateAufgabe:           (id, body) => request('PUT',    `/verein/aufgaben/${id}`, body),
   deleteAufgabe:           (id)       => request('DELETE', `/verein/aufgaben/${id}`),
 
+  // Verein — Finanzen
+  getFinanzKategorien:     ()         => request('GET',    '/verein/finanz/kategorien'),
+  createFinanzKategorie:   (body)     => request('POST',   '/verein/finanz/kategorien', body),
+  deleteFinanzKategorie:   (id)       => request('DELETE', `/verein/finanz/kategorien/${id}`),
+  getBuchungen:            (params)   => { const p = new URLSearchParams(); for (const [k,v] of Object.entries(params||{})) { if (v!=null&&v!=='') p.append(k,v); } return request('GET', `/verein/finanz/buchungen?${p}`); },
+  createBuchung:           (body)     => request('POST',   '/verein/finanz/buchungen', body),
+  updateBuchung:           (id, body) => request('PUT',    `/verein/finanz/buchungen/${id}`, body),
+  deleteBuchung:           (id)       => request('DELETE', `/verein/finanz/buchungen/${id}`),
+  getFinanzSummary:        (params)   => { const p = new URLSearchParams(); for (const [k,v] of Object.entries(params||{})) { if (v!=null&&v!=='') p.append(k,v); } return request('GET', `/verein/finanz/summary?${p}`); },
+  getBeitraege:            (params)   => { const p = new URLSearchParams(); for (const [k,v] of Object.entries(params||{})) { if (v!=null&&v!=='') p.append(k,v); } return request('GET', `/verein/finanz/beitraege?${p}`); },
+  createBeitrag:           (body)     => request('POST',   '/verein/finanz/beitraege', body),
+  updateBeitrag:           (id, body) => request('PUT',    `/verein/finanz/beitraege/${id}`, body),
+  deleteBeitrag:           (id)       => request('DELETE', `/verein/finanz/beitraege/${id}`),
+  generateBeitraege:       (body)     => request('POST',   '/verein/finanz/beitraege/generieren', body),
+
   // Verein — Veranstaltungen
   getEvents:               ()         => request('GET',    '/verein/events'),
   createEvent:             (body)     => request('POST',   '/verein/events', body),
