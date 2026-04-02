@@ -990,6 +990,7 @@ const MODULE_DEFS = [
   { key: 'lager',           iconName: 'package',         label: 'Lager',           desc: 'Beschaffungsaufträge, Bestellübersicht, Artikelstamm' },
   { key: 'personal',        iconName: 'users',           label: 'Personal',        desc: 'Mitgliederverwaltung, Qualifikationen, Ehrungen' },
   { key: 'einsatzberichte', iconName: 'truck',           label: 'Einsatzberichte', desc: 'Einsatzberichte erfassen und verwalten' },
+  { key: 'verein',          iconName: 'building',        label: 'Verein',          desc: 'Vorstandsverwaltung, Schwarzes Brett, Dokumentenablage, Briefkopf' },
   { key: 'fahrzeuge',       iconName: 'car',             label: 'Fahrzeuge',       desc: 'Stammdaten, Fristen &amp; Prüfungen, Einsatzstatus' },
   { key: 'jugendfeuerwehr', iconName: 'users',           label: 'Jugendfeuerwehr', desc: 'JF-Mitglieder, Termine, Wettbewerbe',                  soon: true },
 ];
