@@ -2176,7 +2176,7 @@ pub async fn create_buchung(
     .bind(&body.notiz)
     .bind(claims.sub)
     .fetch_one(&state.db).await?;
-    audit::log(&state.db, claims.sub,
+    audit::log(&state.db, Some(claims.sub), &claims.username,
         "BUCHUNG_CREATED", Some("verein_buchungen"), Some(row.id), None).await;
     Ok(Json(row))
 }
