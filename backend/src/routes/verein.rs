@@ -515,16 +515,29 @@ pub async fn upload_document(
     Ok(Json(row))
 }
 
+#[derive(sqlx::FromRow)]
+struct DocInfo {
+    name:         String,
+    file_path:    String,
+    mime_type:    Option<String>,
+    access_level: String,
+}
+
+#[derive(sqlx::FromRow)]
+struct DeletedPath {
+    file_path: String,
+}
+
 pub async fn download_document(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
     Path(id): Path<Uuid>,
 ) -> AppResult<Response> {
     let is_admin = claims.is_admin_or_above();
-    let row = sqlx::query!(
-        "SELECT name, file_path, mime_type, access_level FROM verein_documents WHERE id=$1",
-        id
+    let row = sqlx::query_as::<_, DocInfo>(
+        "SELECT name, file_path, mime_type, access_level FROM verein_documents WHERE id=$1"
     )
+    .bind(id)
     .fetch_optional(&state.db)
     .await?
     .ok_or(AppError::NotFound)?;
@@ -557,10 +570,10 @@ pub async fn delete_document(
     if !claims.is_admin_or_above() {
         return Err(AppError::Forbidden);
     }
-    let row = sqlx::query!(
-        "DELETE FROM verein_documents WHERE id=$1 RETURNING file_path",
-        id
+    let row = sqlx::query_as::<_, DeletedPath>(
+        "DELETE FROM verein_documents WHERE id=$1 RETURNING file_path"
     )
+    .bind(id)
     .fetch_optional(&state.db)
     .await?
     .ok_or(AppError::NotFound)?;
