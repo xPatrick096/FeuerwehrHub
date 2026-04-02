@@ -983,6 +983,45 @@ tr:hover td { background: $bg-card-hover; }
   }
 }
 
+// ── Schreiben-Editor ──────────────────────────────────────────────────────────
+.schreiben-preview {
+  background: white;
+  color: #1a1a1a;
+  padding: 2rem;
+  border-radius: $radius-lg;
+  border: 1px solid $border;
+  min-height: 400px;
+  font-family: 'Times New Roman', serif;
+  font-size: 12pt;
+  line-height: 1.6;
+}
+
+.brief-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+  font-size: 11pt;
+}
+
+.brief-absender { line-height: 1.4; }
+
+.brief-datum { text-align: right; }
+
+.brief-empfaenger {
+  margin-bottom: 2rem;
+  min-height: 4rem;
+  line-height: 1.5;
+}
+
+.brief-betreff {
+  margin-bottom: 1.5rem;
+  text-decoration: underline;
+}
+
+.brief-body { margin-bottom: 2rem; }
+
+.brief-gruss { margin-top: 1rem; }
+
 // ── Print ─────────────────────────────────────────────────────────────────────
 @media print {
   body > *:not(.modal) { display: none !important; }

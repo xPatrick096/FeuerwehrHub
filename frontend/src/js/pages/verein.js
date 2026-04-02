@@ -31,6 +31,7 @@ export async function renderVerein() {
       <button class="tab-btn" data-tab="protokolle">${icon('file-text', 14)} Protokolle</button>
       ${isAdmin ? `<button class="tab-btn" data-tab="finanzen">${icon('dollar-sign', 14)} Finanzen</button>` : ''}
       ${isAdmin ? `<button class="tab-btn" data-tab="jahresbericht">${icon('bar-chart', 14)} Jahresbericht</button>` : ''}
+      ${isAdmin ? `<button class="tab-btn" data-tab="schreiben">${icon('edit', 14)} Schreiben</button>` : ''}
       ${isAdmin ? `<button class="tab-btn" data-tab="briefkopf">${icon('settings', 14)} Briefkopf</button>` : ''}
     </div>
 
@@ -44,6 +45,7 @@ export async function renderVerein() {
     <div id="tab-protokolle"      class="tab-panel" style="display:none"></div>
     ${isAdmin ? `<div id="tab-finanzen"      class="tab-panel" style="display:none"></div>` : ''}
     ${isAdmin ? `<div id="tab-jahresbericht" class="tab-panel" style="display:none"></div>` : ''}
+    ${isAdmin ? `<div id="tab-schreiben"     class="tab-panel" style="display:none"></div>` : ''}
     ${isAdmin ? `<div id="tab-briefkopf"     class="tab-panel" style="display:none"></div>` : ''}
   `;
 
@@ -69,6 +71,7 @@ export async function renderVerein() {
   if (isAdmin) {
     loadFinanzen(isAdmin);
     loadJahresbericht();
+    loadSchreibenEditor();
     loadBriefkopf();
   }
 }
@@ -419,7 +422,10 @@ async function loadMitglieder(isAdmin) {
   el.innerHTML = `
     <div class="section-header">
       <h3>Mitglieder</h3>
-      ${isAdmin ? `<button class="btn btn--primary" id="btn-new-mitglied">${icon('plus', 14)} Mitglied anlegen</button>` : ''}
+      <div style="display:flex;gap:.5rem">
+        <button class="btn btn--ghost btn--sm" id="btn-mitglieder-csv">${icon('download', 14)} CSV</button>
+        ${isAdmin ? `<button class="btn btn--primary" id="btn-new-mitglied">${icon('plus', 14)} Mitglied anlegen</button>` : ''}
+      </div>
     </div>
     <div class="filter-bar">
       <select id="filter-status">
@@ -438,6 +444,7 @@ async function loadMitglieder(isAdmin) {
   if (isAdmin) document.getElementById('btn-new-mitglied').addEventListener('click', () => openMitgliedModal());
   document.getElementById('filter-status').addEventListener('change', () => renderMitgliederTable(isAdmin));
   document.getElementById('filter-name').addEventListener('input', () => renderMitgliederTable(isAdmin));
+  document.getElementById('btn-mitglieder-csv').addEventListener('click', () => exportMitgliederCsv());
   await refreshMitglieder(isAdmin);
   loadEhrungen();
 }
@@ -605,6 +612,10 @@ function openMitgliedModal(m = null) {
             <label>Schuhgröße</label>
             <input type="text" id="mm-schuhe" value="${esc(m?.kleidung_schuhe || '')}" placeholder="z.B. 43" />
           </div>
+          <div class="form-group">
+            <label>Führerschein</label>
+            <input type="text" id="mm-fuehrerschein" value="${esc(m?.fuehrerschein || '')}" placeholder="z.B. B, BE, C" />
+          </div>
           <div class="form-group form-group--full">
             <label>Bemerkung</label>
             <textarea id="mm-bemerkung" rows="2">${esc(m?.bemerkung || '')}</textarea>
@@ -636,6 +647,7 @@ function openMitgliedModal(m = null) {
       kleidung_oberteil:   document.getElementById('mm-oberteil').value || null,
       kleidung_hose:       document.getElementById('mm-hose').value.trim() || null,
       kleidung_schuhe:     document.getElementById('mm-schuhe').value.trim() || null,
+      fuehrerschein:       document.getElementById('mm-fuehrerschein').value.trim() || null,
     };
     if (m) {
       body.austritt_datum   = document.getElementById('mm-austritt')?.value || null;
@@ -672,11 +684,13 @@ function openMitgliedDetail(m, isAdmin) {
           <div><span class="text-muted text-xs">Eingetreten</span><br>${m.eintrittsdatum || '—'}</div>
           <div><span class="text-muted text-xs">E-Mail</span><br>${m.email ? `<a href="mailto:${esc(m.email)}">${esc(m.email)}</a>` : '—'}</div>
           <div><span class="text-muted text-xs">Telefon</span><br>${esc(m.telefon || '—')}</div>
+          ${m.geburtsdatum ? `<div><span class="text-muted text-xs">Geburtsdatum</span><br>${m.geburtsdatum}</div>` : ''}
           ${(m.kleidung_oberteil || m.kleidung_hose || m.kleidung_schuhe) ? `
           <div><span class="text-muted text-xs">Oberteil</span><br>${esc(m.kleidung_oberteil || '—')}</div>
           <div><span class="text-muted text-xs">Hose</span><br>${esc(m.kleidung_hose || '—')}</div>
           <div><span class="text-muted text-xs">Schuhe</span><br>${esc(m.kleidung_schuhe || '—')}</div>
           ` : ''}
+          ${m.fuehrerschein ? `<div><span class="text-muted text-xs">Führerschein</span><br>${esc(m.fuehrerschein)}</div>` : ''}
         </div>
 
         <div class="section-header" style="margin-top:16px">
@@ -896,6 +910,22 @@ function openAuszeichnungModal(mitgliedId) {
 
 // ── Ehrungen-Übersicht ────────────────────────────────────────────────────────
 
+function exportMitgliederCsv() {
+  const m = _mitgliederCache.filter(x => !x.archiviert);
+  const header = ['Nr.','Vorname','Nachname','Status','Eingetreten','Geburtsdatum','E-Mail','Telefon','Führerschein','Oberteil','Hose','Schuhe'];
+  const rows = m.map(x => [
+    x.mitgliedsnummer, x.vorname, x.nachname, x.status,
+    x.eintrittsdatum || '', x.geburtsdatum || '',
+    x.email || '', x.telefon || '', x.fuehrerschein || '',
+    x.kleidung_oberteil || '', x.kleidung_hose || '', x.kleidung_schuhe || '',
+  ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(';'));
+  const csv = [header.join(';'), ...rows].join('\r\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'mitglieder.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
+
 async function loadEhrungen() {
   const el = document.getElementById('mitglieder-ehrungen');
   el.innerHTML = `<p class="text-muted">Lädt...</p>`;
@@ -904,7 +934,21 @@ async function loadEhrungen() {
     const jubilare = data.jubilare || [];
     const ablaufend = data.ablaufende_qualifikationen || [];
 
+    // Geburtstage aus Cache — nächste 60 Tage
+    const heute = new Date();
+    const geburtstage = _mitgliederCache.filter(m => !m.archiviert && m.geburtsdatum).map(m => {
+      const gb = new Date(m.geburtsdatum);
+      const diesjaehrig = new Date(heute.getFullYear(), gb.getMonth(), gb.getDate());
+      if (diesjaehrig < heute) diesjaehrig.setFullYear(heute.getFullYear() + 1);
+      const tage = Math.ceil((diesjaehrig - heute) / (1000*60*60*24));
+      return { ...m, tage_bis_geburtstag: tage, naechster_geburtstag: diesjaehrig };
+    }).filter(m => m.tage_bis_geburtstag <= 60).sort((a,b) => a.tage_bis_geburtstag - b.tage_bis_geburtstag);
+
     el.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+        <h3 style="margin:0;font-size:15px">Ehrungen &amp; Übersichten</h3>
+        <button class="btn btn--ghost btn--sm" id="btn-quali-csv">${icon('download', 14)} Qualifikationen CSV</button>
+      </div>
       <div class="stats-row">
         <div class="stat-card">
           <div class="stat-card__number" style="color:#d29922">${jubilare.length}</div>
@@ -914,7 +958,33 @@ async function loadEhrungen() {
           <div class="stat-card__number" style="color:${ablaufend.filter(q => q.tage_verbleibend <= 30).length > 0 ? '#e63022' : '#d29922'}">${ablaufend.length}</div>
           <div class="stat-card__label">Ablaufende Qualifikationen</div>
         </div>
+        <div class="stat-card">
+          <div class="stat-card__number" style="color:${geburtstage.length > 0 ? '#3fb950' : '#7d8590'}">${geburtstage.length}</div>
+          <div class="stat-card__label">Geburtstage (60 Tage)</div>
+        </div>
       </div>
+
+      ${geburtstage.length ? `
+      <div class="card" style="margin-bottom:16px">
+        <div class="card__header">${icon('cake', 14)} Geburtstage (nächste 60 Tage)</div>
+        <div class="card__body" style="padding:0">
+          <table>
+            <thead><tr><th>Name</th><th>Datum</th><th>Alter</th><th>In</th></tr></thead>
+            <tbody>
+              ${geburtstage.map(m => {
+                const gb = new Date(m.geburtsdatum);
+                const alter = m.naechster_geburtstag.getFullYear() - gb.getFullYear();
+                return `<tr>
+                  <td>${esc(m.vorname)} ${esc(m.nachname)}</td>
+                  <td class="text-muted text-sm">${m.naechster_geburtstag.toLocaleDateString('de-DE', {day:'2-digit',month:'2-digit'})}</td>
+                  <td>${alter} Jahre</td>
+                  <td><span class="badge ${m.tage_bis_geburtstag <= 7 ? 'badge--green' : 'badge--gray'}">${m.tage_bis_geburtstag === 0 ? 'Heute!' : `${m.tage_bis_geburtstag} Tage`}</span></td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>` : ''}
 
       ${jubilare.length ? `
       <div class="card">
@@ -960,6 +1030,21 @@ async function loadEhrungen() {
       </div>` : ''}
     `;
     renderIcons(el);
+
+    el.querySelector('#btn-quali-csv')?.addEventListener('click', async () => {
+      try {
+        const alle = await api.getAlleQualifikationen();
+        const header = ['Mitglied','Qualifikation','Erworben','Gültig bis','Bemerkung'];
+        const rows = alle.map(q => [
+          q.mitglied_name, q.bezeichnung, q.erworben_am || '', q.gueltig_bis || '', q.bemerkung || '',
+        ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(';'));
+        const csv = [header.join(';'), ...rows].join('\r\n');
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = 'qualifikationen.csv'; a.click();
+        URL.revokeObjectURL(url);
+      } catch (e) { toast(e.message, 'error'); }
+    });
   } catch (e) {
     el.innerHTML = `<p class="text-muted">${esc(e.message)}</p>`;
   }
@@ -3025,17 +3110,149 @@ async function loadJahresbericht() {
   });
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Schreiben-Editor (Briefkopf-basierter Briefeditor mit Print)
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function loadSchreibenEditor() {
+  const el = document.getElementById('tab-schreiben');
+  if (!el) return;
+
+  let briefkopf = {};
+  try { briefkopf = await api.getBriefkopf() || {}; } catch (_) {}
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;align-items:start">
+      <div>
+        <h3 style="margin:0 0 1rem">Schreiben erstellen</h3>
+        <div class="form-grid">
+          <div class="form-group form-group--full">
+            <label>Empfänger</label>
+            <textarea id="sb-empfaenger" class="form-control" rows="3" placeholder="Name&#10;Straße&#10;PLZ Ort"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Datum</label>
+            <input id="sb-datum" type="date" class="form-control" value="${today}">
+          </div>
+          <div class="form-group form-group--full">
+            <label>Betreff</label>
+            <input id="sb-betreff" class="form-control" placeholder="Betreff des Schreibens">
+          </div>
+          <div class="form-group form-group--full">
+            <label>Anrede</label>
+            <input id="sb-anrede" class="form-control" value="Sehr geehrte Damen und Herren,">
+          </div>
+          <div class="form-group form-group--full">
+            <label>Inhalt</label>
+            <textarea id="sb-inhalt" class="form-control" rows="8" placeholder="Text des Schreibens..."></textarea>
+          </div>
+          <div class="form-group form-group--full">
+            <label>Grußformel</label>
+            <input id="sb-gruss" class="form-control" value="Mit freundlichen Grüßen">
+          </div>
+          <div class="form-group form-group--full">
+            <label>Unterschrift</label>
+            <input id="sb-unterschrift" class="form-control" value="${esc(briefkopf.ff_name || '')}">
+          </div>
+        </div>
+        <div style="margin-top:1rem;display:flex;gap:.5rem">
+          <button class="btn btn--primary" id="btn-sb-preview">${icon('eye', 14)} Vorschau aktualisieren</button>
+          <button class="btn btn--ghost" id="btn-sb-print">${icon('printer', 14)} Drucken / PDF</button>
+        </div>
+      </div>
+
+      <div>
+        <h3 style="margin:0 0 1rem">Vorschau</h3>
+        <div id="schreiben-preview" class="schreiben-preview">
+          <p style="color:#7d8590;font-size:13px">Felder ausfüllen und auf Vorschau klicken</p>
+        </div>
+      </div>
+    </div>
+  `;
+  renderIcons(el);
+
+  const updatePreview = () => {
+    const preview = el.querySelector('#schreiben-preview');
+    const empf    = el.querySelector('#sb-empfaenger').value.trim().replace(/\n/g, '<br>');
+    const datum   = new Date(el.querySelector('#sb-datum').value).toLocaleDateString('de-DE', { day:'2-digit', month:'long', year:'numeric' });
+    const betreff = el.querySelector('#sb-betreff').value.trim();
+    const anrede  = el.querySelector('#sb-anrede').value.trim();
+    const inhalt  = el.querySelector('#sb-inhalt').value.trim().replace(/\n/g, '<br>');
+    const gruss   = el.querySelector('#sb-gruss').value.trim();
+    const unter   = el.querySelector('#sb-unterschrift').value.trim();
+
+    preview.innerHTML = `
+      <div id="brief-print-content">
+        <div class="brief-header">
+          <div class="brief-absender">
+            <strong>${esc(briefkopf.ff_name || '')}</strong><br>
+            ${briefkopf.ff_strasse ? esc(briefkopf.ff_strasse) + '<br>' : ''}
+            ${briefkopf.ff_ort ? esc(briefkopf.ff_ort) + '<br>' : ''}
+            ${briefkopf.ff_email ? esc(briefkopf.ff_email) + '<br>' : ''}
+            ${briefkopf.ff_phone ? esc(briefkopf.ff_phone) : ''}
+          </div>
+          <div class="brief-datum">${datum}</div>
+        </div>
+
+        <div class="brief-empfaenger">${empf || '—'}</div>
+
+        ${betreff ? `<div class="brief-betreff"><strong>Betreff: ${esc(betreff)}</strong></div>` : ''}
+
+        <div class="brief-body">
+          <p>${esc(anrede)}</p>
+          <p>${inhalt || '&nbsp;'}</p>
+        </div>
+
+        <div class="brief-gruss">
+          <p>${esc(gruss)}</p>
+          <br><br>
+          <p>___________________________<br>${esc(unter)}</p>
+        </div>
+      </div>
+    `;
+  };
+
+  el.querySelector('#btn-sb-preview').addEventListener('click', updatePreview);
+  el.querySelector('#btn-sb-print').addEventListener('click', () => {
+    updatePreview();
+    const content = el.querySelector('#brief-print-content')?.innerHTML || '';
+    const win = window.open('', '_blank', 'width=800,height=900');
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Schreiben</title>
+      <style>
+        body { font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.6; color: #1a1a1a; margin: 2cm; }
+        .brief-header { display: flex; justify-content: space-between; margin-bottom: 2rem; font-size: 11pt; }
+        .brief-absender { line-height: 1.4; }
+        .brief-datum { text-align: right; }
+        .brief-empfaenger { margin-bottom: 2rem; min-height: 4rem; line-height: 1.5; }
+        .brief-betreff { margin-bottom: 1.5rem; text-decoration: underline; }
+        .brief-body { margin-bottom: 2rem; }
+        .brief-gruss { margin-top: 1rem; }
+        @media print { @page { margin: 2cm; } }
+      </style>
+    </head><body>${content}</body></html>`);
+    win.document.close();
+    win.focus();
+    setTimeout(() => { win.print(); win.close(); }, 300);
+  });
+
+  // Initiale Vorschau
+  updatePreview();
+}
+
 async function renderJahresbericht(jahr) {
   const el = document.getElementById('jb-content');
   if (!el) return;
   el.innerHTML = `<p style="color:#7d8590">Lade Daten...</p>`;
   try {
-    const [summary, buchungen, beitraege, mitglieder, events] = await Promise.all([
+    const [summary, buchungen, beitraege, mitglieder, events, einsatzStats] = await Promise.all([
       api.getFinanzSummary({ jahr }),
       api.getBuchungen({ jahr }),
       api.getBeitraege({ jahr }),
       api.getMitglieder(),
       api.getEvents(),
+      api.getIncidentStats(jahr).catch(() => null),
     ]);
 
     const aktiveMitglieder = (mitglieder || []).filter(m => !m.archiviert && m.status === 'aktiv');
@@ -3057,6 +3274,15 @@ async function renderJahresbericht(jahr) {
           <div class="stat-card"><div class="stat-card__label">Aktive Mitglieder</div><div class="stat-card__value">${aktiveMitglieder.length}</div></div>
           <div class="stat-card"><div class="stat-card__label">Gesamt</div><div class="stat-card__value">${(mitglieder||[]).filter(m=>!m.archiviert).length}</div></div>
         </div>
+
+        ${einsatzStats ? `
+        <h3 style="margin:0 0 .75rem;border-bottom:1px solid var(--border,#21273d);padding-bottom:.5rem">Einsätze ${jahr}</h3>
+        <div class="stats-row" style="margin-bottom:2rem">
+          <div class="stat-card"><div class="stat-card__label">Gesamt</div><div class="stat-card__value">${einsatzStats.total ?? 0}</div></div>
+          <div class="stat-card"><div class="stat-card__label">Brand</div><div class="stat-card__value" style="color:#e63022">${einsatzStats.brand ?? 0}</div></div>
+          <div class="stat-card"><div class="stat-card__label">THL</div><div class="stat-card__value">${einsatzStats.thl ?? 0}</div></div>
+          <div class="stat-card"><div class="stat-card__label">Sonstige</div><div class="stat-card__value">${einsatzStats.sonstige ?? 0}</div></div>
+        </div>` : ''}
 
         <h3 style="margin:0 0 .75rem;border-bottom:1px solid var(--border,#21273d);padding-bottom:.5rem">Veranstaltungen ${jahr}</h3>
         <div class="stats-row" style="margin-bottom:2rem">

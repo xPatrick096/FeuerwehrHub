@@ -612,6 +612,7 @@ pub struct Mitglied {
     pub kleidung_oberteil:   Option<String>,
     pub kleidung_hose:       Option<String>,
     pub kleidung_schuhe:     Option<String>,
+    pub fuehrerschein:       Option<String>,
     pub archiviert:          bool,
     pub created_at:          DateTime<Utc>,
 }
@@ -630,6 +631,7 @@ pub struct CreateMitglied {
     pub kleidung_oberteil:   Option<String>,
     pub kleidung_hose:       Option<String>,
     pub kleidung_schuhe:     Option<String>,
+    pub fuehrerschein:       Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -648,6 +650,7 @@ pub struct UpdateMitglied {
     pub kleidung_oberteil:   Option<String>,
     pub kleidung_hose:       Option<String>,
     pub kleidung_schuhe:     Option<String>,
+    pub fuehrerschein:       Option<String>,
     pub archiviert:          Option<bool>,
 }
 
@@ -668,7 +671,7 @@ pub async fn list_mitglieder(
         "SELECT id, mitgliedsnummer, vorname, nachname, email, telefon, geburtsdatum,
                 eintrittsdatum, status, user_id, austritt_datum, austritt_grund,
                 bemerkung, kleidung_oberteil, kleidung_hose, kleidung_schuhe,
-                archiviert, created_at
+                fuehrerschein, archiviert, created_at
          FROM verein_mitglieder
          ORDER BY archiviert, nachname, vorname"
     )
@@ -692,12 +695,12 @@ pub async fn create_mitglied(
         "INSERT INTO verein_mitglieder
             (mitgliedsnummer, vorname, nachname, email, telefon, geburtsdatum,
              eintrittsdatum, status, user_id, bemerkung,
-             kleidung_oberteil, kleidung_hose, kleidung_schuhe)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+             kleidung_oberteil, kleidung_hose, kleidung_schuhe, fuehrerschein)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
          RETURNING id, mitgliedsnummer, vorname, nachname, email, telefon, geburtsdatum,
                    eintrittsdatum, status, user_id, austritt_datum, austritt_grund,
                    bemerkung, kleidung_oberteil, kleidung_hose, kleidung_schuhe,
-                   archiviert, created_at"
+                   fuehrerschein, archiviert, created_at"
     )
     .bind(&nr)
     .bind(&body.vorname)
@@ -712,6 +715,7 @@ pub async fn create_mitglied(
     .bind(&body.kleidung_oberteil)
     .bind(&body.kleidung_hose)
     .bind(&body.kleidung_schuhe)
+    .bind(&body.fuehrerschein)
     .fetch_one(&state.db)
     .await?;
 
@@ -742,12 +746,13 @@ pub async fn update_mitglied(
             kleidung_oberteil = $12,
             kleidung_hose     = $13,
             kleidung_schuhe   = $14,
-            archiviert        = COALESCE($15, archiviert)
-         WHERE id = $16
+            fuehrerschein     = $15,
+            archiviert        = COALESCE($16, archiviert)
+         WHERE id = $17
          RETURNING id, mitgliedsnummer, vorname, nachname, email, telefon, geburtsdatum,
                    eintrittsdatum, status, user_id, austritt_datum, austritt_grund,
                    bemerkung, kleidung_oberteil, kleidung_hose, kleidung_schuhe,
-                   archiviert, created_at"
+                   fuehrerschein, archiviert, created_at"
     )
     .bind(body.vorname)
     .bind(body.nachname)
@@ -763,6 +768,7 @@ pub async fn update_mitglied(
     .bind(body.kleidung_oberteil)
     .bind(body.kleidung_hose)
     .bind(body.kleidung_schuhe)
+    .bind(body.fuehrerschein)
     .bind(body.archiviert)
     .bind(id)
     .fetch_optional(&state.db)
@@ -932,6 +938,35 @@ pub async fn delete_auszeichnung(
         .execute(&state.db)
         .await?;
     Ok(Json(serde_json::json!({ "ok": true })))
+}
+
+// ── Alle Qualifikationen (Übersicht) ─────────────────────────────────────────
+
+#[derive(Serialize, sqlx::FromRow)]
+pub struct QualifikationUebersicht {
+    pub id:            Uuid,
+    pub mitglied_id:   Uuid,
+    pub mitglied_name: String,
+    pub bezeichnung:   String,
+    pub erworben_am:   Option<NaiveDate>,
+    pub gueltig_bis:   Option<NaiveDate>,
+    pub bemerkung:     Option<String>,
+}
+
+pub async fn list_alle_qualifikationen(
+    State(state): State<AppState>,
+) -> AppResult<Json<Vec<QualifikationUebersicht>>> {
+    let rows = sqlx::query_as::<_, QualifikationÜbersicht>(
+        "SELECT q.id, q.mitglied_id,
+                m.vorname || ' ' || m.nachname AS mitglied_name,
+                q.bezeichnung, q.erworben_am, q.gueltig_bis, q.bemerkung
+         FROM verein_qualifikationen q
+         JOIN verein_mitglieder m ON m.id = q.mitglied_id
+         WHERE m.archiviert = FALSE
+         ORDER BY m.nachname, m.vorname, q.bezeichnung"
+    )
+    .fetch_all(&state.db).await?;
+    Ok(Json(rows))
 }
 
 // ── Ehrungen-Übersicht ────────────────────────────────────────────────────────
@@ -2433,6 +2468,7 @@ pub fn router(state: AppState) -> Router<AppState> {
         .route("/mitglieder/:id/qualifikationen", get(list_qualifikationen))
         .route("/mitglieder/:id/auszeichnungen",  get(list_auszeichnungen))
         .route("/ehrungen",               get(get_ehrungen))
+        .route("/qualifikationen/alle",   get(list_alle_qualifikationen))
         .route("/inventar",               get(list_inventar))
         .route("/inventar/:id/ausleihen", get(list_inventar_ausleihen))
         .route("/schluessel",             get(list_schluessel))

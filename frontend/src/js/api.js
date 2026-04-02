@@ -276,6 +276,9 @@ export const api = {
   updateMitglied:      (id, body)  => request('PUT',    `/verein/mitglieder/${id}`, body),
   deleteMitglied:      (id)        => request('DELETE', `/verein/mitglieder/${id}`),
 
+  // Verein — Qualifikationen (alle)
+  getAlleQualifikationen:   ()         => request('GET',    '/verein/qualifikationen/alle'),
+
   // Verein — Qualifikationen
   getQualifikationen:    (mid)      => request('GET',    `/verein/mitglieder/${mid}/qualifikationen`),
   createQualifikation:   (mid, b)   => request('POST',   `/verein/mitglieder/${mid}/qualifikationen`, b),
