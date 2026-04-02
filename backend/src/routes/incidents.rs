@@ -37,14 +37,15 @@ async fn user_role_level(db: &PgPool, user_id: Uuid) -> i32 {
 }
 
 async fn next_incident_number(db: &PgPool, year: i32) -> AppResult<String> {
-    let count: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM incident_reports
-         WHERE EXTRACT(YEAR FROM incident_date) = $1"
+    let max_seq: Option<i32> = sqlx::query_scalar(
+        "SELECT MAX(CAST(SPLIT_PART(incident_number, '-', 2) AS INTEGER))
+         FROM incident_reports
+         WHERE incident_number LIKE $1"
     )
-    .bind(year)
+    .bind(format!("{}-", year) + "%")
     .fetch_one(db)
     .await?;
-    Ok(format!("{}-{:03}", year, count + 1))
+    Ok(format!("{}-{:03}", year, max_seq.unwrap_or(0) + 1))
 }
 
 // ── Structs ───────────────────────────────────────────────────────────────────
