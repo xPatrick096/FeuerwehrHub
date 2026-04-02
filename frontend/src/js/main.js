@@ -13,6 +13,7 @@ import { renderVehicles } from './pages/vehicles.js';
 import { renderIncidents } from './pages/incidents.js';
 import { renderNewIncident } from './pages/new-incident.js';
 import { renderEditIncident } from './pages/edit-incident.js';
+import { renderVerein } from './pages/verein.js';
 
 // Routen registrieren
 registerRoute('#/login',     renderLogin);
@@ -30,6 +31,7 @@ registerRoute('#/new-order', renderNewOrder,  'lager');
 registerRoute('#/articles',  renderArticles,  'lager');
 registerRoute('#/settings',  renderSettings);
 registerRoute('#/admin',     renderAdmin);
+registerRoute('#/verein',    renderVerein,    'verein');
 
 // Fallback
 registerRoute('*', renderLogin);

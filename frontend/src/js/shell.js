@@ -84,6 +84,13 @@ export function renderShell(activePage) {
             </button>
             <div class="sidebar__divider"></div>` : ''}
 
+            ${canAccess(currentUser, 'verein') && activeModules['verein'] ? `
+            <div class="sidebar__module">${icon('building', 14)} Verein</div>
+            <button class="sidebar__item${activePage === 'verein' ? ' active' : ''}" data-page="verein">
+              <span class="sidebar__item__icon">${icon('clipboard-list', 16)}</span> Vereinsverwaltung
+            </button>
+            <div class="sidebar__divider"></div>` : ''}
+
             <button class="sidebar__item${activePage === 'settings' ? ' active' : ''}" data-page="settings">
               <span class="sidebar__item__icon">${icon('settings', 16)}</span> Einstellungen
             </button>

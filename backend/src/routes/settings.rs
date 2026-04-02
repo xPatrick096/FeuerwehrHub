@@ -18,7 +18,7 @@ use crate::{
     AppState,
 };
 
-pub const KNOWN_MODULES: &[&str] = &["lager", "lager.approve", "personal", "fahrzeuge", "einsatzberichte"];
+pub const KNOWN_MODULES: &[&str] = &["lager", "lager.approve", "personal", "fahrzeuge", "einsatzberichte", "verein"];
 
 #[derive(Serialize)]
 pub struct Settings {

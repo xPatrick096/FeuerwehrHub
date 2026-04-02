@@ -85,6 +85,7 @@ async fn main() -> anyhow::Result<()> {
         .nest("/api/vehicles",           routes::vehicles::router(state.clone()))
         .nest("/api/incident-types",     routes::incident_types::router(state.clone()))
         .nest("/api/einsatzberichte",    routes::incidents::router(state.clone()))
+        .nest("/api/verein",             routes::verein::router(state.clone()))
         .with_state(state)
         .layer(cors)
         .layer(SetResponseHeaderLayer::if_not_present(

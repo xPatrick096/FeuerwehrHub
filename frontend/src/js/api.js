@@ -215,6 +215,60 @@ export const api = {
   getDefectComments:    (vid, did)      => request('GET',    `/vehicles/${vid}/defects/${did}/comments`),
   createDefectComment:  (vid, did, body)=> request('POST',   `/vehicles/${vid}/defects/${did}/comments`, body),
 
+  // Verein
+  getBriefkopf:       ()          => request('GET',    '/verein/briefkopf'),
+  updateBriefkopf:    (body)      => request('PUT',    '/verein/briefkopf', body),
+  deleteLogo:         ()          => request('DELETE', '/verein/logo'),
+  uploadLogo: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const token = getToken();
+    return fetch(`${BASE}/verein/logo`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    }).then(async res => {
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+      return data;
+    });
+  },
+
+  getVorstand:    ()          => request('GET',    '/verein/vorstand'),
+  createVorstand: (body)      => request('POST',   '/verein/vorstand', body),
+  updateVorstand: (id, body)  => request('PUT',    `/verein/vorstand/${id}`, body),
+  deleteVorstand: (id)        => request('DELETE', `/verein/vorstand/${id}`),
+
+  getVereinPosts:    ()          => request('GET',    '/verein/posts'),
+  createVereinPost:  (body)      => request('POST',   '/verein/posts', body),
+  updateVereinPost:  (id, body)  => request('PUT',    `/verein/posts/${id}`, body),
+  deleteVereinPost:  (id)        => request('DELETE', `/verein/posts/${id}`),
+
+  getDocuments:    ()     => request('GET',    '/verein/dokumente'),
+  deleteDocument:  (id)   => request('DELETE', `/verein/dokumente/${id}`),
+  downloadDocument: (id) => {
+    const token = getToken();
+    return fetch(`${BASE}/verein/dokumente/${id}/download`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+  },
+  uploadDocument: (file, category, accessLevel) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('category', category || 'Allgemein');
+    formData.append('access_level', accessLevel || 'all');
+    const token = getToken();
+    return fetch(`${BASE}/verein/dokumente`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    }).then(async res => {
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+      return data;
+    });
+  },
+
   // Einsatzarten
   getIncidentTypes:    ()         => request('GET',    '/incident-types'),
   createIncidentType:  (body)     => request('POST',   '/incident-types', body),
