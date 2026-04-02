@@ -741,7 +741,7 @@ pub async fn update_mitglied(
     .bind(id)
     .fetch_optional(&state.db)
     .await?
-    .ok_or_else(|| AppError::NotFound("Mitglied nicht gefunden".into()))?;
+    .ok_or(AppError::NotFound)?;
 
     audit::log(&state.db, Some(claims.sub), &claims.username,
         "MITGLIED_UPDATED", Some("verein_mitglieder"), Some(id), None).await;
@@ -762,7 +762,7 @@ pub async fn delete_mitglied(
     .rows_affected();
 
     if affected == 0 {
-        return Err(AppError::NotFound("Mitglied nicht gefunden".into()));
+        return Err(AppError::NotFound);
     }
     audit::log(&state.db, Some(claims.sub), &claims.username,
         "MITGLIED_ARCHIVED", Some("verein_mitglieder"), Some(id), None).await;
