@@ -20,26 +20,26 @@ export async function renderVerein() {
       </div>
     </div>
 
-    <div class="tabs" id="verein-tabs">
-      <button class="tab active" data-tab="schwarzesbrett">${icon('clipboard-list', 14)} Schwarzes Brett</button>
-      <button class="tab" data-tab="vorstand">${icon('users', 14)} Vorstand</button>
-      <button class="tab" data-tab="dokumente">${icon('folder', 14)} Dokumente</button>
-      ${isAdmin ? `<button class="tab" data-tab="briefkopf">${icon('settings', 14)} Briefkopf</button>` : ''}
+    <div class="tab-bar" id="verein-tabs">
+      <button class="tab-btn tab-btn--active" data-tab="schwarzesbrett">${icon('clipboard-list', 14)} Schwarzes Brett</button>
+      <button class="tab-btn" data-tab="vorstand">${icon('users', 14)} Vorstand</button>
+      <button class="tab-btn" data-tab="dokumente">${icon('folder', 14)} Dokumente</button>
+      ${isAdmin ? `<button class="tab-btn" data-tab="briefkopf">${icon('settings', 14)} Briefkopf</button>` : ''}
     </div>
 
-    <div id="tab-schwarzesbrett" class="tab-content active"></div>
-    <div id="tab-vorstand"       class="tab-content" style="display:none"></div>
-    <div id="tab-dokumente"      class="tab-content" style="display:none"></div>
-    ${isAdmin ? `<div id="tab-briefkopf" class="tab-content" style="display:none"></div>` : ''}
+    <div id="tab-schwarzesbrett" class="tab-panel"></div>
+    <div id="tab-vorstand"       class="tab-panel" style="display:none"></div>
+    <div id="tab-dokumente"      class="tab-panel" style="display:none"></div>
+    ${isAdmin ? `<div id="tab-briefkopf" class="tab-panel" style="display:none"></div>` : ''}
   `;
 
   renderIcons(content);
 
-  document.querySelectorAll('#verein-tabs .tab').forEach(btn => {
+  document.querySelectorAll('#verein-tabs .tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('#verein-tabs .tab').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
-      btn.classList.add('active');
+      document.querySelectorAll('#verein-tabs .tab-btn').forEach(b => b.classList.remove('tab-btn--active'));
+      document.querySelectorAll('.tab-panel').forEach(t => t.style.display = 'none');
+      btn.classList.add('tab-btn--active');
       document.getElementById(`tab-${btn.dataset.tab}`).style.display = '';
     });
   });
@@ -55,17 +55,12 @@ export async function renderVerein() {
 async function loadSchwarztesBrett(isAdmin) {
   const el = document.getElementById('tab-schwarzesbrett');
 
-  const renderBtn = isAdmin ? `
-    <button class="btn btn--primary" id="btn-new-post">
-      ${icon('plus', 14)} Beitrag erstellen
-    </button>` : '';
-
   el.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <h3 style="margin:0">Schwarzes Brett</h3>
-      ${renderBtn}
+    <div class="section-header">
+      <h3>Schwarzes Brett</h3>
+      ${isAdmin ? `<button class="btn btn--primary" id="btn-new-post">${icon('plus', 14)} Beitrag erstellen</button>` : ''}
     </div>
-    <div id="posts-list"><div class="loading">Lädt...</div></div>
+    <div id="posts-list"><p class="text-muted">Lädt...</p></div>
   `;
 
   renderIcons(el);
@@ -87,13 +82,13 @@ async function refreshPosts(isAdmin) {
     }
     el.innerHTML = posts.map(p => `
       <div class="card" style="margin-bottom:12px">
-        <div class="card__header" style="display:flex;justify-content:space-between;align-items:center">
+        <div class="card__header">
           <span>
-            ${p.pinned ? `<span style="color:#f0a500;margin-right:6px">${icon('pin', 13)}</span>` : ''}
+            ${p.pinned ? `<span style="color:#d29922;margin-right:6px">${icon('pin', 13)}</span>` : ''}
             ${esc(p.title)}
-            ${p.visibility === 'vorstand' ? `<span class="badge badge--warn" style="margin-left:8px;font-size:11px">Nur Vorstand</span>` : ''}
+            ${p.visibility === 'vorstand' ? `<span class="badge badge--superuser" style="margin-left:8px">Nur Vorstand</span>` : ''}
           </span>
-          <span style="font-size:12px;color:#7d8590">
+          <span class="text-muted text-sm">
             ${p.expires_at ? `Bis ${p.expires_at} · ` : ''}${esc(p.created_by_name)}
           </span>
         </div>
@@ -101,7 +96,7 @@ async function refreshPosts(isAdmin) {
           <p style="white-space:pre-wrap;margin:0">${esc(p.content)}</p>
           ${isAdmin ? `
           <div class="btn-group" style="margin-top:12px">
-            <button class="btn btn--secondary btn--sm" data-edit-post="${p.id}">Bearbeiten</button>
+            <button class="btn btn--outline btn--sm" data-edit-post="${p.id}">Bearbeiten</button>
             <button class="btn btn--danger btn--sm" data-del-post="${p.id}">Löschen</button>
           </div>` : ''}
         </div>
@@ -123,7 +118,7 @@ async function refreshPosts(isAdmin) {
       });
     });
   } catch (e) {
-    el.innerHTML = `<div class="error">${esc(e.message)}</div>`;
+    el.innerHTML = `<p class="text-muted">${esc(e.message)}</p>`;
   }
 }
 
@@ -133,7 +128,7 @@ function openPostModal(post = null) {
 
   const modal = document.createElement('div');
   modal.id = 'post-modal';
-  modal.className = 'modal-overlay';
+  modal.className = 'modal-overlay active';
   modal.innerHTML = `
     <div class="modal">
       <div class="modal__header">
@@ -195,8 +190,7 @@ function openPostModal(post = null) {
       else       { await api.createVereinPost(body); }
       toast('Gespeichert', 'success');
       modal.remove();
-      const isAdmin = true;
-      refreshPosts(isAdmin);
+      refreshPosts(true);
     } catch (e) { toast(e.message, 'error'); }
   });
 }
@@ -207,11 +201,11 @@ async function loadVorstand(isAdmin) {
   const el = document.getElementById('tab-vorstand');
 
   el.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <h3 style="margin:0">Vorstand</h3>
+    <div class="section-header">
+      <h3>Vorstand</h3>
       ${isAdmin ? `<button class="btn btn--primary" id="btn-new-vorstand">${icon('plus', 14)} Hinzufügen</button>` : ''}
     </div>
-    <div id="vorstand-list"><div class="loading">Lädt...</div></div>
+    <div id="vorstand-list"><p class="text-muted">Lädt...</p></div>
   `;
 
   renderIcons(el);
@@ -233,7 +227,7 @@ async function refreshVorstand(isAdmin) {
     }
     el.innerHTML = `
       <div class="table-wrapper">
-        <table class="table">
+        <table>
           <thead><tr>
             <th>Name</th><th>Funktion</th><th>Seit</th><th>Bis</th>
             ${isAdmin ? '<th></th>' : ''}
@@ -243,11 +237,13 @@ async function refreshVorstand(isAdmin) {
               <tr>
                 <td>${esc(v.name)}</td>
                 <td>${esc(v.funktion)}</td>
-                <td>${v.seit || '—'}</td>
-                <td>${v.bis || '—'}</td>
+                <td class="text-muted text-sm">${v.seit || '—'}</td>
+                <td class="text-muted text-sm">${v.bis || '—'}</td>
                 ${isAdmin ? `<td>
-                  <button class="btn btn--secondary btn--sm" data-edit-vorstand="${v.id}">Bearbeiten</button>
-                  <button class="btn btn--danger btn--sm" data-del-vorstand="${v.id}">Löschen</button>
+                  <div class="btn-group">
+                    <button class="btn btn--outline btn--sm" data-edit-vorstand="${v.id}">Bearbeiten</button>
+                    <button class="btn btn--danger btn--sm" data-del-vorstand="${v.id}">Löschen</button>
+                  </div>
                 </td>` : ''}
               </tr>
             `).join('')}
@@ -269,7 +265,7 @@ async function refreshVorstand(isAdmin) {
       });
     });
   } catch (e) {
-    el.innerHTML = `<div class="error">${esc(e.message)}</div>`;
+    el.innerHTML = `<p class="text-muted">${esc(e.message)}</p>`;
   }
 }
 
@@ -279,7 +275,7 @@ function openVorstandModal(v = null) {
 
   const modal = document.createElement('div');
   modal.id = 'vorstand-modal';
-  modal.className = 'modal-overlay';
+  modal.className = 'modal-overlay active';
   modal.innerHTML = `
     <div class="modal">
       <div class="modal__header">
@@ -347,15 +343,15 @@ async function loadDokumente(isAdmin) {
   const el = document.getElementById('tab-dokumente');
 
   el.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <h3 style="margin:0">Dokumentenablage</h3>
+    <div class="section-header">
+      <h3>Dokumentenablage</h3>
       ${isAdmin ? `<label class="btn btn--primary" style="cursor:pointer">
         ${icon('upload', 14)} Dokument hochladen
         <input type="file" id="doc-upload-input" style="display:none" />
       </label>` : ''}
     </div>
     ${isAdmin ? `
-    <div class="card" style="margin-bottom:16px" id="upload-form" style="display:none">
+    <div class="card" id="upload-form">
       <div class="card__body">
         <div class="form-grid">
           <div class="form-group">
@@ -372,7 +368,7 @@ async function loadDokumente(isAdmin) {
         </div>
       </div>
     </div>` : ''}
-    <div id="dokumente-list"><div class="loading">Lädt...</div></div>
+    <div id="dokumente-list"><p class="text-muted">Lädt...</p></div>
   `;
 
   renderIcons(el);
@@ -411,22 +407,28 @@ async function refreshDokumente(isAdmin) {
     });
 
     el.innerHTML = Object.entries(byCategory).map(([cat, items]) => `
-      <div class="card" style="margin-bottom:16px">
+      <div class="card" style="margin-bottom:12px">
         <div class="card__header">${icon('folder', 14)} ${esc(cat)}</div>
         <div class="card__body" style="padding:0">
-          <table class="table">
+          <table>
             <tbody>
               ${items.map(d => `
                 <tr>
                   <td>${icon('file', 13)} ${esc(d.name)}</td>
-                  <td style="color:#7d8590;font-size:12px">${formatSize(d.file_size)}</td>
-                  <td style="color:#7d8590;font-size:12px">${d.access_level === 'vorstand' ? '🔒 Vorstand' : '👥 Alle'}</td>
-                  <td style="color:#7d8590;font-size:12px">${esc(d.uploaded_by_name)}</td>
+                  <td class="text-muted text-sm">${formatSize(d.file_size)}</td>
+                  <td class="text-muted text-sm">
+                    ${d.access_level === 'vorstand'
+                      ? `<span class="badge badge--superuser">Nur Vorstand</span>`
+                      : `<span class="badge badge--vollstaendig">Alle</span>`}
+                  </td>
+                  <td class="text-muted text-sm">${esc(d.uploaded_by_name)}</td>
                   <td>
-                    <button class="btn btn--secondary btn--sm" data-download="${d.id}" data-name="${esc(d.name)}">
-                      ${icon('download', 13)} Download
-                    </button>
-                    ${isAdmin ? `<button class="btn btn--danger btn--sm" data-del-doc="${d.id}">Löschen</button>` : ''}
+                    <div class="btn-group">
+                      <button class="btn btn--secondary btn--sm" data-download="${d.id}" data-name="${esc(d.name)}">
+                        ${icon('download', 13)} Download
+                      </button>
+                      ${isAdmin ? `<button class="btn btn--danger btn--sm" data-del-doc="${d.id}">Löschen</button>` : ''}
+                    </div>
                   </td>
                 </tr>
               `).join('')}
@@ -458,7 +460,7 @@ async function refreshDokumente(isAdmin) {
       });
     });
   } catch (e) {
-    el.innerHTML = `<div class="error">${esc(e.message)}</div>`;
+    el.innerHTML = `<p class="text-muted">${esc(e.message)}</p>`;
   }
 }
 
@@ -472,17 +474,15 @@ function formatSize(bytes) {
 
 async function loadBriefkopf() {
   const el = document.getElementById('tab-briefkopf');
-  el.innerHTML = `<div class="loading">Lädt...</div>`;
+  el.innerHTML = `<p class="text-muted">Lädt...</p>`;
 
   try {
     const bk = await api.getBriefkopf();
     el.innerHTML = `
       <div class="card">
-        <div class="card__header">Briefkopf & Kontaktdaten</div>
+        <div class="card__header">Briefkopf &amp; Kontaktdaten</div>
         <div class="card__body">
-          <p style="font-size:13px;color:#7d8590;margin-bottom:16px">
-            Name, Straße und Ort werden in den allgemeinen Einstellungen gepflegt.
-          </p>
+          <p class="hint">Name, Straße und Ort werden in den allgemeinen Einstellungen gepflegt.</p>
           <div class="form-grid">
             <div class="form-group">
               <label>E-Mail</label>
@@ -497,7 +497,7 @@ async function loadBriefkopf() {
               <input type="text" id="bk-website" value="${esc(bk.ff_website)}" placeholder="https://..." />
             </div>
           </div>
-          <div class="btn-group" style="margin-top:16px">
+          <div class="btn-group" style="margin-top:${16}px">
             <button class="btn btn--primary" id="btn-save-bk">Speichern</button>
           </div>
         </div>
@@ -510,13 +510,20 @@ async function loadBriefkopf() {
             <div style="margin-bottom:16px">
               <img src="/api/verein/logo" style="max-height:80px;border-radius:6px" alt="Logo" />
             </div>
-            <button class="btn btn--danger btn--sm" id="btn-del-logo">Logo entfernen</button>
-            <span style="margin-left:12px;color:#7d8590;font-size:13px">oder</span>
-          ` : `<p style="font-size:13px;color:#7d8590;margin-bottom:12px">Noch kein Logo hinterlegt.</p>`}
-          <label class="btn btn--secondary" style="cursor:pointer;margin-left:${bk.has_logo ? '12' : '0'}px">
-            ${icon('upload', 14)} Logo hochladen (PNG/JPG/WebP, max. 2 MB)
-            <input type="file" id="logo-upload" accept="image/png,image/jpeg,image/webp" style="display:none" />
-          </label>
+            <div class="btn-group">
+              <button class="btn btn--danger btn--sm" id="btn-del-logo">Logo entfernen</button>
+              <label class="btn btn--secondary btn--sm" style="cursor:pointer">
+                ${icon('upload', 13)} Ersetzen
+                <input type="file" id="logo-upload" accept="image/png,image/jpeg,image/webp" style="display:none" />
+              </label>
+            </div>
+          ` : `
+            <p class="hint">Noch kein Logo hinterlegt.</p>
+            <label class="btn btn--secondary" style="cursor:pointer">
+              ${icon('upload', 14)} Logo hochladen (PNG/JPG/WebP, max. 2 MB)
+              <input type="file" id="logo-upload" accept="image/png,image/jpeg,image/webp" style="display:none" />
+            </label>
+          `}
         </div>
       </div>
     `;
@@ -554,6 +561,6 @@ async function loadBriefkopf() {
       });
     }
   } catch (e) {
-    el.innerHTML = `<div class="error">${esc(e.message)}</div>`;
+    el.innerHTML = `<p class="text-muted">${esc(e.message)}</p>`;
   }
 }

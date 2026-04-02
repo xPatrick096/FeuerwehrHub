@@ -834,6 +834,38 @@ tr:hover td { background: $bg-card-hover; }
   }
 }
 
+// ── Section Header ────────────────────────────────────────────────────────────
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $space-md;
+
+  h3 {
+    font-size: $font-size-lg;
+    font-weight: 700;
+    color: $text;
+  }
+}
+
+// ── Utilities ─────────────────────────────────────────────────────────────────
+.text-muted { color: $text-muted; }
+.text-sm    { font-size: $font-size-sm; }
+.text-xs    { font-size: $font-size-xs; }
+
+.hint {
+  font-size: $font-size-sm;
+  color: $text-muted;
+  margin-bottom: $space-md;
+}
+
+.empty-state {
+  text-align: center;
+  padding: $space-2xl $space-lg;
+  color: $text-muted;
+  font-style: italic;
+}
+
 // ── Toggle Switch ─────────────────────────────────────────────────────────────
 .toggle-switch {
   position: relative;
