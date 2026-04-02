@@ -27,15 +27,19 @@ export async function renderVerein() {
       <button class="tab-btn" data-tab="inventar">${icon('box', 14)} Inventar</button>
       <button class="tab-btn" data-tab="schluessel">${icon('key', 14)} Schlüssel</button>
       <button class="tab-btn" data-tab="aufgaben">${icon('check-square', 14)} Aufgaben</button>
+      <button class="tab-btn" data-tab="veranstaltungen">${icon('calendar', 14)} Veranstaltungen</button>
+      <button class="tab-btn" data-tab="protokolle">${icon('file-text', 14)} Protokolle</button>
       ${isAdmin ? `<button class="tab-btn" data-tab="briefkopf">${icon('settings', 14)} Briefkopf</button>` : ''}
     </div>
 
-    <div id="tab-schwarzesbrett" class="tab-panel"></div>
-    <div id="tab-mitglieder"     class="tab-panel" style="display:none"></div>
-    <div id="tab-dokumente"      class="tab-panel" style="display:none"></div>
-    <div id="tab-inventar"       class="tab-panel" style="display:none"></div>
-    <div id="tab-schluessel"     class="tab-panel" style="display:none"></div>
-    <div id="tab-aufgaben"       class="tab-panel" style="display:none"></div>
+    <div id="tab-schwarzesbrett"  class="tab-panel"></div>
+    <div id="tab-mitglieder"      class="tab-panel" style="display:none"></div>
+    <div id="tab-dokumente"       class="tab-panel" style="display:none"></div>
+    <div id="tab-inventar"        class="tab-panel" style="display:none"></div>
+    <div id="tab-schluessel"      class="tab-panel" style="display:none"></div>
+    <div id="tab-aufgaben"        class="tab-panel" style="display:none"></div>
+    <div id="tab-veranstaltungen" class="tab-panel" style="display:none"></div>
+    <div id="tab-protokolle"      class="tab-panel" style="display:none"></div>
     ${isAdmin ? `<div id="tab-briefkopf" class="tab-panel" style="display:none"></div>` : ''}
   `;
 
@@ -56,6 +60,8 @@ export async function renderVerein() {
   loadInventar(isAdmin);
   loadSchluessel(isAdmin);
   loadAufgaben(isAdmin);
+  loadVeranstaltungen(isAdmin);
+  loadProtokolle(isAdmin);
   if (isAdmin) loadBriefkopf();
 }
 
@@ -1883,6 +1889,648 @@ async function openAufgabeModal(a = null, isAdmin) {
       toast('Gespeichert', 'success');
       modal.remove();
       refreshAufgaben(isAdmin);
+    } catch (e) { toast(e.message, 'error'); }
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Phase 4 — Veranstaltungen
+// ─────────────────────────────────────────────────────────────────────────────
+
+const EVENT_TYP_LABELS = { uebung:'Übung', versammlung:'Versammlung', fest:'Fest', arbeitsdienst:'Arbeitsdienst', sonstiges:'Sonstiges' };
+const EVENT_TYP_BADGE  = { uebung:'badge--blue', versammlung:'badge--purple', fest:'badge--green', arbeitsdienst:'badge--orange', sonstiges:'badge--gray' };
+
+let _eventCache = [];
+
+async function loadVeranstaltungen(isAdmin) {
+  const el = document.getElementById('tab-veranstaltungen');
+  if (!el) return;
+  try {
+    _eventCache = await api.getEvents() || [];
+    renderVeranstaltungenList(isAdmin);
+  } catch (e) {
+    el.innerHTML = `<p class="error">${esc(e.message)}</p>`;
+  }
+}
+
+function refreshVeranstaltungen(isAdmin) {
+  api.getEvents().then(data => {
+    _eventCache = data || [];
+    renderVeranstaltungenList(isAdmin);
+  }).catch(e => toast(e.message, 'error'));
+}
+
+function renderVeranstaltungenList(isAdmin) {
+  const el = document.getElementById('tab-veranstaltungen');
+  if (!el) return;
+
+  const now = new Date();
+  const upcoming = _eventCache.filter(e => new Date(e.datum_von) >= now);
+  const past     = _eventCache.filter(e => new Date(e.datum_von) <  now);
+
+  el.innerHTML = `
+    <div class="section-header" style="margin-bottom:1rem">
+      <h3>Veranstaltungen</h3>
+      ${isAdmin ? `<button class="btn btn--primary btn--sm" id="btn-new-event">+ Neu</button>` : ''}
+    </div>
+
+    <h4 style="margin:0 0 .5rem;color:var(--text-muted, #7d8590)">Bevorstehend</h4>
+    ${upcoming.length === 0 ? `<p class="empty-state">Keine bevorstehenden Veranstaltungen</p>` : `
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead><tr>
+          <th>Datum</th><th>Typ</th><th>Titel</th><th>Ort</th>
+          <th>Ja</th><th>Nein</th><th>Vll.</th><th></th>
+        </tr></thead>
+        <tbody>
+          ${upcoming.map(e => renderEventRow(e, isAdmin)).join('')}
+        </tbody>
+      </table>
+    </div>`}
+
+    <h4 style="margin:1.5rem 0 .5rem;color:var(--text-muted, #7d8590)">Vergangen</h4>
+    ${past.length === 0 ? `<p class="empty-state">Keine vergangenen Veranstaltungen</p>` : `
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead><tr>
+          <th>Datum</th><th>Typ</th><th>Titel</th><th>Ort</th>
+          <th>Ja</th><th>Nein</th><th>Vll.</th><th></th>
+        </tr></thead>
+        <tbody>
+          ${past.map(e => renderEventRow(e, isAdmin)).join('')}
+        </tbody>
+      </table>
+    </div>`}
+  `;
+  renderIcons(el);
+
+  if (isAdmin) {
+    el.querySelector('#btn-new-event')?.addEventListener('click', () => openEventModal(null, isAdmin));
+  }
+
+  el.querySelectorAll('[data-event-id]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.eventId;
+      openEventDetail(id, isAdmin);
+    });
+  });
+
+  if (isAdmin) {
+    el.querySelectorAll('[data-edit-event]').forEach(btn => {
+      const id = btn.dataset.editEvent;
+      const ev = _eventCache.find(e => e.id === id);
+      btn.addEventListener('click', (evt) => { evt.stopPropagation(); openEventModal(ev, isAdmin); });
+    });
+    el.querySelectorAll('[data-del-event]').forEach(btn => {
+      btn.addEventListener('click', async (evt) => {
+        evt.stopPropagation();
+        if (!confirm('Veranstaltung löschen?')) return;
+        try { await api.deleteEvent(btn.dataset.delEvent); toast('Gelöscht', 'success'); refreshVeranstaltungen(isAdmin); }
+        catch (e) { toast(e.message, 'error'); }
+      });
+    });
+  }
+}
+
+function renderEventRow(e, isAdmin) {
+  const d = new Date(e.datum_von);
+  const dateStr = d.toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit', year:'numeric' });
+  const timeStr = d.toLocaleTimeString('de-DE', { hour:'2-digit', minute:'2-digit' });
+  return `<tr style="cursor:pointer" data-event-id="${e.id}">
+    <td>${dateStr} ${timeStr}</td>
+    <td><span class="badge ${EVENT_TYP_BADGE[e.typ] || 'badge--gray'}">${EVENT_TYP_LABELS[e.typ] || e.typ}</span></td>
+    <td>${esc(e.titel)}</td>
+    <td>${e.ort ? esc(e.ort) : '—'}</td>
+    <td><span class="badge badge--green">${e.antworten_ja}</span></td>
+    <td><span class="badge badge--red">${e.antworten_nein}</span></td>
+    <td><span class="badge badge--gray">${e.antworten_vllt}</span></td>
+    <td style="white-space:nowrap">
+      ${isAdmin ? `
+        <button class="btn btn--ghost btn--xs" data-edit-event="${e.id}">${icon('edit', 12)}</button>
+        <button class="btn btn--ghost btn--xs btn--danger" data-del-event="${e.id}">${icon('trash', 12)}</button>
+      ` : ''}
+    </td>
+  </tr>`;
+}
+
+async function openEventDetail(id, isAdmin) {
+  const ev = _eventCache.find(e => e.id === id);
+  if (!ev) return;
+
+  let antworten = [];
+  try { antworten = await api.getEventAntworten(id) || []; } catch (_) {}
+
+  const modal = document.createElement('div');
+  modal.className = 'modal modal--open';
+  const d = new Date(ev.datum_von);
+  const dateStr = d.toLocaleDateString('de-DE', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
+  const timeStr = d.toLocaleTimeString('de-DE', { hour:'2-digit', minute:'2-digit' });
+  const dateBis = ev.datum_bis ? ` bis ${new Date(ev.datum_bis).toLocaleTimeString('de-DE', { hour:'2-digit', minute:'2-digit' })}` : '';
+
+  const antwortRows = antworten.map(a => `
+    <tr>
+      <td>${esc(a.mitglied_name)}</td>
+      <td><span class="badge ${a.antwort === 'ja' ? 'badge--green' : a.antwort === 'nein' ? 'badge--red' : 'badge--gray'}">${a.antwort === 'ja' ? 'Ja' : a.antwort === 'nein' ? 'Nein' : 'Vielleicht'}</span></td>
+      <td>${a.kommentar ? esc(a.kommentar) : '—'}</td>
+    </tr>
+  `).join('');
+
+  modal.innerHTML = `
+    <div class="modal__box modal__box--lg">
+      <div class="modal__header">
+        <h3>${esc(ev.titel)}</h3>
+        <button class="modal__close" id="close-evd">&times;</button>
+      </div>
+      <div class="modal__body">
+        <div class="detail-grid">
+          <div class="detail-item"><span class="detail-label">Typ</span><span class="badge ${EVENT_TYP_BADGE[ev.typ] || 'badge--gray'}">${EVENT_TYP_LABELS[ev.typ]}</span></div>
+          <div class="detail-item"><span class="detail-label">Datum</span><span>${dateStr}, ${timeStr}${dateBis} Uhr</span></div>
+          ${ev.ort ? `<div class="detail-item"><span class="detail-label">Ort</span><span>${esc(ev.ort)}</span></div>` : ''}
+          ${ev.beschreibung ? `<div class="detail-item detail-item--full"><span class="detail-label">Beschreibung</span><span>${esc(ev.beschreibung)}</span></div>` : ''}
+        </div>
+
+        <h4 style="margin:1.5rem 0 .5rem">Meine Antwort</h4>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap" id="my-rsvp-btns">
+          <button class="btn btn--sm btn--success" data-rsvp="ja">✓ Ich komme</button>
+          <button class="btn btn--sm btn--danger"  data-rsvp="nein">✗ Ich komme nicht</button>
+          <button class="btn btn--sm btn--secondary" data-rsvp="vielleicht">? Vielleicht</button>
+        </div>
+        <div id="rsvp-kommentar-wrap" style="margin-top:.5rem;display:none">
+          <input id="rsvp-kommentar" class="form-control" placeholder="Kommentar (optional)" style="max-width:400px">
+          <button class="btn btn--primary btn--sm" id="rsvp-send" style="margin-top:.25rem">Absenden</button>
+        </div>
+
+        <h4 style="margin:1.5rem 0 .5rem">Antworten (${antworten.length})</h4>
+        ${antworten.length === 0 ? '<p class="empty-state">Noch keine Antworten</p>' : `
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead><tr><th>Mitglied</th><th>Antwort</th><th>Kommentar</th></tr></thead>
+            <tbody>${antwortRows}</tbody>
+          </table>
+        </div>`}
+
+        ${isAdmin ? `<div style="margin-top:1rem">
+          <a class="btn btn--ghost btn--sm" id="btn-csv-export" href="#">CSV Export</a>
+        </div>` : ''}
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--secondary" id="close-evd2">Schließen</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  renderIcons(modal);
+
+  const close = () => modal.remove();
+  modal.querySelector('#close-evd').addEventListener('click', close);
+  modal.querySelector('#close-evd2').addEventListener('click', close);
+
+  let selectedAntwort = null;
+  modal.querySelectorAll('[data-rsvp]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedAntwort = btn.dataset.rsvp;
+      modal.querySelectorAll('[data-rsvp]').forEach(b => b.classList.remove('btn--active'));
+      btn.classList.add('btn--active');
+      modal.querySelector('#rsvp-kommentar-wrap').style.display = '';
+    });
+  });
+
+  modal.querySelector('#rsvp-send')?.addEventListener('click', async () => {
+    if (!selectedAntwort) return;
+    const kommentar = modal.querySelector('#rsvp-kommentar').value.trim() || null;
+    try {
+      await api.setMeineAntwort(id, { antwort: selectedAntwort, kommentar });
+      toast('Antwort gespeichert', 'success');
+      modal.remove();
+      refreshVeranstaltungen(isAdmin);
+    } catch (e) { toast(e.message, 'error'); }
+  });
+
+  if (isAdmin) {
+    modal.querySelector('#btn-csv-export')?.addEventListener('click', async (evt) => {
+      evt.preventDefault();
+      try {
+        const res = await api.exportEventCsv(id);
+        if (!res.ok) { toast('Export fehlgeschlagen', 'error'); return; }
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `event-${id}-antworten.csv`; a.click();
+        URL.revokeObjectURL(url);
+      } catch (e) { toast(e.message, 'error'); }
+    });
+  }
+}
+
+function openEventModal(ev, isAdmin) {
+  const isEdit = !!ev;
+  const modal = document.createElement('div');
+  modal.className = 'modal modal--open';
+
+  const formatDateLocal = (iso) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    const pad = n => String(n).padStart(2,'0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  modal.innerHTML = `
+    <div class="modal__box">
+      <div class="modal__header">
+        <h3>${isEdit ? 'Veranstaltung bearbeiten' : 'Neue Veranstaltung'}</h3>
+        <button class="modal__close" id="close-ev">&times;</button>
+      </div>
+      <div class="modal__body">
+        <div class="form-grid">
+          <div class="form-group form-group--full">
+            <label>Titel *</label>
+            <input id="ev-titel" class="form-control" value="${ev ? esc(ev.titel) : ''}">
+          </div>
+          <div class="form-group">
+            <label>Typ</label>
+            <select id="ev-typ">
+              ${Object.entries(EVENT_TYP_LABELS).map(([k,v]) =>
+                `<option value="${k}" ${ev?.typ === k ? 'selected' : ''}>${v}</option>`
+              ).join('')}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Von *</label>
+            <input id="ev-von" type="datetime-local" class="form-control" value="${formatDateLocal(ev?.datum_von)}">
+          </div>
+          <div class="form-group">
+            <label>Bis</label>
+            <input id="ev-bis" type="datetime-local" class="form-control" value="${formatDateLocal(ev?.datum_bis)}">
+          </div>
+          <div class="form-group">
+            <label>Ort</label>
+            <input id="ev-ort" class="form-control" value="${ev?.ort ? esc(ev.ort) : ''}">
+          </div>
+          <div class="form-group form-group--full">
+            <label>Beschreibung</label>
+            <textarea id="ev-beschr" class="form-control" rows="3">${ev?.beschreibung ? esc(ev.beschreibung) : ''}</textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--secondary" id="close-ev2">Abbrechen</button>
+        <button class="btn btn--primary" id="save-ev">Speichern</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  const close = () => modal.remove();
+  modal.querySelector('#close-ev').addEventListener('click', close);
+  modal.querySelector('#close-ev2').addEventListener('click', close);
+  modal.querySelector('#save-ev').addEventListener('click', async () => {
+    const body = {
+      titel:       modal.querySelector('#ev-titel').value.trim(),
+      typ:         modal.querySelector('#ev-typ').value,
+      datum_von:   modal.querySelector('#ev-von').value,
+      datum_bis:   modal.querySelector('#ev-bis').value || null,
+      ort:         modal.querySelector('#ev-ort').value.trim() || null,
+      beschreibung:modal.querySelector('#ev-beschr').value.trim() || null,
+    };
+    if (!body.titel || !body.datum_von) { toast('Titel und Von-Datum erforderlich', 'error'); return; }
+    try {
+      if (isEdit) await api.updateEvent(ev.id, body);
+      else        await api.createEvent(body);
+      toast('Gespeichert', 'success');
+      modal.remove();
+      refreshVeranstaltungen(isAdmin);
+    } catch (e) { toast(e.message, 'error'); }
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Phase 4 — Protokolle
+// ─────────────────────────────────────────────────────────────────────────────
+
+const PROTO_STATUS_LABELS = { entwurf: 'Entwurf', final: 'Final' };
+const PROTO_STATUS_BADGE  = { entwurf: 'badge--orange', final: 'badge--green' };
+
+let _protokollCache = [];
+
+async function loadProtokolle(isAdmin) {
+  const el = document.getElementById('tab-protokolle');
+  if (!el) return;
+  try {
+    _protokollCache = await api.getProtokolle() || [];
+    renderProtokolleList(isAdmin);
+  } catch (e) {
+    el.innerHTML = `<p class="error">${esc(e.message)}</p>`;
+  }
+}
+
+function refreshProtokolle(isAdmin) {
+  api.getProtokolle().then(data => {
+    _protokollCache = data || [];
+    renderProtokolleList(isAdmin);
+  }).catch(e => toast(e.message, 'error'));
+}
+
+function renderProtokolleList(isAdmin) {
+  const el = document.getElementById('tab-protokolle');
+  if (!el) return;
+  el.innerHTML = `
+    <div class="section-header" style="margin-bottom:1rem">
+      <h3>Protokolle</h3>
+      ${isAdmin ? `<button class="btn btn--primary btn--sm" id="btn-new-proto">+ Neu</button>` : ''}
+    </div>
+    ${_protokollCache.length === 0 ? '<p class="empty-state">Keine Protokolle vorhanden</p>' : `
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead><tr>
+          <th>Datum</th><th>Titel</th><th>Ort</th><th>Protokollant</th><th>Status</th><th></th>
+        </tr></thead>
+        <tbody>
+          ${_protokollCache.map(p => `
+          <tr style="cursor:pointer" data-proto-id="${p.id}">
+            <td>${new Date(p.datum).toLocaleDateString('de-DE')}</td>
+            <td>${esc(p.titel)}</td>
+            <td>${p.ort ? esc(p.ort) : '—'}</td>
+            <td>${p.protokollant ? esc(p.protokollant) : '—'}</td>
+            <td><span class="badge ${PROTO_STATUS_BADGE[p.status] || 'badge--gray'}">${PROTO_STATUS_LABELS[p.status] || p.status}</span></td>
+            <td style="white-space:nowrap">
+              ${isAdmin ? `
+                <button class="btn btn--ghost btn--xs" data-edit-proto="${p.id}">${icon('edit', 12)}</button>
+                <button class="btn btn--ghost btn--xs btn--danger" data-del-proto="${p.id}">${icon('trash', 12)}</button>
+              ` : ''}
+            </td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`}
+  `;
+  renderIcons(el);
+
+  if (isAdmin) {
+    el.querySelector('#btn-new-proto')?.addEventListener('click', () => openProtokollModal(null, isAdmin));
+    el.querySelectorAll('[data-edit-proto]').forEach(btn => {
+      const p = _protokollCache.find(x => x.id === btn.dataset.editProto);
+      btn.addEventListener('click', (evt) => { evt.stopPropagation(); openProtokollModal(p, isAdmin); });
+    });
+    el.querySelectorAll('[data-del-proto]').forEach(btn => {
+      btn.addEventListener('click', async (evt) => {
+        evt.stopPropagation();
+        if (!confirm('Protokoll löschen?')) return;
+        try { await api.deleteProtokoll(btn.dataset.delProto); toast('Gelöscht', 'success'); refreshProtokolle(isAdmin); }
+        catch (e) { toast(e.message, 'error'); }
+      });
+    });
+  }
+
+  el.querySelectorAll('[data-proto-id]').forEach(row => {
+    row.addEventListener('click', () => openProtokollDetail(row.dataset.protoId, isAdmin));
+  });
+}
+
+async function openProtokollDetail(id, isAdmin) {
+  let data;
+  try { data = await api.getProtokoll(id); } catch (e) { toast(e.message, 'error'); return; }
+  const { protokoll: p, tops } = data;
+
+  const modal = document.createElement('div');
+  modal.className = 'modal modal--open';
+  modal.innerHTML = `
+    <div class="modal__box modal__box--xl" id="proto-print-area">
+      <div class="modal__header no-print">
+        <h3>${esc(p.titel)}</h3>
+        <button class="modal__close" id="close-pd">&times;</button>
+      </div>
+      <div class="modal__body">
+        <div class="proto-header">
+          <h2 style="margin:0 0 .5rem">${esc(p.titel)}</h2>
+          <div class="proto-meta">
+            <span>Datum: ${new Date(p.datum).toLocaleDateString('de-DE', {weekday:'long', day:'2-digit', month:'long', year:'numeric'})}</span>
+            ${p.ort ? `<span>Ort: ${esc(p.ort)}</span>` : ''}
+            ${p.protokollant ? `<span>Protokollant: ${esc(p.protokollant)}</span>` : ''}
+            ${p.anwesende != null ? `<span>Anwesende: ${p.anwesende}</span>` : ''}
+            <span class="no-print"><span class="badge ${PROTO_STATUS_BADGE[p.status]}">${PROTO_STATUS_LABELS[p.status]}</span></span>
+          </div>
+        </div>
+        <hr style="margin:1rem 0">
+        <div id="tops-list">
+          ${tops.length === 0 ? '<p class="empty-state">Keine Tagesordnungspunkte</p>' : tops.map(t => renderTopBlock(t, isAdmin)).join('')}
+        </div>
+        ${isAdmin ? `
+        <div class="no-print" style="margin-top:1rem">
+          <button class="btn btn--secondary btn--sm" id="btn-add-top">+ TOP hinzufügen</button>
+        </div>` : ''}
+      </div>
+      <div class="modal__footer no-print">
+        <button class="btn btn--secondary" id="close-pd2">Schließen</button>
+        <button class="btn btn--ghost" id="btn-print-proto">${icon('printer', 14)} Drucken / PDF</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  renderIcons(modal);
+
+  const close = () => modal.remove();
+  modal.querySelector('#close-pd').addEventListener('click', close);
+  modal.querySelector('#close-pd2').addEventListener('click', close);
+
+  modal.querySelector('#btn-print-proto')?.addEventListener('click', () => window.print());
+
+  if (isAdmin) {
+    modal.querySelector('#btn-add-top')?.addEventListener('click', () => openTopModal(id, null, modal, isAdmin));
+    bindTopButtons(modal, id, isAdmin);
+  }
+}
+
+function renderTopBlock(t, isAdmin) {
+  return `
+  <div class="top-block" data-top-id="${t.id}">
+    <div class="top-header">
+      <span class="top-nr">TOP ${t.position}</span>
+      <strong>${esc(t.titel)}</strong>
+      ${isAdmin ? `
+        <span style="margin-left:auto;display:flex;gap:.25rem">
+          <button class="btn btn--ghost btn--xs no-print" data-edit-top="${t.id}">${icon('edit', 12)}</button>
+          <button class="btn btn--ghost btn--xs btn--danger no-print" data-del-top="${t.id}">${icon('trash', 12)}</button>
+        </span>` : ''}
+    </div>
+    ${t.inhalt ? `<div class="top-inhalt">${esc(t.inhalt)}</div>` : ''}
+    ${t.beschluss ? `<div class="top-beschluss"><strong>Beschluss:</strong> ${esc(t.beschluss)}</div>` : ''}
+  </div>`;
+}
+
+function bindTopButtons(modal, protokollId, isAdmin) {
+  if (!isAdmin) return;
+  modal.querySelectorAll('[data-edit-top]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      let data;
+      try { data = await api.getProtokoll(protokollId); } catch (e) { toast(e.message, 'error'); return; }
+      const top = data.tops.find(t => t.id === btn.dataset.editTop);
+      if (top) openTopModal(protokollId, top, modal, isAdmin);
+    });
+  });
+  modal.querySelectorAll('[data-del-top]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('TOP löschen?')) return;
+      try {
+        await api.deleteTop(btn.dataset.delTop);
+        toast('Gelöscht', 'success');
+        await reloadTops(protokollId, modal, isAdmin);
+      } catch (e) { toast(e.message, 'error'); }
+    });
+  });
+}
+
+async function reloadTops(protokollId, modal, isAdmin) {
+  try {
+    const data = await api.getProtokoll(protokollId);
+    const topsList = modal.querySelector('#tops-list');
+    if (topsList) {
+      topsList.innerHTML = data.tops.length === 0
+        ? '<p class="empty-state">Keine Tagesordnungspunkte</p>'
+        : data.tops.map(t => renderTopBlock(t, isAdmin)).join('');
+      renderIcons(topsList);
+      bindTopButtons(modal, protokollId, isAdmin);
+    }
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+function openTopModal(protokollId, top, parentModal, isAdmin) {
+  const isEdit = !!top;
+  const m = document.createElement('div');
+  m.className = 'modal modal--open modal--nested';
+  m.innerHTML = `
+    <div class="modal__box">
+      <div class="modal__header">
+        <h3>${isEdit ? 'TOP bearbeiten' : 'TOP hinzufügen'}</h3>
+        <button class="modal__close" id="close-top">&times;</button>
+      </div>
+      <div class="modal__body">
+        <div class="form-grid">
+          <div class="form-group form-group--full">
+            <label>Titel *</label>
+            <input id="top-titel" class="form-control" value="${top ? esc(top.titel) : ''}">
+          </div>
+          <div class="form-group form-group--full">
+            <label>Inhalt</label>
+            <textarea id="top-inhalt" class="form-control" rows="4">${top?.inhalt ? esc(top.inhalt) : ''}</textarea>
+          </div>
+          <div class="form-group form-group--full">
+            <label>Beschluss</label>
+            <textarea id="top-beschluss" class="form-control" rows="2">${top?.beschluss ? esc(top.beschluss) : ''}</textarea>
+          </div>
+          ${isEdit ? `
+          <div class="form-group">
+            <label>Position</label>
+            <input id="top-pos" type="number" min="1" class="form-control" value="${top.position}">
+          </div>` : ''}
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--secondary" id="close-top2">Abbrechen</button>
+        <button class="btn btn--primary" id="save-top">Speichern</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(m);
+  const close = () => m.remove();
+  m.querySelector('#close-top').addEventListener('click', close);
+  m.querySelector('#close-top2').addEventListener('click', close);
+  m.querySelector('#save-top').addEventListener('click', async () => {
+    const body = {
+      titel:    m.querySelector('#top-titel').value.trim(),
+      inhalt:   m.querySelector('#top-inhalt').value.trim() || null,
+      beschluss:m.querySelector('#top-beschluss').value.trim() || null,
+    };
+    if (isEdit) body.position = parseInt(m.querySelector('#top-pos')?.value) || top.position;
+    if (!body.titel) { toast('Titel erforderlich', 'error'); return; }
+    try {
+      if (isEdit) await api.updateTop(top.id, body);
+      else        await api.createTop(protokollId, body);
+      toast('Gespeichert', 'success');
+      m.remove();
+      await reloadTops(protokollId, parentModal, isAdmin);
+    } catch (e) { toast(e.message, 'error'); }
+  });
+}
+
+function openProtokollModal(p, isAdmin) {
+  const isEdit = !!p;
+  const modal = document.createElement('div');
+  modal.className = 'modal modal--open';
+  const eventOpts = _eventCache.map(e =>
+    `<option value="${e.id}" ${p?.event_id === e.id ? 'selected' : ''}>${esc(e.titel)}</option>`
+  ).join('');
+  modal.innerHTML = `
+    <div class="modal__box">
+      <div class="modal__header">
+        <h3>${isEdit ? 'Protokoll bearbeiten' : 'Neues Protokoll'}</h3>
+        <button class="modal__close" id="close-pm">&times;</button>
+      </div>
+      <div class="modal__body">
+        <div class="form-grid">
+          <div class="form-group form-group--full">
+            <label>Titel *</label>
+            <input id="pm-titel" class="form-control" value="${p ? esc(p.titel) : ''}">
+          </div>
+          <div class="form-group">
+            <label>Datum *</label>
+            <input id="pm-datum" type="date" class="form-control" value="${p?.datum || ''}">
+          </div>
+          <div class="form-group">
+            <label>Ort</label>
+            <input id="pm-ort" class="form-control" value="${p?.ort ? esc(p.ort) : ''}">
+          </div>
+          <div class="form-group">
+            <label>Protokollant</label>
+            <input id="pm-protokollant" class="form-control" value="${p?.protokollant ? esc(p.protokollant) : ''}">
+          </div>
+          <div class="form-group">
+            <label>Anwesende</label>
+            <input id="pm-anwesende" type="number" min="0" class="form-control" value="${p?.anwesende ?? ''}">
+          </div>
+          <div class="form-group">
+            <label>Verknüpfte Veranstaltung</label>
+            <select id="pm-event">
+              <option value="">— keine —</option>
+              ${eventOpts}
+            </select>
+          </div>
+          ${isEdit ? `
+          <div class="form-group">
+            <label>Status</label>
+            <select id="pm-status">
+              ${Object.entries(PROTO_STATUS_LABELS).map(([k,v]) =>
+                `<option value="${k}" ${p.status === k ? 'selected' : ''}>${v}</option>`
+              ).join('')}
+            </select>
+          </div>` : ''}
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--secondary" id="close-pm2">Abbrechen</button>
+        <button class="btn btn--primary" id="save-pm">Speichern</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  const close = () => modal.remove();
+  modal.querySelector('#close-pm').addEventListener('click', close);
+  modal.querySelector('#close-pm2').addEventListener('click', close);
+  modal.querySelector('#save-pm').addEventListener('click', async () => {
+    const body = {
+      titel:        modal.querySelector('#pm-titel').value.trim(),
+      datum:        modal.querySelector('#pm-datum').value,
+      ort:          modal.querySelector('#pm-ort').value.trim() || null,
+      protokollant: modal.querySelector('#pm-protokollant').value.trim() || null,
+      anwesende:    parseInt(modal.querySelector('#pm-anwesende').value) || null,
+      event_id:     modal.querySelector('#pm-event').value || null,
+    };
+    if (isEdit) body.status = modal.querySelector('#pm-status').value;
+    if (!body.titel || !body.datum) { toast('Titel und Datum erforderlich', 'error'); return; }
+    try {
+      if (isEdit) await api.updateProtokoll(p.id, body);
+      else        await api.createProtokoll(body);
+      toast('Gespeichert', 'success');
+      modal.remove();
+      refreshProtokolle(isAdmin);
     } catch (e) { toast(e.message, 'error'); }
   });
 }

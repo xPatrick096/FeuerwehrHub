@@ -1532,6 +1532,448 @@ pub async fn delete_aufgabe(
     Ok(Json(serde_json::json!({ "ok": true })))
 }
 
+// ── Vereinsveranstaltungen ────────────────────────────────────────────────────
+
+#[derive(Serialize, sqlx::FromRow)]
+pub struct VereinEvent {
+    pub id:              Uuid,
+    pub titel:           String,
+    pub typ:             String,
+    pub datum_von:       DateTime<Utc>,
+    pub datum_bis:       Option<DateTime<Utc>>,
+    pub ort:             Option<String>,
+    pub beschreibung:    Option<String>,
+    pub erstellt_von:    Option<Uuid>,
+    pub created_at:      DateTime<Utc>,
+    pub antworten_ja:    i64,
+    pub antworten_nein:  i64,
+    pub antworten_vllt:  i64,
+}
+
+#[derive(Deserialize)]
+pub struct CreateEvent {
+    pub titel:        String,
+    pub typ:          Option<String>,
+    pub datum_von:    DateTime<Utc>,
+    pub datum_bis:    Option<DateTime<Utc>>,
+    pub ort:          Option<String>,
+    pub beschreibung: Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct UpdateEvent {
+    pub titel:        Option<String>,
+    pub typ:          Option<String>,
+    pub datum_von:    Option<DateTime<Utc>>,
+    pub datum_bis:    Option<DateTime<Utc>>,
+    pub ort:          Option<String>,
+    pub beschreibung: Option<String>,
+}
+
+#[derive(Serialize, sqlx::FromRow)]
+pub struct EventAntwort {
+    pub id:           Uuid,
+    pub event_id:     Uuid,
+    pub mitglied_id:  Uuid,
+    pub mitglied_name: String,
+    pub antwort:      String,
+    pub kommentar:    Option<String>,
+    pub updated_at:   DateTime<Utc>,
+}
+
+#[derive(Deserialize)]
+pub struct SetAntwort {
+    pub antwort:   String,
+    pub kommentar: Option<String>,
+}
+
+pub async fn list_events(State(state): State<AppState>) -> AppResult<Json<Vec<VereinEvent>>> {
+    let rows = sqlx::query_as::<_, VereinEvent>(
+        "SELECT e.id, e.titel, e.typ, e.datum_von, e.datum_bis, e.ort, e.beschreibung,
+                e.erstellt_von, e.created_at,
+                COUNT(a.id) FILTER (WHERE a.antwort = 'ja')         AS antworten_ja,
+                COUNT(a.id) FILTER (WHERE a.antwort = 'nein')       AS antworten_nein,
+                COUNT(a.id) FILTER (WHERE a.antwort = 'vielleicht') AS antworten_vllt
+         FROM verein_events e
+         LEFT JOIN verein_event_antworten a ON a.event_id = e.id
+         GROUP BY e.id
+         ORDER BY e.datum_von DESC"
+    )
+    .fetch_all(&state.db).await?;
+    Ok(Json(rows))
+}
+
+pub async fn create_event(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Json(body): Json<CreateEvent>,
+) -> AppResult<Json<VereinEvent>> {
+    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+    let row = sqlx::query_as::<_, VereinEvent>(
+        "INSERT INTO verein_events (titel, typ, datum_von, datum_bis, ort, beschreibung, erstellt_von)
+         VALUES ($1, COALESCE($2,'sonstiges'), $3, $4, $5, $6, $7)
+         RETURNING id, titel, typ, datum_von, datum_bis, ort, beschreibung, erstellt_von, created_at,
+             0::bigint AS antworten_ja, 0::bigint AS antworten_nein, 0::bigint AS antworten_vllt"
+    )
+    .bind(&body.titel).bind(&body.typ).bind(body.datum_von).bind(body.datum_bis)
+    .bind(&body.ort).bind(&body.beschreibung).bind(claims.sub)
+    .fetch_one(&state.db).await?;
+    audit::log(&state.db, Some(claims.sub), &claims.username,
+        "EVENT_CREATED", Some("verein_events"), Some(row.id), None).await;
+    Ok(Json(row))
+}
+
+pub async fn update_event(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+    Json(body): Json<UpdateEvent>,
+) -> AppResult<Json<VereinEvent>> {
+    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+    let row = sqlx::query_as::<_, VereinEvent>(
+        "UPDATE verein_events SET
+            titel        = COALESCE($1, titel),
+            typ          = COALESCE($2, typ),
+            datum_von    = COALESCE($3, datum_von),
+            datum_bis    = $4,
+            ort          = $5,
+            beschreibung = $6
+         WHERE id = $7
+         RETURNING id, titel, typ, datum_von, datum_bis, ort, beschreibung, erstellt_von, created_at,
+             (SELECT COUNT(*) FROM verein_event_antworten WHERE event_id = $7 AND antwort='ja')         AS antworten_ja,
+             (SELECT COUNT(*) FROM verein_event_antworten WHERE event_id = $7 AND antwort='nein')       AS antworten_nein,
+             (SELECT COUNT(*) FROM verein_event_antworten WHERE event_id = $7 AND antwort='vielleicht') AS antworten_vllt"
+    )
+    .bind(body.titel).bind(body.typ).bind(body.datum_von).bind(body.datum_bis)
+    .bind(body.ort).bind(body.beschreibung).bind(id)
+    .fetch_optional(&state.db).await?.ok_or(AppError::NotFound)?;
+    Ok(Json(row))
+}
+
+pub async fn delete_event(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+) -> AppResult<Json<serde_json::Value>> {
+    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+    let n = sqlx::query("DELETE FROM verein_events WHERE id = $1")
+        .bind(id).execute(&state.db).await?.rows_affected();
+    if n == 0 { return Err(AppError::NotFound); }
+    Ok(Json(serde_json::json!({ "ok": true })))
+}
+
+pub async fn list_event_antworten(
+    State(state): State<AppState>,
+    Path(event_id): Path<Uuid>,
+) -> AppResult<Json<Vec<EventAntwort>>> {
+    let rows = sqlx::query_as::<_, EventAntwort>(
+        "SELECT a.id, a.event_id, a.mitglied_id,
+                m.vorname || ' ' || m.nachname AS mitglied_name,
+                a.antwort, a.kommentar, a.updated_at
+         FROM verein_event_antworten a
+         JOIN verein_mitglieder m ON m.id = a.mitglied_id
+         ORDER BY a.antwort, m.nachname, m.vorname"
+    )
+    .bind(event_id)
+    .fetch_all(&state.db).await?;
+    Ok(Json(rows))
+}
+
+pub async fn set_meine_antwort(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(event_id): Path<Uuid>,
+    Json(body): Json<SetAntwort>,
+) -> AppResult<Json<EventAntwort>> {
+    let mitglied_id: Option<Uuid> = sqlx::query_scalar(
+        "SELECT id FROM verein_mitglieder WHERE user_id = $1 AND archiviert = FALSE LIMIT 1"
+    )
+    .bind(claims.sub).fetch_optional(&state.db).await?;
+
+    let mid = mitglied_id.ok_or_else(|| AppError::BadRequest(
+        "Kein verknüpftes Vereinsmitglied für diesen Account".into()
+    ))?;
+
+    set_antwort_for_mitglied(&state.db, event_id, mid, &body.antwort, body.kommentar.as_deref()).await
+}
+
+pub async fn set_antwort_admin(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path((event_id, mitglied_id)): Path<(Uuid, Uuid)>,
+    Json(body): Json<SetAntwort>,
+) -> AppResult<Json<EventAntwort>> {
+    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+    set_antwort_for_mitglied(&state.db, event_id, mitglied_id, &body.antwort, body.kommentar.as_deref()).await
+}
+
+async fn set_antwort_for_mitglied(
+    db: &sqlx::PgPool,
+    event_id: Uuid,
+    mitglied_id: Uuid,
+    antwort: &str,
+    kommentar: Option<&str>,
+) -> AppResult<Json<EventAntwort>> {
+    let row = sqlx::query_as::<_, EventAntwort>(
+        "INSERT INTO verein_event_antworten (event_id, mitglied_id, antwort, kommentar)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (event_id, mitglied_id) DO UPDATE
+             SET antwort = EXCLUDED.antwort, kommentar = EXCLUDED.kommentar, updated_at = NOW()
+         RETURNING id, event_id, mitglied_id,
+             (SELECT vorname || ' ' || nachname FROM verein_mitglieder WHERE id = $2) AS mitglied_name,
+             antwort, kommentar, updated_at"
+    )
+    .bind(event_id).bind(mitglied_id).bind(antwort).bind(kommentar)
+    .fetch_one(db).await?;
+    Ok(Json(row))
+}
+
+pub async fn export_event_csv(
+    State(state): State<AppState>,
+    Path(event_id): Path<Uuid>,
+) -> Result<Response, AppError> {
+    let event = sqlx::query_as::<_, (String, DateTime<Utc>)>(
+        "SELECT titel, datum_von FROM verein_events WHERE id = $1"
+    )
+    .bind(event_id).fetch_optional(&state.db).await?
+    .ok_or(AppError::NotFound)?;
+
+    let antworten = sqlx::query_as::<_, EventAntwort>(
+        "SELECT a.id, a.event_id, a.mitglied_id,
+                m.vorname || ' ' || m.nachname AS mitglied_name,
+                a.antwort, a.kommentar, a.updated_at
+         FROM verein_event_antworten a
+         JOIN verein_mitglieder m ON m.id = a.mitglied_id
+         ORDER BY a.antwort, m.nachname"
+    )
+    .bind(event_id).fetch_all(&state.db).await?;
+
+    let mut csv = String::from("Name;Antwort;Kommentar\n");
+    for a in &antworten {
+        let antwort_de = match a.antwort.as_str() {
+            "ja" => "Zusage", "nein" => "Absage", _ => "Vielleicht"
+        };
+        csv.push_str(&format!("{};{};{}\n",
+            a.mitglied_name,
+            antwort_de,
+            a.kommentar.as_deref().unwrap_or("")
+        ));
+    }
+
+    let filename = format!("anwesenheit_{}.csv",
+        event.0.replace(' ', "_").to_lowercase());
+
+    Ok(Response::builder()
+        .header(header::CONTENT_TYPE, "text/csv; charset=utf-8")
+        .header(header::CONTENT_DISPOSITION,
+            format!("attachment; filename=\"{}\"", filename))
+        .body(Body::from(csv))
+        .unwrap())
+}
+
+// ── Protokollverwaltung ───────────────────────────────────────────────────────
+
+#[derive(Serialize, sqlx::FromRow)]
+pub struct Protokoll {
+    pub id:           Uuid,
+    pub titel:        String,
+    pub datum:        NaiveDate,
+    pub ort:          Option<String>,
+    pub event_id:     Option<Uuid>,
+    pub protokollant: Option<String>,
+    pub anwesende:    Option<i32>,
+    pub status:       String,
+    pub erstellt_von: Option<Uuid>,
+    pub created_at:   DateTime<Utc>,
+}
+
+#[derive(Serialize, sqlx::FromRow)]
+pub struct ProtokollTop {
+    pub id:           Uuid,
+    pub protokoll_id: Uuid,
+    pub position:     i32,
+    pub titel:        String,
+    pub inhalt:       Option<String>,
+    pub beschluss:    Option<String>,
+    pub created_at:   DateTime<Utc>,
+}
+
+#[derive(Deserialize)]
+pub struct CreateProtokoll {
+    pub titel:        String,
+    pub datum:        NaiveDate,
+    pub ort:          Option<String>,
+    pub event_id:     Option<Uuid>,
+    pub protokollant: Option<String>,
+    pub anwesende:    Option<i32>,
+}
+
+#[derive(Deserialize)]
+pub struct UpdateProtokoll {
+    pub titel:        Option<String>,
+    pub datum:        Option<NaiveDate>,
+    pub ort:          Option<String>,
+    pub event_id:     Option<Uuid>,
+    pub protokollant: Option<String>,
+    pub anwesende:    Option<i32>,
+    pub status:       Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct CreateTop {
+    pub titel:     String,
+    pub inhalt:    Option<String>,
+    pub beschluss: Option<String>,
+    pub position:  Option<i32>,
+}
+
+#[derive(Deserialize)]
+pub struct UpdateTop {
+    pub titel:     Option<String>,
+    pub inhalt:    Option<String>,
+    pub beschluss: Option<String>,
+    pub position:  Option<i32>,
+}
+
+pub async fn list_protokolle(State(state): State<AppState>) -> AppResult<Json<Vec<Protokoll>>> {
+    let rows = sqlx::query_as::<_, Protokoll>(
+        "SELECT id, titel, datum, ort, event_id, protokollant, anwesende, status, erstellt_von, created_at
+         FROM verein_protokolle ORDER BY datum DESC"
+    )
+    .fetch_all(&state.db).await?;
+    Ok(Json(rows))
+}
+
+pub async fn get_protokoll(
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> AppResult<Json<serde_json::Value>> {
+    let protokoll = sqlx::query_as::<_, Protokoll>(
+        "SELECT id, titel, datum, ort, event_id, protokollant, anwesende, status, erstellt_von, created_at
+         FROM verein_protokolle WHERE id = $1"
+    )
+    .bind(id).fetch_optional(&state.db).await?.ok_or(AppError::NotFound)?;
+
+    let tops = sqlx::query_as::<_, ProtokollTop>(
+        "SELECT id, protokoll_id, position, titel, inhalt, beschluss, created_at
+         FROM verein_protokoll_tops WHERE protokoll_id = $1 ORDER BY position, created_at"
+    )
+    .bind(id).fetch_all(&state.db).await?;
+
+    Ok(Json(serde_json::json!({ "protokoll": protokoll, "tops": tops })))
+}
+
+pub async fn create_protokoll(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Json(body): Json<CreateProtokoll>,
+) -> AppResult<Json<Protokoll>> {
+    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+    let row = sqlx::query_as::<_, Protokoll>(
+        "INSERT INTO verein_protokolle (titel, datum, ort, event_id, protokollant, anwesende, erstellt_von)
+         VALUES ($1,$2,$3,$4,$5,$6,$7)
+         RETURNING id, titel, datum, ort, event_id, protokollant, anwesende, status, erstellt_von, created_at"
+    )
+    .bind(&body.titel).bind(body.datum).bind(&body.ort).bind(body.event_id)
+    .bind(&body.protokollant).bind(body.anwesende).bind(claims.sub)
+    .fetch_one(&state.db).await?;
+    audit::log(&state.db, Some(claims.sub), &claims.username,
+        "PROTOKOLL_CREATED", Some("verein_protokolle"), Some(row.id), None).await;
+    Ok(Json(row))
+}
+
+pub async fn update_protokoll(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+    Json(body): Json<UpdateProtokoll>,
+) -> AppResult<Json<Protokoll>> {
+    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+    let row = sqlx::query_as::<_, Protokoll>(
+        "UPDATE verein_protokolle SET
+            titel        = COALESCE($1, titel),
+            datum        = COALESCE($2, datum),
+            ort          = $3,
+            event_id     = $4,
+            protokollant = $5,
+            anwesende    = $6,
+            status       = COALESCE($7, status)
+         WHERE id = $8
+         RETURNING id, titel, datum, ort, event_id, protokollant, anwesende, status, erstellt_von, created_at"
+    )
+    .bind(body.titel).bind(body.datum).bind(body.ort).bind(body.event_id)
+    .bind(body.protokollant).bind(body.anwesende).bind(body.status).bind(id)
+    .fetch_optional(&state.db).await?.ok_or(AppError::NotFound)?;
+    Ok(Json(row))
+}
+
+pub async fn delete_protokoll(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+) -> AppResult<Json<serde_json::Value>> {
+    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+    let n = sqlx::query("DELETE FROM verein_protokolle WHERE id = $1")
+        .bind(id).execute(&state.db).await?.rows_affected();
+    if n == 0 { return Err(AppError::NotFound); }
+    Ok(Json(serde_json::json!({ "ok": true })))
+}
+
+pub async fn create_top(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(protokoll_id): Path<Uuid>,
+    Json(body): Json<CreateTop>,
+) -> AppResult<Json<ProtokollTop>> {
+    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+    let next_pos: i64 = sqlx::query_scalar(
+        "SELECT COALESCE(MAX(position), 0) + 1 FROM verein_protokoll_tops WHERE protokoll_id = $1"
+    )
+    .bind(protokoll_id).fetch_one(&state.db).await?;
+
+    let row = sqlx::query_as::<_, ProtokollTop>(
+        "INSERT INTO verein_protokoll_tops (protokoll_id, position, titel, inhalt, beschluss)
+         VALUES ($1, COALESCE($2, $3), $4, $5, $6)
+         RETURNING id, protokoll_id, position, titel, inhalt, beschluss, created_at"
+    )
+    .bind(protokoll_id).bind(body.position).bind(next_pos as i32)
+    .bind(&body.titel).bind(&body.inhalt).bind(&body.beschluss)
+    .fetch_one(&state.db).await?;
+    Ok(Json(row))
+}
+
+pub async fn update_top(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+    Json(body): Json<UpdateTop>,
+) -> AppResult<Json<ProtokollTop>> {
+    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+    let row = sqlx::query_as::<_, ProtokollTop>(
+        "UPDATE verein_protokoll_tops SET
+            titel     = COALESCE($1, titel),
+            inhalt    = $2,
+            beschluss = $3,
+            position  = COALESCE($4, position)
+         WHERE id = $5
+         RETURNING id, protokoll_id, position, titel, inhalt, beschluss, created_at"
+    )
+    .bind(body.titel).bind(body.inhalt).bind(body.beschluss).bind(body.position).bind(id)
+    .fetch_optional(&state.db).await?.ok_or(AppError::NotFound)?;
+    Ok(Json(row))
+}
+
+pub async fn delete_top(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+) -> AppResult<Json<serde_json::Value>> {
+    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+    sqlx::query("DELETE FROM verein_protokoll_tops WHERE id = $1")
+        .bind(id).execute(&state.db).await?;
+    Ok(Json(serde_json::json!({ "ok": true })))
+}
+
 // ── Router ────────────────────────────────────────────────────────────────────
 
 pub fn router(state: AppState) -> Router<AppState> {
@@ -1568,6 +2010,16 @@ pub fn router(state: AppState) -> Router<AppState> {
         // Aufgaben
         .route("/aufgaben",        post(create_aufgabe))
         .route("/aufgaben/:id",    put(update_aufgabe).delete(delete_aufgabe))
+        // Events
+        .route("/events",          post(create_event))
+        .route("/events/:id",      put(update_event).delete(delete_event))
+        .route("/events/:id/meine-antwort",        put(set_meine_antwort))
+        .route("/events/:id/antworten/:mitglied_id", put(set_antwort_admin))
+        // Protokolle
+        .route("/protokolle",         post(create_protokoll))
+        .route("/protokolle/:id",     put(update_protokoll).delete(delete_protokoll))
+        .route("/protokolle/:id/tops",         post(create_top))
+        .route("/protokoll-tops/:id",          put(update_top).delete(delete_top))
         .route_layer(middleware::from_fn_with_state(state.clone(), require_auth));
 
     Router::new()
@@ -1585,6 +2037,11 @@ pub fn router(state: AppState) -> Router<AppState> {
         .route("/schluessel",             get(list_schluessel))
         .route("/schluessel/:id/ausgaben", get(list_schluessel_ausgaben))
         .route("/aufgaben",               get(list_aufgaben))
+        .route("/events",                 get(list_events))
+        .route("/events/:id/antworten",   get(list_event_antworten))
+        .route("/events/:id/antworten/csv", get(export_event_csv))
+        .route("/protokolle",             get(list_protokolle))
+        .route("/protokolle/:id",         get(get_protokoll))
         .merge(protected)
         .route_layer(middleware::from_fn_with_state(state, require_auth))
 }

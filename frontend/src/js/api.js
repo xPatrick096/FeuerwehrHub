@@ -314,6 +314,31 @@ export const api = {
   updateAufgabe:           (id, body) => request('PUT',    `/verein/aufgaben/${id}`, body),
   deleteAufgabe:           (id)       => request('DELETE', `/verein/aufgaben/${id}`),
 
+  // Verein — Veranstaltungen
+  getEvents:               ()         => request('GET',    '/verein/events'),
+  createEvent:             (body)     => request('POST',   '/verein/events', body),
+  updateEvent:             (id, body) => request('PUT',    `/verein/events/${id}`, body),
+  deleteEvent:             (id)       => request('DELETE', `/verein/events/${id}`),
+  getEventAntworten:       (id)       => request('GET',    `/verein/events/${id}/antworten`),
+  setMeineAntwort:         (id, body) => request('PUT',    `/verein/events/${id}/meine-antwort`, body),
+  setAntwortAdmin:         (id, mid, body) => request('PUT', `/verein/events/${id}/antworten/${mid}`, body),
+  exportEventCsv:          (id)       => {
+    const token = localStorage.getItem('ff_token');
+    return fetch(`${BASE}/verein/events/${id}/antworten/csv`, {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    });
+  },
+
+  // Verein — Protokolle
+  getProtokolle:           ()         => request('GET',    '/verein/protokolle'),
+  getProtokoll:            (id)       => request('GET',    `/verein/protokolle/${id}`),
+  createProtokoll:         (body)     => request('POST',   '/verein/protokolle', body),
+  updateProtokoll:         (id, body) => request('PUT',    `/verein/protokolle/${id}`, body),
+  deleteProtokoll:         (id)       => request('DELETE', `/verein/protokolle/${id}`),
+  createTop:               (pid, body)=> request('POST',   `/verein/protokolle/${pid}/tops`, body),
+  updateTop:               (id, body) => request('PUT',    `/verein/protokoll-tops/${id}`, body),
+  deleteTop:               (id)       => request('DELETE', `/verein/protokoll-tops/${id}`),
+
   // Einsatzarten
   getIncidentTypes:    ()         => request('GET',    '/incident-types'),
   createIncidentType:  (body)     => request('POST',   '/incident-types', body),

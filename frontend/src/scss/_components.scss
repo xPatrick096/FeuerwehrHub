@@ -133,9 +133,19 @@
     &:hover:not(:disabled) { background: $rot-hell; }
   }
 
+  &--ghost {
+    background: transparent;
+    color: $text-muted;
+    border: 1px solid transparent;
+    &:hover:not(:disabled) { background: $bg-card-hover; color: $text; border-color: $border; }
+    &.btn--danger { color: $rot; &:hover:not(:disabled) { background: $rot-hell; border-color: $rot; } }
+  }
+
   &--sm  { padding: 5px 10px; font-size: $font-size-xs; border-radius: $radius-sm; }
+  &--xs  { padding: 3px 7px;  font-size: $font-size-xs; border-radius: $radius-sm; }
   &--lg  { padding: 11px 22px; font-size: $font-size-md; }
   &--full { width: 100%; justify-content: center; }
+  &--active { outline: 2px solid currentColor; outline-offset: 2px; }
 }
 
 .btn-group {
@@ -235,6 +245,14 @@ tr:hover td { background: $bg-card-hover; }
   &--superuser { background: $orange-hell; color: $orange; }
   &--admin     { background: $lila-hell;   color: $lila; }
   &--user      { background: $bg-card-hover; color: $text-muted; }
+
+  // Semantische Farb-Aliase
+  &--green  { background: $gruen-hell;    color: $gruen; }
+  &--red    { background: $rot-hell;      color: #ff8a80; }
+  &--orange { background: $orange-hell;   color: $orange; }
+  &--blue   { background: $blau-hell;     color: $blau; }
+  &--purple { background: $lila-hell;     color: $lila; }
+  &--gray   { background: $bg-card-hover; color: $text-muted; }
 }
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
@@ -387,6 +405,9 @@ tr:hover td { background: $bg-card-hover; }
     max-width: 540px;
     max-height: 90vh;
     overflow-y: auto;
+
+    &--lg  { max-width: 720px; }
+    &--xl  { max-width: 900px; }
   }
 
   &__header {
@@ -905,5 +926,100 @@ tr:hover td { background: $bg-card-hover; }
       transition: transform $transition-md;
       box-shadow: 0 1px 3px rgba(0,0,0,0.4);
     }
+  }
+}
+
+// ── Protokoll ─────────────────────────────────────────────────────────────────
+.proto-header {
+  padding-bottom: $space-sm;
+}
+
+.proto-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-sm $space-lg;
+  color: $text-muted;
+  font-size: $font-size-sm;
+  margin-top: $space-xs;
+}
+
+.top-block {
+  border: 1px solid $border;
+  border-radius: $radius-lg;
+  padding: $space-md;
+  margin-bottom: $space-sm;
+  background: $bg-card-hover;
+
+  .top-header {
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+    margin-bottom: $space-xs;
+  }
+
+  .top-nr {
+    font-size: $font-size-sm;
+    font-weight: 600;
+    color: var(--accent);
+    min-width: 3rem;
+  }
+
+  .top-inhalt {
+    color: $text-muted;
+    font-size: $font-size-sm;
+    white-space: pre-wrap;
+    margin-top: $space-xs;
+  }
+
+  .top-beschluss {
+    margin-top: $space-xs;
+    padding: $space-xs $space-sm;
+    background: rgba(var(--accent-rgb, 59,130,246), 0.08);
+    border-left: 3px solid var(--accent, #3b82f6);
+    border-radius: 0 $radius-sm $radius-sm 0;
+    font-size: $font-size-sm;
+    white-space: pre-wrap;
+  }
+}
+
+// ── Print ─────────────────────────────────────────────────────────────────────
+@media print {
+  body > *:not(.modal) { display: none !important; }
+
+  .modal {
+    position: static !important;
+    background: white !important;
+    backdrop-filter: none !important;
+    padding: 0 !important;
+    display: block !important;
+  }
+
+  .modal__box {
+    position: static !important;
+    box-shadow: none !important;
+    border: none !important;
+    max-height: none !important;
+    overflow: visible !important;
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  .no-print { display: none !important; }
+
+  .top-block {
+    border: 1px solid #ccc !important;
+    background: white !important;
+    break-inside: avoid;
+  }
+
+  .top-beschluss {
+    border-left: 3px solid #333 !important;
+    background: #f5f5f5 !important;
+  }
+
+  .badge {
+    border: 1px solid #ccc !important;
+    background: #eee !important;
+    color: #333 !important;
   }
 }
