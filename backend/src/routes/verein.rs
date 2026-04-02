@@ -409,6 +409,7 @@ pub struct VereinDocument {
     pub id:               Uuid,
     pub name:             String,
     pub category:         String,
+    pub beschreibung:     Option<String>,
     pub access_level:     String,
     pub file_size:        i64,
     pub mime_type:        Option<String>,
@@ -423,7 +424,7 @@ pub async fn list_documents(
 ) -> AppResult<Json<Vec<VereinDocument>>> {
     let is_admin = claims.is_admin_or_above();
     let rows = sqlx::query_as::<_, VereinDocument>(
-        "SELECT id, name, category, access_level, file_size, mime_type,
+        "SELECT id, name, category, beschreibung, access_level, file_size, mime_type,
                 uploaded_by, uploaded_by_name, uploaded_at
          FROM verein_documents
          WHERE $1 = true OR access_level = 'all'
@@ -445,13 +446,15 @@ pub async fn upload_document(
     }
 
     let mut file_data: Option<(Vec<u8>, String, String)> = None; // (bytes, filename, mime)
-    let mut category     = "Allgemein".to_string();
+    let mut category     = "Sonstiges".to_string();
+    let mut beschreibung: Option<String> = None;
     let mut access_level = "all".to_string();
 
     while let Some(field) = multipart.next_field().await
         .map_err(|e| AppError::BadRequest(e.to_string()))? {
         match field.name() {
             Some("category")     => { category = field.text().await.unwrap_or_default(); }
+            Some("beschreibung") => { let t = field.text().await.unwrap_or_default(); if !t.is_empty() { beschreibung = Some(t); } }
             Some("access_level") => { access_level = field.text().await.unwrap_or_default(); }
             Some("file") => {
                 let filename = field.file_name().unwrap_or("dokument").to_string();
@@ -493,13 +496,14 @@ pub async fn upload_document(
     let author = display_name.unwrap_or_else(|| claims.username.clone());
 
     let row = sqlx::query_as::<_, VereinDocument>(
-        "INSERT INTO verein_documents (id, name, category, access_level, file_path, file_size, mime_type, uploaded_by, uploaded_by_name)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-         RETURNING id, name, category, access_level, file_size, mime_type, uploaded_by, uploaded_by_name, uploaded_at"
+        "INSERT INTO verein_documents (id, name, category, beschreibung, access_level, file_path, file_size, mime_type, uploaded_by, uploaded_by_name)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+         RETURNING id, name, category, beschreibung, access_level, file_size, mime_type, uploaded_by, uploaded_by_name, uploaded_at"
     )
     .bind(doc_id)
     .bind(&filename)
     .bind(&category)
+    .bind(&beschreibung)
     .bind(&access_level)
     .bind(stored_name)
     .bind(file_size)
@@ -592,50 +596,59 @@ pub async fn delete_document(
 
 #[derive(Serialize, sqlx::FromRow)]
 pub struct Mitglied {
-    pub id:              Uuid,
-    pub mitgliedsnummer: String,
-    pub vorname:         String,
-    pub nachname:        String,
-    pub email:           Option<String>,
-    pub telefon:         Option<String>,
-    pub geburtsdatum:    Option<NaiveDate>,
-    pub eintrittsdatum:  NaiveDate,
-    pub status:          String,
-    pub user_id:         Option<Uuid>,
-    pub austritt_datum:  Option<NaiveDate>,
-    pub austritt_grund:  Option<String>,
-    pub bemerkung:       Option<String>,
-    pub archiviert:      bool,
-    pub created_at:      DateTime<Utc>,
+    pub id:                  Uuid,
+    pub mitgliedsnummer:     String,
+    pub vorname:             String,
+    pub nachname:            String,
+    pub email:               Option<String>,
+    pub telefon:             Option<String>,
+    pub geburtsdatum:        Option<NaiveDate>,
+    pub eintrittsdatum:      NaiveDate,
+    pub status:              String,
+    pub user_id:             Option<Uuid>,
+    pub austritt_datum:      Option<NaiveDate>,
+    pub austritt_grund:      Option<String>,
+    pub bemerkung:           Option<String>,
+    pub kleidung_oberteil:   Option<String>,
+    pub kleidung_hose:       Option<String>,
+    pub kleidung_schuhe:     Option<String>,
+    pub archiviert:          bool,
+    pub created_at:          DateTime<Utc>,
 }
 
 #[derive(Deserialize)]
 pub struct CreateMitglied {
-    pub vorname:        String,
-    pub nachname:       String,
-    pub email:          Option<String>,
-    pub telefon:        Option<String>,
-    pub geburtsdatum:   Option<NaiveDate>,
-    pub eintrittsdatum: NaiveDate,
-    pub status:         Option<String>,
-    pub user_id:        Option<Uuid>,
-    pub bemerkung:      Option<String>,
+    pub vorname:             String,
+    pub nachname:            String,
+    pub email:               Option<String>,
+    pub telefon:             Option<String>,
+    pub geburtsdatum:        Option<NaiveDate>,
+    pub eintrittsdatum:      NaiveDate,
+    pub status:              Option<String>,
+    pub user_id:             Option<Uuid>,
+    pub bemerkung:           Option<String>,
+    pub kleidung_oberteil:   Option<String>,
+    pub kleidung_hose:       Option<String>,
+    pub kleidung_schuhe:     Option<String>,
 }
 
 #[derive(Deserialize)]
 pub struct UpdateMitglied {
-    pub vorname:        Option<String>,
-    pub nachname:       Option<String>,
-    pub email:          Option<String>,
-    pub telefon:        Option<String>,
-    pub geburtsdatum:   Option<NaiveDate>,
-    pub eintrittsdatum: Option<NaiveDate>,
-    pub status:         Option<String>,
-    pub user_id:        Option<Uuid>,
-    pub austritt_datum: Option<NaiveDate>,
-    pub austritt_grund: Option<String>,
-    pub bemerkung:      Option<String>,
-    pub archiviert:     Option<bool>,
+    pub vorname:             Option<String>,
+    pub nachname:            Option<String>,
+    pub email:               Option<String>,
+    pub telefon:             Option<String>,
+    pub geburtsdatum:        Option<NaiveDate>,
+    pub eintrittsdatum:      Option<NaiveDate>,
+    pub status:              Option<String>,
+    pub user_id:             Option<Uuid>,
+    pub austritt_datum:      Option<NaiveDate>,
+    pub austritt_grund:      Option<String>,
+    pub bemerkung:           Option<String>,
+    pub kleidung_oberteil:   Option<String>,
+    pub kleidung_hose:       Option<String>,
+    pub kleidung_schuhe:     Option<String>,
+    pub archiviert:          Option<bool>,
 }
 
 async fn next_mitgliedsnummer(db: &sqlx::PgPool) -> AppResult<String> {
@@ -654,7 +667,8 @@ pub async fn list_mitglieder(
     let rows = sqlx::query_as::<_, Mitglied>(
         "SELECT id, mitgliedsnummer, vorname, nachname, email, telefon, geburtsdatum,
                 eintrittsdatum, status, user_id, austritt_datum, austritt_grund,
-                bemerkung, archiviert, created_at
+                bemerkung, kleidung_oberteil, kleidung_hose, kleidung_schuhe,
+                archiviert, created_at
          FROM verein_mitglieder
          ORDER BY archiviert, nachname, vorname"
     )
@@ -677,11 +691,13 @@ pub async fn create_mitglied(
     let row = sqlx::query_as::<_, Mitglied>(
         "INSERT INTO verein_mitglieder
             (mitgliedsnummer, vorname, nachname, email, telefon, geburtsdatum,
-             eintrittsdatum, status, user_id, bemerkung)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+             eintrittsdatum, status, user_id, bemerkung,
+             kleidung_oberteil, kleidung_hose, kleidung_schuhe)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
          RETURNING id, mitgliedsnummer, vorname, nachname, email, telefon, geburtsdatum,
                    eintrittsdatum, status, user_id, austritt_datum, austritt_grund,
-                   bemerkung, archiviert, created_at"
+                   bemerkung, kleidung_oberteil, kleidung_hose, kleidung_schuhe,
+                   archiviert, created_at"
     )
     .bind(&nr)
     .bind(&body.vorname)
@@ -693,6 +709,9 @@ pub async fn create_mitglied(
     .bind(&status)
     .bind(body.user_id)
     .bind(&body.bemerkung)
+    .bind(&body.kleidung_oberteil)
+    .bind(&body.kleidung_hose)
+    .bind(&body.kleidung_schuhe)
     .fetch_one(&state.db)
     .await?;
 
@@ -709,22 +728,26 @@ pub async fn update_mitglied(
 ) -> AppResult<Json<Mitglied>> {
     let row = sqlx::query_as::<_, Mitglied>(
         "UPDATE verein_mitglieder SET
-            vorname        = COALESCE($1, vorname),
-            nachname       = COALESCE($2, nachname),
-            email          = $3,
-            telefon        = $4,
-            geburtsdatum   = $5,
-            eintrittsdatum = COALESCE($6, eintrittsdatum),
-            status         = COALESCE($7, status),
-            user_id        = $8,
-            austritt_datum = $9,
-            austritt_grund = $10,
-            bemerkung      = $11,
-            archiviert     = COALESCE($12, archiviert)
-         WHERE id = $13
+            vorname           = COALESCE($1, vorname),
+            nachname          = COALESCE($2, nachname),
+            email             = $3,
+            telefon           = $4,
+            geburtsdatum      = $5,
+            eintrittsdatum    = COALESCE($6, eintrittsdatum),
+            status            = COALESCE($7, status),
+            user_id           = $8,
+            austritt_datum    = $9,
+            austritt_grund    = $10,
+            bemerkung         = $11,
+            kleidung_oberteil = $12,
+            kleidung_hose     = $13,
+            kleidung_schuhe   = $14,
+            archiviert        = COALESCE($15, archiviert)
+         WHERE id = $16
          RETURNING id, mitgliedsnummer, vorname, nachname, email, telefon, geburtsdatum,
                    eintrittsdatum, status, user_id, austritt_datum, austritt_grund,
-                   bemerkung, archiviert, created_at"
+                   bemerkung, kleidung_oberteil, kleidung_hose, kleidung_schuhe,
+                   archiviert, created_at"
     )
     .bind(body.vorname)
     .bind(body.nachname)
@@ -737,6 +760,9 @@ pub async fn update_mitglied(
     .bind(body.austritt_datum)
     .bind(body.austritt_grund)
     .bind(body.bemerkung)
+    .bind(body.kleidung_oberteil)
+    .bind(body.kleidung_hose)
+    .bind(body.kleidung_schuhe)
     .bind(body.archiviert)
     .bind(id)
     .fetch_optional(&state.db)
@@ -977,6 +1003,535 @@ pub async fn get_ehrungen(
     })))
 }
 
+// ── Inventar ──────────────────────────────────────────────────────────────────
+
+#[derive(Serialize, sqlx::FromRow)]
+pub struct InventarItem {
+    pub id:           Uuid,
+    pub name:         String,
+    pub kategorie:    String,
+    pub seriennummer: Option<String>,
+    pub zustand:      String,
+    pub standort:     Option<String>,
+    pub bemerkung:    Option<String>,
+    pub archiviert:   bool,
+    pub ausgeliehen:  bool,
+    pub created_at:   DateTime<Utc>,
+}
+
+#[derive(Serialize, sqlx::FromRow)]
+pub struct Inventar {
+    pub id:           Uuid,
+    pub name:         String,
+    pub kategorie:    String,
+    pub seriennummer: Option<String>,
+    pub zustand:      String,
+    pub standort:     Option<String>,
+    pub bemerkung:    Option<String>,
+    pub archiviert:   bool,
+    pub created_at:   DateTime<Utc>,
+}
+
+#[derive(Deserialize)]
+pub struct CreateInventar {
+    pub name:         String,
+    pub kategorie:    Option<String>,
+    pub seriennummer: Option<String>,
+    pub zustand:      Option<String>,
+    pub standort:     Option<String>,
+    pub bemerkung:    Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct UpdateInventar {
+    pub name:         Option<String>,
+    pub kategorie:    Option<String>,
+    pub seriennummer: Option<String>,
+    pub zustand:      Option<String>,
+    pub standort:     Option<String>,
+    pub bemerkung:    Option<String>,
+    pub archiviert:   Option<bool>,
+}
+
+pub async fn list_inventar(State(state): State<AppState>) -> AppResult<Json<Vec<InventarItem>>> {
+    let rows = sqlx::query_as::<_, InventarItem>(
+        "SELECT i.id, i.name, i.kategorie, i.seriennummer, i.zustand, i.standort, i.bemerkung,
+                i.archiviert, i.created_at,
+                EXISTS(SELECT 1 FROM verein_ausleihen a
+                       WHERE a.inventar_id = i.id AND a.rueckgabe_ist IS NULL) AS ausgeliehen
+         FROM verein_inventar i
+         ORDER BY i.archiviert, i.kategorie, i.name"
+    )
+    .fetch_all(&state.db)
+    .await?;
+    Ok(Json(rows))
+}
+
+pub async fn create_inventar(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Json(body): Json<CreateInventar>,
+) -> AppResult<Json<Inventar>> {
+    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+    let row = sqlx::query_as::<_, Inventar>(
+        "INSERT INTO verein_inventar (name, kategorie, seriennummer, zustand, standort, bemerkung)
+         VALUES ($1, COALESCE($2,'sonstige'), $3, COALESCE($4,'gut'), $5, $6)
+         RETURNING id, name, kategorie, seriennummer, zustand, standort, bemerkung, archiviert, created_at"
+    )
+    .bind(&body.name).bind(&body.kategorie).bind(&body.seriennummer)
+    .bind(&body.zustand).bind(&body.standort).bind(&body.bemerkung)
+    .fetch_one(&state.db).await?;
+    audit::log(&state.db, Some(claims.sub), &claims.username,
+        "INVENTAR_CREATED", Some("verein_inventar"), Some(row.id), None).await;
+    Ok(Json(row))
+}
+
+pub async fn update_inventar(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+    Json(body): Json<UpdateInventar>,
+) -> AppResult<Json<Inventar>> {
+    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+    let row = sqlx::query_as::<_, Inventar>(
+        "UPDATE verein_inventar SET
+            name         = COALESCE($1, name),
+            kategorie    = COALESCE($2, kategorie),
+            seriennummer = $3,
+            zustand      = COALESCE($4, zustand),
+            standort     = $5,
+            bemerkung    = $6,
+            archiviert   = COALESCE($7, archiviert)
+         WHERE id = $8
+         RETURNING id, name, kategorie, seriennummer, zustand, standort, bemerkung, archiviert, created_at"
+    )
+    .bind(body.name).bind(body.kategorie).bind(body.seriennummer)
+    .bind(body.zustand).bind(body.standort).bind(body.bemerkung)
+    .bind(body.archiviert).bind(id)
+    .fetch_optional(&state.db).await?.ok_or(AppError::NotFound)?;
+    audit::log(&state.db, Some(claims.sub), &claims.username,
+        "INVENTAR_UPDATED", Some("verein_inventar"), Some(id), None).await;
+    Ok(Json(row))
+}
+
+pub async fn delete_inventar(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+) -> AppResult<Json<serde_json::Value>> {
+    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+    let n = sqlx::query("UPDATE verein_inventar SET archiviert = TRUE WHERE id = $1")
+        .bind(id).execute(&state.db).await?.rows_affected();
+    if n == 0 { return Err(AppError::NotFound); }
+    audit::log(&state.db, Some(claims.sub), &claims.username,
+        "INVENTAR_ARCHIVED", Some("verein_inventar"), Some(id), None).await;
+    Ok(Json(serde_json::json!({ "ok": true })))
+}
+
+// ── Ausleihen ─────────────────────────────────────────────────────────────────
+
+#[derive(Serialize, sqlx::FromRow)]
+pub struct Ausleihe {
+    pub id:             Uuid,
+    pub inventar_id:    Uuid,
+    pub inventar_name:  String,
+    pub ausgeliehen_an: String,
+    pub ausgabe_datum:  NaiveDate,
+    pub rueckgabe_soll: Option<NaiveDate>,
+    pub rueckgabe_ist:  Option<NaiveDate>,
+    pub bemerkung:      Option<String>,
+    pub created_at:     DateTime<Utc>,
+}
+
+#[derive(Deserialize)]
+pub struct CreateAusleihe {
+    pub ausgeliehen_an: String,
+    pub ausgabe_datum:  Option<NaiveDate>,
+    pub rueckgabe_soll: Option<NaiveDate>,
+    pub bemerkung:      Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct ReturnAusleihe {
+    pub rueckgabe_ist: NaiveDate,
+    pub bemerkung:     Option<String>,
+}
+
+pub async fn list_inventar_ausleihen(
+    State(state): State<AppState>,
+    Path(inventar_id): Path<Uuid>,
+) -> AppResult<Json<Vec<Ausleihe>>> {
+    let rows = sqlx::query_as::<_, Ausleihe>(
+        "SELECT a.id, a.inventar_id, i.name AS inventar_name, a.ausgeliehen_an,
+                a.ausgabe_datum, a.rueckgabe_soll, a.rueckgabe_ist, a.bemerkung, a.created_at
+         FROM verein_ausleihen a JOIN verein_inventar i ON i.id = a.inventar_id
+         WHERE a.inventar_id = $1 ORDER BY a.ausgabe_datum DESC"
+    )
+    .bind(inventar_id).fetch_all(&state.db).await?;
+    Ok(Json(rows))
+}
+
+pub async fn create_ausleihe(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(inventar_id): Path<Uuid>,
+    Json(body): Json<CreateAusleihe>,
+) -> AppResult<Json<Ausleihe>> {
+    let already = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM verein_ausleihen WHERE inventar_id = $1 AND rueckgabe_ist IS NULL"
+    )
+    .bind(inventar_id).fetch_one(&state.db).await?;
+    if already > 0 {
+        return Err(AppError::BadRequest("Gegenstand ist bereits ausgeliehen".into()));
+    }
+    let row = sqlx::query_as::<_, Ausleihe>(
+        "INSERT INTO verein_ausleihen (inventar_id, ausgeliehen_an, ausgabe_datum, rueckgabe_soll, bemerkung)
+         VALUES ($1,$2,COALESCE($3,CURRENT_DATE),$4,$5)
+         RETURNING id, inventar_id,
+             (SELECT name FROM verein_inventar WHERE id = $1) AS inventar_name,
+             ausgeliehen_an, ausgabe_datum, rueckgabe_soll, rueckgabe_ist, bemerkung, created_at"
+    )
+    .bind(inventar_id).bind(&body.ausgeliehen_an).bind(body.ausgabe_datum)
+    .bind(body.rueckgabe_soll).bind(&body.bemerkung)
+    .fetch_one(&state.db).await?;
+    audit::log(&state.db, Some(claims.sub), &claims.username,
+        "AUSLEIHE_CREATED", Some("verein_ausleihen"), Some(row.id), None).await;
+    Ok(Json(row))
+}
+
+pub async fn return_ausleihe(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+    Json(body): Json<ReturnAusleihe>,
+) -> AppResult<Json<Ausleihe>> {
+    let row = sqlx::query_as::<_, Ausleihe>(
+        "UPDATE verein_ausleihen SET rueckgabe_ist = $1, bemerkung = COALESCE($2, bemerkung)
+         WHERE id = $3
+         RETURNING id, inventar_id,
+             (SELECT name FROM verein_inventar WHERE id = inventar_id) AS inventar_name,
+             ausgeliehen_an, ausgabe_datum, rueckgabe_soll, rueckgabe_ist, bemerkung, created_at"
+    )
+    .bind(body.rueckgabe_ist).bind(body.bemerkung).bind(id)
+    .fetch_optional(&state.db).await?.ok_or(AppError::NotFound)?;
+    audit::log(&state.db, Some(claims.sub), &claims.username,
+        "AUSLEIHE_RETURNED", Some("verein_ausleihen"), Some(id), None).await;
+    Ok(Json(row))
+}
+
+pub async fn delete_ausleihe(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+) -> AppResult<Json<serde_json::Value>> {
+    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+    sqlx::query("DELETE FROM verein_ausleihen WHERE id = $1")
+        .bind(id).execute(&state.db).await?;
+    Ok(Json(serde_json::json!({ "ok": true })))
+}
+
+// ── Schlüsselverwaltung ───────────────────────────────────────────────────────
+
+#[derive(Serialize, sqlx::FromRow)]
+pub struct SchluesselItem {
+    pub id:              Uuid,
+    pub bezeichnung:     String,
+    pub schloss_bereich: Option<String>,
+    pub kopien_anzahl:   i32,
+    pub bemerkung:       Option<String>,
+    pub ausgegeben:      i64,
+    pub created_at:      DateTime<Utc>,
+}
+
+#[derive(Serialize, sqlx::FromRow)]
+pub struct Schluessel {
+    pub id:              Uuid,
+    pub bezeichnung:     String,
+    pub schloss_bereich: Option<String>,
+    pub kopien_anzahl:   i32,
+    pub bemerkung:       Option<String>,
+    pub created_at:      DateTime<Utc>,
+}
+
+#[derive(Deserialize)]
+pub struct CreateSchluessel {
+    pub bezeichnung:     String,
+    pub schloss_bereich: Option<String>,
+    pub kopien_anzahl:   Option<i32>,
+    pub bemerkung:       Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct UpdateSchluessel {
+    pub bezeichnung:     Option<String>,
+    pub schloss_bereich: Option<String>,
+    pub kopien_anzahl:   Option<i32>,
+    pub bemerkung:       Option<String>,
+}
+
+#[derive(Serialize, sqlx::FromRow)]
+pub struct SchluesselAusgabe {
+    pub id:              Uuid,
+    pub schluessel_id:   Uuid,
+    pub inhaber_name:    String,
+    pub ausgabe_datum:   NaiveDate,
+    pub rueckgabe_datum: Option<NaiveDate>,
+    pub bemerkung:       Option<String>,
+    pub created_at:      DateTime<Utc>,
+}
+
+#[derive(Deserialize)]
+pub struct CreateSchluesselAusgabe {
+    pub inhaber_name:  String,
+    pub ausgabe_datum: Option<NaiveDate>,
+    pub bemerkung:     Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct ReturnSchluessel {
+    pub rueckgabe_datum: NaiveDate,
+    pub bemerkung:       Option<String>,
+}
+
+pub async fn list_schluessel(State(state): State<AppState>) -> AppResult<Json<Vec<SchluesselItem>>> {
+    let rows = sqlx::query_as::<_, SchluesselItem>(
+        "SELECT s.id, s.bezeichnung, s.schloss_bereich, s.kopien_anzahl, s.bemerkung, s.created_at,
+                (SELECT COUNT(*) FROM verein_schluessel_ausgabe a
+                 WHERE a.schluessel_id = s.id AND a.rueckgabe_datum IS NULL) AS ausgegeben
+         FROM verein_schluessel s ORDER BY s.bezeichnung"
+    )
+    .fetch_all(&state.db).await?;
+    Ok(Json(rows))
+}
+
+pub async fn create_schluessel(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Json(body): Json<CreateSchluessel>,
+) -> AppResult<Json<Schluessel>> {
+    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+    let row = sqlx::query_as::<_, Schluessel>(
+        "INSERT INTO verein_schluessel (bezeichnung, schloss_bereich, kopien_anzahl, bemerkung)
+         VALUES ($1,$2,COALESCE($3,1),$4)
+         RETURNING id, bezeichnung, schloss_bereich, kopien_anzahl, bemerkung, created_at"
+    )
+    .bind(&body.bezeichnung).bind(&body.schloss_bereich)
+    .bind(body.kopien_anzahl).bind(&body.bemerkung)
+    .fetch_one(&state.db).await?;
+    audit::log(&state.db, Some(claims.sub), &claims.username,
+        "SCHLUESSEL_CREATED", Some("verein_schluessel"), Some(row.id), None).await;
+    Ok(Json(row))
+}
+
+pub async fn update_schluessel(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+    Json(body): Json<UpdateSchluessel>,
+) -> AppResult<Json<Schluessel>> {
+    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+    let row = sqlx::query_as::<_, Schluessel>(
+        "UPDATE verein_schluessel SET
+            bezeichnung     = COALESCE($1, bezeichnung),
+            schloss_bereich = $2,
+            kopien_anzahl   = COALESCE($3, kopien_anzahl),
+            bemerkung       = $4
+         WHERE id = $5
+         RETURNING id, bezeichnung, schloss_bereich, kopien_anzahl, bemerkung, created_at"
+    )
+    .bind(body.bezeichnung).bind(body.schloss_bereich)
+    .bind(body.kopien_anzahl).bind(body.bemerkung).bind(id)
+    .fetch_optional(&state.db).await?.ok_or(AppError::NotFound)?;
+    Ok(Json(row))
+}
+
+pub async fn delete_schluessel(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+) -> AppResult<Json<serde_json::Value>> {
+    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+    let n = sqlx::query("DELETE FROM verein_schluessel WHERE id = $1")
+        .bind(id).execute(&state.db).await?.rows_affected();
+    if n == 0 { return Err(AppError::NotFound); }
+    Ok(Json(serde_json::json!({ "ok": true })))
+}
+
+pub async fn list_schluessel_ausgaben(
+    State(state): State<AppState>,
+    Path(schluessel_id): Path<Uuid>,
+) -> AppResult<Json<Vec<SchluesselAusgabe>>> {
+    let rows = sqlx::query_as::<_, SchluesselAusgabe>(
+        "SELECT id, schluessel_id, inhaber_name, ausgabe_datum, rueckgabe_datum, bemerkung, created_at
+         FROM verein_schluessel_ausgabe WHERE schluessel_id = $1 ORDER BY ausgabe_datum DESC"
+    )
+    .bind(schluessel_id).fetch_all(&state.db).await?;
+    Ok(Json(rows))
+}
+
+pub async fn create_schluessel_ausgabe(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(schluessel_id): Path<Uuid>,
+    Json(body): Json<CreateSchluesselAusgabe>,
+) -> AppResult<Json<SchluesselAusgabe>> {
+    let key = sqlx::query_as::<_, Schluessel>(
+        "SELECT id, bezeichnung, schloss_bereich, kopien_anzahl, bemerkung, created_at
+         FROM verein_schluessel WHERE id = $1"
+    )
+    .bind(schluessel_id).fetch_optional(&state.db).await?.ok_or(AppError::NotFound)?;
+
+    let ausgegeben = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM verein_schluessel_ausgabe WHERE schluessel_id = $1 AND rueckgabe_datum IS NULL"
+    )
+    .bind(schluessel_id).fetch_one(&state.db).await?;
+
+    if ausgegeben >= key.kopien_anzahl as i64 {
+        return Err(AppError::BadRequest(format!("Alle {} Kopie(n) sind vergeben", key.kopien_anzahl)));
+    }
+
+    let row = sqlx::query_as::<_, SchluesselAusgabe>(
+        "INSERT INTO verein_schluessel_ausgabe (schluessel_id, inhaber_name, ausgabe_datum, bemerkung)
+         VALUES ($1,$2,COALESCE($3,CURRENT_DATE),$4)
+         RETURNING id, schluessel_id, inhaber_name, ausgabe_datum, rueckgabe_datum, bemerkung, created_at"
+    )
+    .bind(schluessel_id).bind(&body.inhaber_name)
+    .bind(body.ausgabe_datum).bind(&body.bemerkung)
+    .fetch_one(&state.db).await?;
+    audit::log(&state.db, Some(claims.sub), &claims.username,
+        "SCHLUESSEL_AUSGEGEBEN", Some("verein_schluessel_ausgabe"), Some(row.id), None).await;
+    Ok(Json(row))
+}
+
+pub async fn return_schluessel_ausgabe(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+    Json(body): Json<ReturnSchluessel>,
+) -> AppResult<Json<SchluesselAusgabe>> {
+    let row = sqlx::query_as::<_, SchluesselAusgabe>(
+        "UPDATE verein_schluessel_ausgabe
+         SET rueckgabe_datum = $1, bemerkung = COALESCE($2, bemerkung)
+         WHERE id = $3
+         RETURNING id, schluessel_id, inhaber_name, ausgabe_datum, rueckgabe_datum, bemerkung, created_at"
+    )
+    .bind(body.rueckgabe_datum).bind(body.bemerkung).bind(id)
+    .fetch_optional(&state.db).await?.ok_or(AppError::NotFound)?;
+    audit::log(&state.db, Some(claims.sub), &claims.username,
+        "SCHLUESSEL_ZURUECK", Some("verein_schluessel_ausgabe"), Some(id), None).await;
+    Ok(Json(row))
+}
+
+// ── Aufgaben ──────────────────────────────────────────────────────────────────
+
+#[derive(Serialize, sqlx::FromRow)]
+pub struct Aufgabe {
+    pub id:              Uuid,
+    pub titel:           String,
+    pub beschreibung:    Option<String>,
+    pub zugewiesen_an:   Option<Uuid>,
+    pub zugewiesen_name: Option<String>,
+    pub faellig_am:      Option<NaiveDate>,
+    pub prioritaet:      String,
+    pub status:          String,
+    pub erstellt_von:    Option<Uuid>,
+    pub created_at:      DateTime<Utc>,
+}
+
+#[derive(Deserialize)]
+pub struct CreateAufgabe {
+    pub titel:         String,
+    pub beschreibung:  Option<String>,
+    pub zugewiesen_an: Option<Uuid>,
+    pub faellig_am:    Option<NaiveDate>,
+    pub prioritaet:    Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct UpdateAufgabe {
+    pub titel:         Option<String>,
+    pub beschreibung:  Option<String>,
+    pub zugewiesen_an: Option<Uuid>,
+    pub faellig_am:    Option<NaiveDate>,
+    pub prioritaet:    Option<String>,
+    pub status:        Option<String>,
+}
+
+pub async fn list_aufgaben(State(state): State<AppState>) -> AppResult<Json<Vec<Aufgabe>>> {
+    let rows = sqlx::query_as::<_, Aufgabe>(
+        "SELECT a.id, a.titel, a.beschreibung, a.zugewiesen_an,
+                m.vorname || ' ' || m.nachname AS zugewiesen_name,
+                a.faellig_am, a.prioritaet, a.status, a.erstellt_von, a.created_at
+         FROM verein_aufgaben a
+         LEFT JOIN verein_mitglieder m ON m.id = a.zugewiesen_an
+         ORDER BY
+             CASE a.status WHEN 'erledigt' THEN 1 ELSE 0 END,
+             CASE a.prioritaet WHEN 'dringend' THEN 0 WHEN 'hoch' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END,
+             a.faellig_am NULLS LAST"
+    )
+    .fetch_all(&state.db).await?;
+    Ok(Json(rows))
+}
+
+pub async fn create_aufgabe(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Json(body): Json<CreateAufgabe>,
+) -> AppResult<Json<Aufgabe>> {
+    let row = sqlx::query_as::<_, Aufgabe>(
+        "INSERT INTO verein_aufgaben (titel, beschreibung, zugewiesen_an, faellig_am, prioritaet, erstellt_von)
+         VALUES ($1,$2,$3,$4,COALESCE($5,'normal'),$6)
+         RETURNING id, titel, beschreibung, zugewiesen_an,
+             (SELECT vorname || ' ' || nachname FROM verein_mitglieder WHERE id = $3) AS zugewiesen_name,
+             faellig_am, prioritaet, status, erstellt_von, created_at"
+    )
+    .bind(&body.titel).bind(&body.beschreibung).bind(body.zugewiesen_an)
+    .bind(body.faellig_am).bind(&body.prioritaet).bind(claims.sub)
+    .fetch_one(&state.db).await?;
+    audit::log(&state.db, Some(claims.sub), &claims.username,
+        "AUFGABE_CREATED", Some("verein_aufgaben"), Some(row.id), None).await;
+    Ok(Json(row))
+}
+
+pub async fn update_aufgabe(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+    Json(body): Json<UpdateAufgabe>,
+) -> AppResult<Json<Aufgabe>> {
+    let row = sqlx::query_as::<_, Aufgabe>(
+        "UPDATE verein_aufgaben SET
+            titel         = COALESCE($1, titel),
+            beschreibung  = $2,
+            zugewiesen_an = $3,
+            faellig_am    = $4,
+            prioritaet    = COALESCE($5, prioritaet),
+            status        = COALESCE($6, status)
+         WHERE id = $7
+         RETURNING id, titel, beschreibung, zugewiesen_an,
+             (SELECT vorname || ' ' || nachname FROM verein_mitglieder WHERE id = zugewiesen_an) AS zugewiesen_name,
+             faellig_am, prioritaet, status, erstellt_von, created_at"
+    )
+    .bind(body.titel).bind(body.beschreibung).bind(body.zugewiesen_an)
+    .bind(body.faellig_am).bind(body.prioritaet).bind(body.status).bind(id)
+    .fetch_optional(&state.db).await?.ok_or(AppError::NotFound)?;
+    audit::log(&state.db, Some(claims.sub), &claims.username,
+        "AUFGABE_UPDATED", Some("verein_aufgaben"), Some(id), None).await;
+    Ok(Json(row))
+}
+
+pub async fn delete_aufgabe(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+) -> AppResult<Json<serde_json::Value>> {
+    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+    let n = sqlx::query("DELETE FROM verein_aufgaben WHERE id = $1")
+        .bind(id).execute(&state.db).await?.rows_affected();
+    if n == 0 { return Err(AppError::NotFound); }
+    Ok(Json(serde_json::json!({ "ok": true })))
+}
+
 // ── Router ────────────────────────────────────────────────────────────────────
 
 pub fn router(state: AppState) -> Router<AppState> {
@@ -984,9 +1539,6 @@ pub fn router(state: AppState) -> Router<AppState> {
         // Briefkopf
         .route("/briefkopf",       put(update_briefkopf))
         .route("/logo",            post(upload_logo).delete(delete_logo))
-        // Vorstand
-        .route("/vorstand",        post(create_vorstand))
-        .route("/vorstand/:id",    put(update_vorstand).delete(delete_vorstand))
         // Schwarzes Brett
         .route("/posts",           post(create_post))
         .route("/posts/:id",       put(update_post).delete(delete_post))
@@ -1002,12 +1554,25 @@ pub fn router(state: AppState) -> Router<AppState> {
         // Auszeichnungen
         .route("/mitglieder/:id/auszeichnungen",  post(create_auszeichnung))
         .route("/auszeichnungen/:id",             delete(delete_auszeichnung))
+        // Inventar
+        .route("/inventar",        post(create_inventar))
+        .route("/inventar/:id",    put(update_inventar).delete(delete_inventar))
+        .route("/inventar/:id/ausleihen",         post(create_ausleihe))
+        .route("/ausleihen/:id/rueckgabe",         put(return_ausleihe))
+        .route("/ausleihen/:id",                   delete(delete_ausleihe))
+        // Schlüssel
+        .route("/schluessel",      post(create_schluessel))
+        .route("/schluessel/:id",  put(update_schluessel).delete(delete_schluessel))
+        .route("/schluessel/:id/ausgaben",         post(create_schluessel_ausgabe))
+        .route("/schluessel-ausgaben/:id/rueckgabe", put(return_schluessel_ausgabe))
+        // Aufgaben
+        .route("/aufgaben",        post(create_aufgabe))
+        .route("/aufgaben/:id",    put(update_aufgabe).delete(delete_aufgabe))
         .route_layer(middleware::from_fn_with_state(state.clone(), require_auth));
 
     Router::new()
         .route("/briefkopf",              get(get_briefkopf))
         .route("/logo",                   get(get_logo))
-        .route("/vorstand",               get(list_vorstand))
         .route("/posts",                  get(list_posts))
         .route("/dokumente",              get(list_documents))
         .route("/dokumente/:id/download", get(download_document))
@@ -1015,6 +1580,11 @@ pub fn router(state: AppState) -> Router<AppState> {
         .route("/mitglieder/:id/qualifikationen", get(list_qualifikationen))
         .route("/mitglieder/:id/auszeichnungen",  get(list_auszeichnungen))
         .route("/ehrungen",               get(get_ehrungen))
+        .route("/inventar",               get(list_inventar))
+        .route("/inventar/:id/ausleihen", get(list_inventar_ausleihen))
+        .route("/schluessel",             get(list_schluessel))
+        .route("/schluessel/:id/ausgaben", get(list_schluessel_ausgaben))
+        .route("/aufgaben",               get(list_aufgaben))
         .merge(protected)
         .route_layer(middleware::from_fn_with_state(state, require_auth))
 }

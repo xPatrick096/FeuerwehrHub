@@ -23,17 +23,19 @@ export async function renderVerein() {
     <div class="tab-bar" id="verein-tabs">
       <button class="tab-btn tab-btn--active" data-tab="schwarzesbrett">${icon('clipboard-list', 14)} Schwarzes Brett</button>
       <button class="tab-btn" data-tab="mitglieder">${icon('users', 14)} Mitglieder</button>
-      <button class="tab-btn" data-tab="ehrungen">${icon('award', 14)} Ehrungen</button>
-      <button class="tab-btn" data-tab="vorstand">${icon('user-check', 14)} Vorstand</button>
       <button class="tab-btn" data-tab="dokumente">${icon('folder', 14)} Dokumente</button>
+      <button class="tab-btn" data-tab="inventar">${icon('box', 14)} Inventar</button>
+      <button class="tab-btn" data-tab="schluessel">${icon('key', 14)} Schlüssel</button>
+      <button class="tab-btn" data-tab="aufgaben">${icon('check-square', 14)} Aufgaben</button>
       ${isAdmin ? `<button class="tab-btn" data-tab="briefkopf">${icon('settings', 14)} Briefkopf</button>` : ''}
     </div>
 
     <div id="tab-schwarzesbrett" class="tab-panel"></div>
     <div id="tab-mitglieder"     class="tab-panel" style="display:none"></div>
-    <div id="tab-ehrungen"       class="tab-panel" style="display:none"></div>
-    <div id="tab-vorstand"       class="tab-panel" style="display:none"></div>
     <div id="tab-dokumente"      class="tab-panel" style="display:none"></div>
+    <div id="tab-inventar"       class="tab-panel" style="display:none"></div>
+    <div id="tab-schluessel"     class="tab-panel" style="display:none"></div>
+    <div id="tab-aufgaben"       class="tab-panel" style="display:none"></div>
     ${isAdmin ? `<div id="tab-briefkopf" class="tab-panel" style="display:none"></div>` : ''}
   `;
 
@@ -50,9 +52,10 @@ export async function renderVerein() {
 
   loadSchwarztesBrett(isAdmin);
   loadMitglieder(isAdmin);
-  loadEhrungen();
-  loadVorstand(isAdmin);
   loadDokumente(isAdmin);
+  loadInventar(isAdmin);
+  loadSchluessel(isAdmin);
+  loadAufgaben(isAdmin);
   if (isAdmin) loadBriefkopf();
 }
 
@@ -201,149 +204,9 @@ function openPostModal(post = null) {
   });
 }
 
-// ── Vorstand ──────────────────────────────────────────────────────────────────
-
-async function loadVorstand(isAdmin) {
-  const el = document.getElementById('tab-vorstand');
-
-  el.innerHTML = `
-    <div class="section-header">
-      <h3>Vorstand</h3>
-      ${isAdmin ? `<button class="btn btn--primary" id="btn-new-vorstand">${icon('plus', 14)} Hinzufügen</button>` : ''}
-    </div>
-    <div id="vorstand-list"><p class="text-muted">Lädt...</p></div>
-  `;
-
-  renderIcons(el);
-
-  if (isAdmin) {
-    document.getElementById('btn-new-vorstand').addEventListener('click', () => openVorstandModal());
-  }
-
-  await refreshVorstand(isAdmin);
-}
-
-async function refreshVorstand(isAdmin) {
-  const el = document.getElementById('vorstand-list');
-  try {
-    const list = await api.getVorstand();
-    if (!list?.length) {
-      el.innerHTML = `<div class="empty-state">Kein Vorstand eingetragen.</div>`;
-      return;
-    }
-    el.innerHTML = `
-      <div class="table-wrapper">
-        <table>
-          <thead><tr>
-            <th>Name</th><th>Funktion</th><th>Seit</th><th>Bis</th>
-            ${isAdmin ? '<th></th>' : ''}
-          </tr></thead>
-          <tbody>
-            ${list.map(v => `
-              <tr>
-                <td>${esc(v.name)}</td>
-                <td>${esc(v.funktion)}</td>
-                <td class="text-muted text-sm">${v.seit || '—'}</td>
-                <td class="text-muted text-sm">${v.bis || '—'}</td>
-                ${isAdmin ? `<td>
-                  <div class="btn-group">
-                    <button class="btn btn--outline btn--sm" data-edit-vorstand="${v.id}">Bearbeiten</button>
-                    <button class="btn btn--danger btn--sm" data-del-vorstand="${v.id}">Löschen</button>
-                  </div>
-                </td>` : ''}
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
-    `;
-
-    el.querySelectorAll('[data-edit-vorstand]').forEach(btn => {
-      const v = list.find(x => x.id === btn.dataset.editVorstand);
-      btn.addEventListener('click', () => openVorstandModal(v));
-    });
-    el.querySelectorAll('[data-del-vorstand]').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        if (!confirm('Eintrag löschen?')) return;
-        await api.deleteVorstand(btn.dataset.delVorstand);
-        toast('Gelöscht', 'success');
-        refreshVorstand(isAdmin);
-      });
-    });
-  } catch (e) {
-    el.innerHTML = `<p class="text-muted">${esc(e.message)}</p>`;
-  }
-}
-
-function openVorstandModal(v = null) {
-  const existing = document.getElementById('vorstand-modal');
-  if (existing) existing.remove();
-
-  const modal = document.createElement('div');
-  modal.id = 'vorstand-modal';
-  modal.className = 'modal-overlay active';
-  modal.innerHTML = `
-    <div class="modal">
-      <div class="modal__header">
-        <h3>${v ? 'Vorstandsmitglied bearbeiten' : 'Vorstandsmitglied hinzufügen'}</h3>
-        <button class="modal__close" id="close-vm">✕</button>
-      </div>
-      <div class="modal__body">
-        <div class="form-grid">
-          <div class="form-group">
-            <label>Name</label>
-            <input type="text" id="vm-name" value="${esc(v?.name || '')}" />
-          </div>
-          <div class="form-group">
-            <label>Funktion</label>
-            <input type="text" id="vm-funktion" value="${esc(v?.funktion || '')}" placeholder="z.B. 1. Vorsitzender" />
-          </div>
-          <div class="form-group">
-            <label>Gewählt seit</label>
-            <input type="date" id="vm-seit" value="${v?.seit || ''}" />
-          </div>
-          <div class="form-group">
-            <label>Amtszeit bis</label>
-            <input type="date" id="vm-bis" value="${v?.bis || ''}" />
-          </div>
-          <div class="form-group">
-            <label>Reihenfolge</label>
-            <input type="number" id="vm-sort" value="${v?.sort_order ?? 0}" />
-          </div>
-        </div>
-      </div>
-      <div class="modal__footer">
-        <button class="btn btn--secondary" id="close-vm2">Abbrechen</button>
-        <button class="btn btn--primary" id="save-vm-btn">Speichern</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(modal);
-
-  const close = () => modal.remove();
-  document.getElementById('close-vm').addEventListener('click', close);
-  document.getElementById('close-vm2').addEventListener('click', close);
-
-  document.getElementById('save-vm-btn').addEventListener('click', async () => {
-    const body = {
-      name:       document.getElementById('vm-name').value.trim(),
-      funktion:   document.getElementById('vm-funktion').value.trim(),
-      seit:       document.getElementById('vm-seit').value || null,
-      bis:        document.getElementById('vm-bis').value || null,
-      sort_order: parseInt(document.getElementById('vm-sort').value) || 0,
-    };
-    if (!body.name || !body.funktion) { toast('Name und Funktion erforderlich', 'error'); return; }
-    try {
-      if (v) { await api.updateVorstand(v.id, body); }
-      else    { await api.createVorstand(body); }
-      toast('Gespeichert', 'success');
-      modal.remove();
-      refreshVorstand(true);
-    } catch (e) { toast(e.message, 'error'); }
-  });
-}
-
 // ── Dokumente ─────────────────────────────────────────────────────────────────
+
+const DOK_KATEGORIEN = ['Satzung', 'Protokolle', 'Versicherungen', 'Formulare', 'Berichte', 'Sonstiges'];
 
 async function loadDokumente(isAdmin) {
   const el = document.getElementById('tab-dokumente');
@@ -351,123 +214,179 @@ async function loadDokumente(isAdmin) {
   el.innerHTML = `
     <div class="section-header">
       <h3>Dokumentenablage</h3>
-      ${isAdmin ? `<label class="btn btn--primary" style="cursor:pointer">
-        ${icon('upload', 14)} Dokument hochladen
-        <input type="file" id="doc-upload-input" style="display:none" />
-      </label>` : ''}
+      ${isAdmin ? `<button class="btn btn--primary" id="btn-upload-doc">${icon('upload', 14)} Hochladen</button>` : ''}
     </div>
-    ${isAdmin ? `
-    <div class="card" id="upload-form">
-      <div class="card__body">
-        <div class="form-grid">
-          <div class="form-group">
-            <label>Kategorie</label>
-            <input type="text" id="doc-category" placeholder="z.B. Satzung, Protokolle, Versicherungen" />
-          </div>
-          <div class="form-group">
-            <label>Zugriff</label>
-            <select id="doc-access">
-              <option value="all">Alle</option>
-              <option value="vorstand">Nur Vorstand / Admin</option>
-            </select>
-          </div>
-        </div>
-      </div>
-    </div>` : ''}
+    <div class="tab-bar" id="dok-filter-bar" style="margin-bottom:12px">
+      <button class="tab-btn tab-btn--active" data-kat="">Alle</button>
+      ${DOK_KATEGORIEN.map(k => `<button class="tab-btn" data-kat="${k}">${k}</button>`).join('')}
+    </div>
     <div id="dokumente-list"><p class="text-muted">Lädt...</p></div>
   `;
 
   renderIcons(el);
 
-  if (isAdmin) {
-    document.getElementById('doc-upload-input').addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const category = document.getElementById('doc-category').value || 'Allgemein';
-      const access   = document.getElementById('doc-access').value || 'all';
-      try {
-        await api.uploadDocument(file, category, access);
-        toast('Dokument hochgeladen', 'success');
-        e.target.value = '';
-        refreshDokumente(isAdmin);
-      } catch (err) { toast(err.message, 'error'); }
+  document.querySelectorAll('#dok-filter-bar .tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#dok-filter-bar .tab-btn').forEach(b => b.classList.remove('tab-btn--active'));
+      btn.classList.add('tab-btn--active');
+      renderDokumenteList(isAdmin, btn.dataset.kat);
     });
+  });
+
+  if (isAdmin) {
+    document.getElementById('btn-upload-doc').addEventListener('click', () => openDokumentModal(isAdmin));
   }
 
   await refreshDokumente(isAdmin);
 }
 
+function openDokumentModal(isAdmin) {
+  const existing = document.getElementById('dok-modal');
+  if (existing) existing.remove();
+  const modal = document.createElement('div');
+  modal.id = 'dok-modal';
+  modal.className = 'modal-overlay active';
+  modal.innerHTML = `
+    <div class="modal">
+      <div class="modal__header">
+        <h3>Dokument hochladen</h3>
+        <button class="modal__close" id="close-dok">✕</button>
+      </div>
+      <div class="modal__body">
+        <div class="form-grid">
+          <div class="form-group form-group--full">
+            <label>Datei</label>
+            <input type="file" id="dok-file" />
+          </div>
+          <div class="form-group">
+            <label>Kategorie</label>
+            <select id="dok-kat">
+              ${DOK_KATEGORIEN.map(k => `<option value="${k}">${k}</option>`).join('')}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Zugriff</label>
+            <select id="dok-access">
+              <option value="all">Alle Mitglieder</option>
+              <option value="vorstand">Nur Admin</option>
+            </select>
+          </div>
+          <div class="form-group form-group--full">
+            <label>Beschreibung <span class="text-muted">(optional)</span></label>
+            <input type="text" id="dok-beschreibung" placeholder="Kurze Beschreibung des Dokuments" />
+          </div>
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--secondary" id="close-dok2">Abbrechen</button>
+        <button class="btn btn--primary" id="save-dok">Hochladen</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  const close = () => modal.remove();
+  document.getElementById('close-dok').addEventListener('click', close);
+  document.getElementById('close-dok2').addEventListener('click', close);
+  document.getElementById('save-dok').addEventListener('click', async () => {
+    const file         = document.getElementById('dok-file').files[0];
+    const kat          = document.getElementById('dok-kat').value;
+    const access       = document.getElementById('dok-access').value;
+    const beschreibung = document.getElementById('dok-beschreibung').value.trim();
+    if (!file) { toast('Bitte eine Datei auswählen', 'error'); return; }
+    try {
+      await api.uploadDocument(file, kat, access, beschreibung || null);
+      toast('Dokument hochgeladen', 'success');
+      modal.remove();
+      refreshDokumente(isAdmin);
+    } catch (e) { toast(e.message, 'error'); }
+  });
+}
+
+let _dokCache = [];
+
 async function refreshDokumente(isAdmin) {
-  const el = document.getElementById('dokumente-list');
   try {
-    const docs = await api.getDocuments();
-    if (!docs?.length) {
-      el.innerHTML = `<div class="empty-state">Noch keine Dokumente hochgeladen.</div>`;
-      return;
-    }
+    _dokCache = await api.getDocuments();
+    const aktiveKat = document.querySelector('#dok-filter-bar .tab-btn--active')?.dataset.kat || '';
+    renderDokumenteList(isAdmin, aktiveKat);
+  } catch (e) {
+    const el = document.getElementById('dokumente-list');
+    if (el) el.innerHTML = `<p class="text-muted">${esc(e.message)}</p>`;
+  }
+}
 
-    const byCategory = {};
-    docs.forEach(d => {
-      if (!byCategory[d.category]) byCategory[d.category] = [];
-      byCategory[d.category].push(d);
-    });
+function renderDokumenteList(isAdmin, katFilter = '') {
+  const el = document.getElementById('dokumente-list');
+  if (!el) return;
+  const docs = katFilter ? _dokCache.filter(d => d.category === katFilter) : _dokCache;
 
-    el.innerHTML = Object.entries(byCategory).map(([cat, items]) => `
-      <div class="card" style="margin-bottom:12px">
-        <div class="card__header">${icon('folder', 14)} ${esc(cat)}</div>
-        <div class="card__body" style="padding:0">
-          <table>
-            <tbody>
-              ${items.map(d => `
-                <tr>
-                  <td>${icon('file', 13)} ${esc(d.name)}</td>
-                  <td class="text-muted text-sm">${formatSize(d.file_size)}</td>
-                  <td class="text-muted text-sm">
-                    ${d.access_level === 'vorstand'
-                      ? `<span class="badge badge--superuser">Nur Vorstand</span>`
-                      : `<span class="badge badge--vollstaendig">Alle</span>`}
-                  </td>
-                  <td class="text-muted text-sm">${esc(d.uploaded_by_name)}</td>
-                  <td>
-                    <div class="btn-group">
-                      <button class="btn btn--secondary btn--sm" data-download="${d.id}" data-name="${esc(d.name)}">
-                        ${icon('download', 13)} Download
-                      </button>
-                      ${isAdmin ? `<button class="btn btn--danger btn--sm" data-del-doc="${d.id}">Löschen</button>` : ''}
-                    </div>
-                  </td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
+  if (!docs.length) {
+    el.innerHTML = `<div class="empty-state">Keine Dokumente in dieser Kategorie.</div>`;
+    return;
+  }
+
+  const byCategory = {};
+  docs.forEach(d => {
+    if (!byCategory[d.category]) byCategory[d.category] = [];
+    byCategory[d.category].push(d);
+  });
+
+  el.innerHTML = Object.entries(byCategory).map(([cat, items]) => `
+    <div class="card" style="margin-bottom:12px">
+      <div class="card__header">${icon('folder', 14)} ${esc(cat)}</div>
+      <div class="card__body" style="padding:0">
+        <table>
+          <thead><tr><th>Dateiname</th><th>Beschreibung</th><th>Größe</th><th>Zugriff</th><th>Hochgeladen</th><th></th></tr></thead>
+          <tbody>
+            ${items.map(d => `
+              <tr>
+                <td>${icon('file', 13)} <strong>${esc(d.name)}</strong></td>
+                <td class="text-muted text-sm">${d.beschreibung ? esc(d.beschreibung) : '—'}</td>
+                <td class="text-muted text-sm">${formatSize(d.file_size)}</td>
+                <td>${d.access_level === 'vorstand'
+                  ? `<span class="badge badge--superuser">Nur Admin</span>`
+                  : `<span class="badge badge--vollstaendig">Alle</span>`}
+                </td>
+                <td class="text-muted text-sm">${esc(d.uploaded_by_name)}</td>
+                <td>
+                  <div class="btn-group">
+                    <button class="btn btn--secondary btn--sm" data-download="${d.id}" data-name="${esc(d.name)}">
+                      ${icon('download', 13)} Download
+                    </button>
+                    ${isAdmin ? `<button class="btn btn--danger btn--sm" data-del-doc="${d.id}">Löschen</button>` : ''}
+                  </div>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
         </div>
       </div>
     `).join('');
 
     renderIcons(el);
 
-    el.querySelectorAll('[data-download]').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const res = await api.downloadDocument(btn.dataset.download);
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = btn.dataset.name;
-        a.click(); URL.revokeObjectURL(url);
-      });
-    });
+  renderIcons(el);
 
-    el.querySelectorAll('[data-del-doc]').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        if (!confirm('Dokument löschen?')) return;
-        await api.deleteDocument(btn.dataset.delDoc);
-        toast('Gelöscht', 'success');
-        refreshDokumente(isAdmin);
-      });
+  el.querySelectorAll('[data-download]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const res = await api.downloadDocument(btn.dataset.download);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = btn.dataset.name;
+      a.click(); URL.revokeObjectURL(url);
     });
-  } catch (e) {
-    el.innerHTML = `<p class="text-muted">${esc(e.message)}</p>`;
-  }
+  });
+
+  el.querySelectorAll('[data-del-doc]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Dokument löschen?')) return;
+      await api.deleteDocument(btn.dataset.delDoc);
+      toast('Gelöscht', 'success');
+      refreshDokumente(isAdmin);
+    });
+  });
 }
 
 function formatSize(bytes) {
@@ -499,12 +418,14 @@ async function loadMitglieder(isAdmin) {
       <input type="text" id="filter-name" placeholder="Name suchen…" style="flex:1;max-width:260px" />
     </div>
     <div id="mitglieder-list"><p class="text-muted">Lädt...</p></div>
+    <div id="mitglieder-ehrungen" style="margin-top:24px"></div>
   `;
   renderIcons(el);
   if (isAdmin) document.getElementById('btn-new-mitglied').addEventListener('click', () => openMitgliedModal());
   document.getElementById('filter-status').addEventListener('change', () => renderMitgliederTable(isAdmin));
   document.getElementById('filter-name').addEventListener('input', () => renderMitgliederTable(isAdmin));
   await refreshMitglieder(isAdmin);
+  loadEhrungen();
 }
 
 let _mitgliederCache = [];
@@ -653,6 +574,23 @@ function openMitgliedModal(m = null) {
             <label>Austrittsgrund</label>
             <input type="text" id="mm-austrittsgrund" value="${esc(m?.austritt_grund || '')}" />
           </div>` : ''}
+          <div class="form-group">
+            <label>Oberteil Größe</label>
+            <select id="mm-oberteil">
+              <option value="">—</option>
+              ${['XS','S','M','L','XL','XXL','XXXL'].map(s =>
+                `<option value="${s}" ${(m?.kleidung_oberteil || '') === s ? 'selected' : ''}>${s}</option>`
+              ).join('')}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Hose Größe</label>
+            <input type="text" id="mm-hose" value="${esc(m?.kleidung_hose || '')}" placeholder="z.B. 50 oder 32/32" />
+          </div>
+          <div class="form-group">
+            <label>Schuhgröße</label>
+            <input type="text" id="mm-schuhe" value="${esc(m?.kleidung_schuhe || '')}" placeholder="z.B. 43" />
+          </div>
           <div class="form-group form-group--full">
             <label>Bemerkung</label>
             <textarea id="mm-bemerkung" rows="2">${esc(m?.bemerkung || '')}</textarea>
@@ -680,7 +618,10 @@ function openMitgliedModal(m = null) {
       geburtsdatum:   document.getElementById('mm-geburt').value || null,
       eintrittsdatum: document.getElementById('mm-eintritt').value,
       status:         document.getElementById('mm-status').value,
-      bemerkung:      document.getElementById('mm-bemerkung').value.trim() || null,
+      bemerkung:           document.getElementById('mm-bemerkung').value.trim() || null,
+      kleidung_oberteil:   document.getElementById('mm-oberteil').value || null,
+      kleidung_hose:       document.getElementById('mm-hose').value.trim() || null,
+      kleidung_schuhe:     document.getElementById('mm-schuhe').value.trim() || null,
     };
     if (m) {
       body.austritt_datum   = document.getElementById('mm-austritt')?.value || null;
@@ -717,6 +658,11 @@ function openMitgliedDetail(m, isAdmin) {
           <div><span class="text-muted text-xs">Eingetreten</span><br>${m.eintrittsdatum || '—'}</div>
           <div><span class="text-muted text-xs">E-Mail</span><br>${m.email ? `<a href="mailto:${esc(m.email)}">${esc(m.email)}</a>` : '—'}</div>
           <div><span class="text-muted text-xs">Telefon</span><br>${esc(m.telefon || '—')}</div>
+          ${(m.kleidung_oberteil || m.kleidung_hose || m.kleidung_schuhe) ? `
+          <div><span class="text-muted text-xs">Oberteil</span><br>${esc(m.kleidung_oberteil || '—')}</div>
+          <div><span class="text-muted text-xs">Hose</span><br>${esc(m.kleidung_hose || '—')}</div>
+          <div><span class="text-muted text-xs">Schuhe</span><br>${esc(m.kleidung_schuhe || '—')}</div>
+          ` : ''}
         </div>
 
         <div class="section-header" style="margin-top:16px">
@@ -937,7 +883,7 @@ function openAuszeichnungModal(mitgliedId) {
 // ── Ehrungen-Übersicht ────────────────────────────────────────────────────────
 
 async function loadEhrungen() {
-  const el = document.getElementById('tab-ehrungen');
+  const el = document.getElementById('mitglieder-ehrungen');
   el.innerHTML = `<p class="text-muted">Lädt...</p>`;
   try {
     const data = await api.getEhrungen();
@@ -1098,4 +1044,845 @@ async function loadBriefkopf() {
   } catch (e) {
     el.innerHTML = `<p class="text-muted">${esc(e.message)}</p>`;
   }
+}
+
+// ── Inventar ──────────────────────────────────────────────────────────────────
+
+const KAT_LABELS     = { technik: 'Technik', werkzeug: 'Werkzeug', veranstaltung: 'Veranstaltung', buero: 'Büro', sonstige: 'Sonstiges' };
+const ZUSTAND_LABELS = { gut: 'Gut', beschaedigt: 'Beschädigt', defekt: 'Defekt', ausgemustert: 'Ausgemustert' };
+const ZUSTAND_BADGE  = { gut: 'badge--vollstaendig', beschaedigt: 'badge--superuser', defekt: 'badge--abgelehnt', ausgemustert: 'badge--storniert' };
+
+let _inventarCache = [];
+
+async function loadInventar(isAdmin) {
+  const el = document.getElementById('tab-inventar');
+  el.innerHTML = `
+    <div class="section-header">
+      <h3>Inventar</h3>
+      ${isAdmin ? `<button class="btn btn--primary" id="btn-new-inventar">${icon('plus', 14)} Gerät anlegen</button>` : ''}
+    </div>
+    <div class="filter-bar">
+      <select id="inv-filter-kat">
+        <option value="">Alle Kategorien</option>
+        ${Object.entries(KAT_LABELS).map(([k,v]) => `<option value="${k}">${v}</option>`).join('')}
+      </select>
+      <select id="inv-filter-zustand">
+        <option value="">Alle Zustände</option>
+        ${Object.entries(ZUSTAND_LABELS).map(([k,v]) => `<option value="${k}">${v}</option>`).join('')}
+      </select>
+      <input type="text" id="inv-filter-name" placeholder="Suchen…" style="flex:1;max-width:260px" />
+    </div>
+    <div id="inventar-list"><p class="text-muted">Lädt...</p></div>
+  `;
+  renderIcons(el);
+  if (isAdmin) document.getElementById('btn-new-inventar').addEventListener('click', () => openInventarModal());
+  ['inv-filter-kat','inv-filter-zustand'].forEach(id =>
+    document.getElementById(id).addEventListener('change', () => renderInventarList(isAdmin))
+  );
+  document.getElementById('inv-filter-name').addEventListener('input', () => renderInventarList(isAdmin));
+  await refreshInventar(isAdmin);
+}
+
+async function refreshInventar(isAdmin) {
+  try {
+    _inventarCache = await api.getInventar();
+    renderInventarList(isAdmin);
+  } catch (e) {
+    const el = document.getElementById('inventar-list');
+    if (el) el.innerHTML = `<p class="text-muted">${esc(e.message)}</p>`;
+  }
+}
+
+function renderInventarList(isAdmin) {
+  const el = document.getElementById('inventar-list');
+  if (!el) return;
+  const katF     = document.getElementById('inv-filter-kat')?.value || '';
+  const zustandF = document.getElementById('inv-filter-zustand')?.value || '';
+  const nameF    = (document.getElementById('inv-filter-name')?.value || '').toLowerCase();
+
+  let list = _inventarCache.filter(i =>
+    (!katF || i.kategorie === katF) &&
+    (!zustandF || i.zustand === zustandF) &&
+    (!nameF || i.name.toLowerCase().includes(nameF))
+  );
+
+  const aktiv  = list.filter(i => !i.archiviert);
+  const archiv = list.filter(i => i.archiviert);
+
+  if (!aktiv.length && !archiv.length) {
+    el.innerHTML = `<div class="empty-state">Noch keine Gegenstände erfasst.</div>`;
+    return;
+  }
+
+  const renderRows = (items) => items.map(i => `
+    <tr>
+      <td><strong>${esc(i.name)}</strong>${i.standort ? `<br><span class="text-muted text-xs">${esc(i.standort)}</span>` : ''}</td>
+      <td class="text-muted text-sm">${KAT_LABELS[i.kategorie] || i.kategorie}</td>
+      <td><span class="badge ${ZUSTAND_BADGE[i.zustand] || ''}">${ZUSTAND_LABELS[i.zustand] || i.zustand}</span></td>
+      <td>${i.ausgeliehen
+        ? `<span class="badge badge--abgelehnt">Ausgeliehen</span>`
+        : `<span class="badge badge--vollstaendig">Verfügbar</span>`}
+      </td>
+      <td class="text-muted text-sm">${esc(i.seriennummer || '—')}</td>
+      <td>
+        <div class="btn-group">
+          <button class="btn btn--outline btn--sm" data-inv-detail="${i.id}">Details</button>
+          ${isAdmin && !i.archiviert ? `
+            <button class="btn btn--outline btn--sm" data-inv-edit="${i.id}">Bearbeiten</button>
+            <button class="btn btn--danger btn--sm" data-inv-arch="${i.id}">Archivieren</button>
+          ` : ''}
+        </div>
+      </td>
+    </tr>
+  `).join('');
+
+  el.innerHTML = `
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Name / Standort</th><th>Kategorie</th><th>Zustand</th><th>Status</th><th>Seriennr.</th><th></th></tr></thead>
+        <tbody>${renderRows(aktiv)}</tbody>
+      </table>
+    </div>
+    ${archiv.length ? `
+    <details style="margin-top:12px">
+      <summary class="text-muted text-sm" style="cursor:pointer">Archiviert (${archiv.length})</summary>
+      <div class="table-wrapper" style="margin-top:8px">
+        <table><tbody>${renderRows(archiv)}</tbody></table>
+      </div>
+    </details>` : ''}
+  `;
+
+  el.querySelectorAll('[data-inv-detail]').forEach(btn => {
+    const item = _inventarCache.find(i => i.id === btn.dataset.invDetail);
+    btn.addEventListener('click', () => openInventarDetail(item, isAdmin));
+  });
+  el.querySelectorAll('[data-inv-edit]').forEach(btn => {
+    const item = _inventarCache.find(i => i.id === btn.dataset.invEdit);
+    btn.addEventListener('click', () => openInventarModal(item));
+  });
+  el.querySelectorAll('[data-inv-arch]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Gegenstand archivieren?')) return;
+      await api.deleteInventar(btn.dataset.invArch);
+      toast('Archiviert', 'success');
+      refreshInventar(isAdmin);
+    });
+  });
+}
+
+function openInventarModal(item = null) {
+  const ex = document.getElementById('inv-modal');
+  if (ex) ex.remove();
+  const modal = document.createElement('div');
+  modal.id = 'inv-modal';
+  modal.className = 'modal-overlay active';
+  modal.innerHTML = `
+    <div class="modal">
+      <div class="modal__header">
+        <h3>${item ? 'Gerät bearbeiten' : 'Neues Gerät'}</h3>
+        <button class="modal__close" id="close-inv">✕</button>
+      </div>
+      <div class="modal__body">
+        <div class="form-grid">
+          <div class="form-group form-group--full">
+            <label>Name</label>
+            <input type="text" id="inv-name" value="${esc(item?.name || '')}" />
+          </div>
+          <div class="form-group">
+            <label>Kategorie</label>
+            <select id="inv-kat">
+              ${Object.entries(KAT_LABELS).map(([k,v]) =>
+                `<option value="${k}" ${(item?.kategorie || 'sonstige') === k ? 'selected' : ''}>${v}</option>`
+              ).join('')}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Zustand</label>
+            <select id="inv-zustand">
+              ${Object.entries(ZUSTAND_LABELS).map(([k,v]) =>
+                `<option value="${k}" ${(item?.zustand || 'gut') === k ? 'selected' : ''}>${v}</option>`
+              ).join('')}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Seriennummer</label>
+            <input type="text" id="inv-serial" value="${esc(item?.seriennummer || '')}" />
+          </div>
+          <div class="form-group">
+            <label>Standort</label>
+            <input type="text" id="inv-standort" value="${esc(item?.standort || '')}" />
+          </div>
+          <div class="form-group form-group--full">
+            <label>Bemerkung</label>
+            <input type="text" id="inv-bemerkung" value="${esc(item?.bemerkung || '')}" />
+          </div>
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--secondary" id="close-inv2">Abbrechen</button>
+        <button class="btn btn--primary" id="save-inv">Speichern</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  const close = () => modal.remove();
+  document.getElementById('close-inv').addEventListener('click', close);
+  document.getElementById('close-inv2').addEventListener('click', close);
+  document.getElementById('save-inv').addEventListener('click', async () => {
+    const body = {
+      name:         document.getElementById('inv-name').value.trim(),
+      kategorie:    document.getElementById('inv-kat').value,
+      zustand:      document.getElementById('inv-zustand').value,
+      seriennummer: document.getElementById('inv-serial').value.trim() || null,
+      standort:     document.getElementById('inv-standort').value.trim() || null,
+      bemerkung:    document.getElementById('inv-bemerkung').value.trim() || null,
+    };
+    if (!body.name) { toast('Name erforderlich', 'error'); return; }
+    try {
+      if (item) await api.updateInventar(item.id, body);
+      else      await api.createInventar(body);
+      toast('Gespeichert', 'success');
+      modal.remove();
+      refreshInventar(true);
+    } catch (e) { toast(e.message, 'error'); }
+  });
+}
+
+async function openInventarDetail(item, isAdmin) {
+  const ex = document.getElementById('inv-detail-modal');
+  if (ex) ex.remove();
+  const ausleihen = await api.getInventarAusleihen(item.id).catch(() => []);
+  const aktive = ausleihen.filter(a => !a.rueckgabe_ist);
+  const modal = document.createElement('div');
+  modal.id = 'inv-detail-modal';
+  modal.className = 'modal-overlay active';
+  modal.innerHTML = `
+    <div class="modal" style="max-width:680px">
+      <div class="modal__header">
+        <h3>${esc(item.name)}
+          <span class="badge ${item.ausgeliehen ? 'badge--abgelehnt' : 'badge--vollstaendig'}" style="margin-left:8px">
+            ${item.ausgeliehen ? 'Ausgeliehen' : 'Verfügbar'}
+          </span>
+        </h3>
+        <button class="modal__close" id="close-inv-d">✕</button>
+      </div>
+      <div class="modal__body">
+        <div class="form-grid" style="margin-bottom:16px">
+          <div><span class="text-muted text-xs">Kategorie</span><br>${KAT_LABELS[item.kategorie] || item.kategorie}</div>
+          <div><span class="text-muted text-xs">Zustand</span><br><span class="badge ${ZUSTAND_BADGE[item.zustand] || ''}">${ZUSTAND_LABELS[item.zustand] || item.zustand}</span></div>
+          ${item.standort ? `<div><span class="text-muted text-xs">Standort</span><br>${esc(item.standort)}</div>` : ''}
+          ${item.seriennummer ? `<div><span class="text-muted text-xs">Seriennr.</span><br>${esc(item.seriennummer)}</div>` : ''}
+        </div>
+
+        ${aktive.length ? `
+        <div class="card" style="margin-bottom:16px;border-color:#e63022">
+          <div class="card__body">
+            <strong>Aktuell ausgeliehen an:</strong> ${esc(aktive[0].ausgeliehen_an)}<br>
+            <span class="text-muted text-sm">Seit ${aktive[0].ausgabe_datum}${aktive[0].rueckgabe_soll ? ` · Soll zurück: ${aktive[0].rueckgabe_soll}` : ''}</span>
+            ${isAdmin ? `<br><br><button class="btn btn--primary btn--sm" id="btn-rueckgabe-${aktive[0].id}">Rückgabe erfassen</button>` : ''}
+          </div>
+        </div>` : isAdmin ? `
+        <div style="margin-bottom:16px">
+          <button class="btn btn--primary" id="btn-ausleihen-${item.id}">Ausleihen</button>
+        </div>` : ''}
+
+        ${ausleihen.filter(a => a.rueckgabe_ist).length ? `
+        <details>
+          <summary class="text-muted text-sm" style="cursor:pointer">Ausleihe-Verlauf</summary>
+          <table style="margin-top:8px">
+            <thead><tr><th>Ausgeliehen an</th><th>Ausgabe</th><th>Zurück</th></tr></thead>
+            <tbody>
+              ${ausleihen.filter(a => a.rueckgabe_ist).map(a => `
+                <tr>
+                  <td>${esc(a.ausgeliehen_an)}</td>
+                  <td class="text-muted text-sm">${a.ausgabe_datum}</td>
+                  <td class="text-muted text-sm">${a.rueckgabe_ist}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </details>` : ''}
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--secondary" id="close-inv-d2">Schließen</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  const close = () => modal.remove();
+  document.getElementById('close-inv-d').addEventListener('click', close);
+  document.getElementById('close-inv-d2').addEventListener('click', close);
+
+  if (isAdmin && aktive.length) {
+    document.getElementById(`btn-rueckgabe-${aktive[0].id}`).addEventListener('click', async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const datum = prompt('Rückgabedatum:', today);
+      if (!datum) return;
+      try {
+        await api.returnAusleihe(aktive[0].id, { rueckgabe_ist: datum });
+        toast('Rückgabe erfasst', 'success');
+        modal.remove();
+        refreshInventar(isAdmin);
+      } catch (e) { toast(e.message, 'error'); }
+    });
+  }
+  if (isAdmin && !item.ausgeliehen) {
+    document.getElementById(`btn-ausleihen-${item.id}`)?.addEventListener('click', () => {
+      openAusleiheModal(item, isAdmin);
+    });
+  }
+}
+
+function openAusleiheModal(item, isAdmin) {
+  const ex = document.getElementById('ausl-modal');
+  if (ex) ex.remove();
+  const today = new Date().toISOString().split('T')[0];
+  const modal = document.createElement('div');
+  modal.id = 'ausl-modal';
+  modal.className = 'modal-overlay active';
+  modal.innerHTML = `
+    <div class="modal">
+      <div class="modal__header">
+        <h3>Ausleihen: ${esc(item.name)}</h3>
+        <button class="modal__close" id="close-ausl">✕</button>
+      </div>
+      <div class="modal__body">
+        <div class="form-grid">
+          <div class="form-group form-group--full">
+            <label>Ausgeliehen an</label>
+            <input type="text" id="ausl-an" placeholder="Name der Person" />
+          </div>
+          <div class="form-group">
+            <label>Ausgabedatum</label>
+            <input type="date" id="ausl-datum" value="${today}" />
+          </div>
+          <div class="form-group">
+            <label>Zurück bis <span class="text-muted">(optional)</span></label>
+            <input type="date" id="ausl-bis" />
+          </div>
+          <div class="form-group form-group--full">
+            <label>Bemerkung</label>
+            <input type="text" id="ausl-bem" />
+          </div>
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--secondary" id="close-ausl2">Abbrechen</button>
+        <button class="btn btn--primary" id="save-ausl">Ausleihen</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  const close = () => modal.remove();
+  document.getElementById('close-ausl').addEventListener('click', close);
+  document.getElementById('close-ausl2').addEventListener('click', close);
+  document.getElementById('save-ausl').addEventListener('click', async () => {
+    const body = {
+      ausgeliehen_an: document.getElementById('ausl-an').value.trim(),
+      ausgabe_datum:  document.getElementById('ausl-datum').value || null,
+      rueckgabe_soll: document.getElementById('ausl-bis').value || null,
+      bemerkung:      document.getElementById('ausl-bem').value.trim() || null,
+    };
+    if (!body.ausgeliehen_an) { toast('Name erforderlich', 'error'); return; }
+    try {
+      await api.createAusleihe(item.id, body);
+      toast('Ausgeliehen', 'success');
+      modal.remove();
+      document.getElementById('inv-detail-modal')?.remove();
+      refreshInventar(isAdmin);
+    } catch (e) { toast(e.message, 'error'); }
+  });
+}
+
+// ── Schlüsselverwaltung ───────────────────────────────────────────────────────
+
+let _schluesselCache = [];
+
+async function loadSchluessel(isAdmin) {
+  const el = document.getElementById('tab-schluessel');
+  el.innerHTML = `
+    <div class="section-header">
+      <h3>Schlüsselverwaltung</h3>
+      ${isAdmin ? `<button class="btn btn--primary" id="btn-new-schluessel">${icon('plus', 14)} Schlüssel anlegen</button>` : ''}
+    </div>
+    <div id="schluessel-list"><p class="text-muted">Lädt...</p></div>
+  `;
+  renderIcons(el);
+  if (isAdmin) document.getElementById('btn-new-schluessel').addEventListener('click', () => openSchluesselModal());
+  await refreshSchluessel(isAdmin);
+}
+
+async function refreshSchluessel(isAdmin) {
+  try {
+    _schluesselCache = await api.getSchluessel();
+    renderSchluesselList(isAdmin);
+  } catch (e) {
+    const el = document.getElementById('schluessel-list');
+    if (el) el.innerHTML = `<p class="text-muted">${esc(e.message)}</p>`;
+  }
+}
+
+function renderSchluesselList(isAdmin) {
+  const el = document.getElementById('schluessel-list');
+  if (!el) return;
+  if (!_schluesselCache.length) {
+    el.innerHTML = `<div class="empty-state">Noch keine Schlüssel erfasst.</div>`;
+    return;
+  }
+  el.innerHTML = `
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Bezeichnung</th><th>Bereich</th><th>Kopien</th><th>Vergeben</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          ${_schluesselCache.map(s => {
+            const frei = s.kopien_anzahl - Number(s.ausgegeben);
+            const statusCls = frei === 0 ? 'badge--abgelehnt' : 'badge--vollstaendig';
+            return `
+              <tr>
+                <td><strong>${esc(s.bezeichnung)}</strong></td>
+                <td class="text-muted text-sm">${esc(s.schloss_bereich || '—')}</td>
+                <td class="text-muted text-sm">${s.kopien_anzahl}</td>
+                <td class="text-muted text-sm">${s.ausgegeben}</td>
+                <td><span class="badge ${statusCls}">${frei === 0 ? 'Alle vergeben' : frei + ' frei'}</span></td>
+                <td>
+                  <div class="btn-group">
+                    <button class="btn btn--outline btn--sm" data-schl-detail="${s.id}">Details</button>
+                    ${isAdmin ? `
+                      <button class="btn btn--outline btn--sm" data-schl-edit="${s.id}">Bearbeiten</button>
+                      <button class="btn btn--danger btn--sm" data-schl-del="${s.id}">Löschen</button>
+                    ` : ''}
+                  </div>
+                </td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  el.querySelectorAll('[data-schl-detail]').forEach(btn => {
+    const s = _schluesselCache.find(x => x.id === btn.dataset.schlDetail);
+    btn.addEventListener('click', () => openSchluesselDetail(s, isAdmin));
+  });
+  el.querySelectorAll('[data-schl-edit]').forEach(btn => {
+    const s = _schluesselCache.find(x => x.id === btn.dataset.schlEdit);
+    btn.addEventListener('click', () => openSchluesselModal(s));
+  });
+  el.querySelectorAll('[data-schl-del]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Schlüssel löschen? Alle Ausgaben werden ebenfalls gelöscht.')) return;
+      try {
+        await api.deleteSchluessel(btn.dataset.schlDel);
+        toast('Gelöscht', 'success');
+        refreshSchluessel(isAdmin);
+      } catch (e) { toast(e.message, 'error'); }
+    });
+  });
+}
+
+function openSchluesselModal(s = null) {
+  const ex = document.getElementById('schl-modal');
+  if (ex) ex.remove();
+  const modal = document.createElement('div');
+  modal.id = 'schl-modal';
+  modal.className = 'modal-overlay active';
+  modal.innerHTML = `
+    <div class="modal">
+      <div class="modal__header">
+        <h3>${s ? 'Schlüssel bearbeiten' : 'Neuer Schlüssel'}</h3>
+        <button class="modal__close" id="close-schl">✕</button>
+      </div>
+      <div class="modal__body">
+        <div class="form-grid">
+          <div class="form-group form-group--full">
+            <label>Bezeichnung</label>
+            <input type="text" id="schl-bez" value="${esc(s?.bezeichnung || '')}" placeholder="z.B. Gerätehaus Haupteingang" />
+          </div>
+          <div class="form-group">
+            <label>Schloss / Bereich</label>
+            <input type="text" id="schl-bereich" value="${esc(s?.schloss_bereich || '')}" placeholder="z.B. Halle A" />
+          </div>
+          <div class="form-group">
+            <label>Anzahl Kopien</label>
+            <input type="number" id="schl-kopien" value="${s?.kopien_anzahl ?? 1}" min="1" />
+          </div>
+          <div class="form-group form-group--full">
+            <label>Bemerkung</label>
+            <input type="text" id="schl-bem" value="${esc(s?.bemerkung || '')}" />
+          </div>
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--secondary" id="close-schl2">Abbrechen</button>
+        <button class="btn btn--primary" id="save-schl">Speichern</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  const close = () => modal.remove();
+  document.getElementById('close-schl').addEventListener('click', close);
+  document.getElementById('close-schl2').addEventListener('click', close);
+  document.getElementById('save-schl').addEventListener('click', async () => {
+    const body = {
+      bezeichnung:     document.getElementById('schl-bez').value.trim(),
+      schloss_bereich: document.getElementById('schl-bereich').value.trim() || null,
+      kopien_anzahl:   parseInt(document.getElementById('schl-kopien').value) || 1,
+      bemerkung:       document.getElementById('schl-bem').value.trim() || null,
+    };
+    if (!body.bezeichnung) { toast('Bezeichnung erforderlich', 'error'); return; }
+    try {
+      if (s) await api.updateSchluessel(s.id, body);
+      else   await api.createSchluessel(body);
+      toast('Gespeichert', 'success');
+      modal.remove();
+      refreshSchluessel(true);
+    } catch (e) { toast(e.message, 'error'); }
+  });
+}
+
+async function openSchluesselDetail(s, isAdmin) {
+  const ex = document.getElementById('schl-detail-modal');
+  if (ex) ex.remove();
+  const ausgaben = await api.getSchluesselAusgaben(s.id).catch(() => []);
+  const aktive = ausgaben.filter(a => !a.rueckgabe_datum);
+  const modal = document.createElement('div');
+  modal.id = 'schl-detail-modal';
+  modal.className = 'modal-overlay active';
+  modal.innerHTML = `
+    <div class="modal" style="max-width:680px">
+      <div class="modal__header">
+        <h3>${esc(s.bezeichnung)}${s.schloss_bereich ? ` <span class="text-muted text-sm">· ${esc(s.schloss_bereich)}</span>` : ''}</h3>
+        <button class="modal__close" id="close-schl-d">✕</button>
+      </div>
+      <div class="modal__body">
+        <p class="text-muted text-sm" style="margin-bottom:16px">${Number(s.ausgegeben)} von ${s.kopien_anzahl} Kopie(n) vergeben</p>
+
+        <div class="section-header">
+          <h3 style="font-size:14px">Aktuelle Inhaber</h3>
+          ${isAdmin && Number(s.ausgegeben) < s.kopien_anzahl
+            ? `<button class="btn btn--primary btn--sm" id="btn-ausgeben">Ausgeben</button>`
+            : ''}
+        </div>
+
+        ${aktive.length ? `
+        <table>
+          <thead><tr><th>Name</th><th>Ausgegeben</th>${isAdmin ? '<th></th>' : ''}</tr></thead>
+          <tbody>
+            ${aktive.map(a => `
+              <tr>
+                <td>${esc(a.inhaber_name)}</td>
+                <td class="text-muted text-sm">${a.ausgabe_datum}</td>
+                ${isAdmin ? `<td><button class="btn btn--outline btn--sm" data-rueck="${a.id}">Rückgabe</button></td>` : ''}
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>` : `<p class="text-muted">Keine aktiven Ausgaben.</p>`}
+
+        ${ausgaben.filter(a => a.rueckgabe_datum).length ? `
+        <details style="margin-top:16px">
+          <summary class="text-muted text-sm" style="cursor:pointer">Verlauf</summary>
+          <table style="margin-top:8px">
+            <thead><tr><th>Name</th><th>Ausgabe</th><th>Rückgabe</th></tr></thead>
+            <tbody>
+              ${ausgaben.filter(a => a.rueckgabe_datum).map(a => `
+                <tr>
+                  <td>${esc(a.inhaber_name)}</td>
+                  <td class="text-muted text-sm">${a.ausgabe_datum}</td>
+                  <td class="text-muted text-sm">${a.rueckgabe_datum}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </details>` : ''}
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--secondary" id="close-schl-d2">Schließen</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  const close = () => modal.remove();
+  document.getElementById('close-schl-d').addEventListener('click', close);
+  document.getElementById('close-schl-d2').addEventListener('click', close);
+
+  document.getElementById('btn-ausgeben')?.addEventListener('click', () => openSchluesselAusgabeModal(s, isAdmin));
+
+  modal.querySelectorAll('[data-rueck]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const datum = prompt('Rückgabedatum:', today);
+      if (!datum) return;
+      try {
+        await api.returnSchluesselAusgabe(btn.dataset.rueck, { rueckgabe_datum: datum });
+        toast('Rückgabe erfasst', 'success');
+        modal.remove();
+        refreshSchluessel(isAdmin);
+      } catch (e) { toast(e.message, 'error'); }
+    });
+  });
+}
+
+function openSchluesselAusgabeModal(s, isAdmin) {
+  const ex = document.getElementById('schl-ausg-modal');
+  if (ex) ex.remove();
+  const today = new Date().toISOString().split('T')[0];
+  const modal = document.createElement('div');
+  modal.id = 'schl-ausg-modal';
+  modal.className = 'modal-overlay active';
+  modal.innerHTML = `
+    <div class="modal">
+      <div class="modal__header">
+        <h3>Schlüssel ausgeben: ${esc(s.bezeichnung)}</h3>
+        <button class="modal__close" id="close-sa">✕</button>
+      </div>
+      <div class="modal__body">
+        <div class="form-grid">
+          <div class="form-group form-group--full">
+            <label>Inhaber Name</label>
+            <input type="text" id="sa-name" placeholder="Name der Person" />
+          </div>
+          <div class="form-group">
+            <label>Ausgabedatum</label>
+            <input type="date" id="sa-datum" value="${today}" />
+          </div>
+          <div class="form-group form-group--full">
+            <label>Bemerkung</label>
+            <input type="text" id="sa-bem" />
+          </div>
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--secondary" id="close-sa2">Abbrechen</button>
+        <button class="btn btn--primary" id="save-sa">Ausgeben</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  const close = () => modal.remove();
+  document.getElementById('close-sa').addEventListener('click', close);
+  document.getElementById('close-sa2').addEventListener('click', close);
+  document.getElementById('save-sa').addEventListener('click', async () => {
+    const body = {
+      inhaber_name:  document.getElementById('sa-name').value.trim(),
+      ausgabe_datum: document.getElementById('sa-datum').value || null,
+      bemerkung:     document.getElementById('sa-bem').value.trim() || null,
+    };
+    if (!body.inhaber_name) { toast('Name erforderlich', 'error'); return; }
+    try {
+      await api.createSchluesselAusgabe(s.id, body);
+      toast('Schlüssel ausgegeben', 'success');
+      modal.remove();
+      document.getElementById('schl-detail-modal')?.remove();
+      refreshSchluessel(isAdmin);
+    } catch (e) { toast(e.message, 'error'); }
+  });
+}
+
+// ── Aufgaben ──────────────────────────────────────────────────────────────────
+
+const PRIO_LABELS        = { niedrig: 'Niedrig', normal: 'Normal', hoch: 'Hoch', dringend: 'Dringend' };
+const PRIO_BADGE         = { niedrig: 'badge--ausstehend', normal: 'badge--entwurf', hoch: 'badge--superuser', dringend: 'badge--abgelehnt' };
+const AUFG_STATUS_LABELS = { offen: 'Offen', in_arbeit: 'In Arbeit', erledigt: 'Erledigt' };
+const AUFG_STATUS_BADGE  = { offen: 'badge--offen', in_arbeit: 'badge--ausstehend', erledigt: 'badge--vollstaendig' };
+
+let _aufgabenCache  = [];
+let _aufgFilterStatus = '';
+
+async function loadAufgaben(isAdmin) {
+  const el = document.getElementById('tab-aufgaben');
+  el.innerHTML = `
+    <div class="section-header">
+      <h3>Aufgaben</h3>
+      <button class="btn btn--primary" id="btn-new-aufgabe">${icon('plus', 14)} Neue Aufgabe</button>
+    </div>
+    <div class="filter-bar">
+      <button class="btn btn--outline btn--sm aufg-fb aufg-fb--active" data-s="">Alle</button>
+      <button class="btn btn--outline btn--sm aufg-fb" data-s="offen">Offen</button>
+      <button class="btn btn--outline btn--sm aufg-fb" data-s="in_arbeit">In Arbeit</button>
+      <button class="btn btn--outline btn--sm aufg-fb" data-s="erledigt">Erledigt</button>
+    </div>
+    <div id="aufgaben-list"><p class="text-muted">Lädt...</p></div>
+  `;
+  renderIcons(el);
+  document.getElementById('btn-new-aufgabe').addEventListener('click', () => openAufgabeModal(null, isAdmin));
+  el.querySelectorAll('.aufg-fb').forEach(btn => {
+    btn.addEventListener('click', () => {
+      el.querySelectorAll('.aufg-fb').forEach(b => b.classList.remove('aufg-fb--active'));
+      btn.classList.add('aufg-fb--active');
+      _aufgFilterStatus = btn.dataset.s;
+      renderAufgabenList(isAdmin);
+    });
+  });
+  await refreshAufgaben(isAdmin);
+}
+
+async function refreshAufgaben(isAdmin) {
+  try {
+    _aufgabenCache = await api.getAufgaben();
+    renderAufgabenList(isAdmin);
+  } catch (e) {
+    const el = document.getElementById('aufgaben-list');
+    if (el) el.innerHTML = `<p class="text-muted">${esc(e.message)}</p>`;
+  }
+}
+
+function renderAufgabenList(isAdmin) {
+  const el = document.getElementById('aufgaben-list');
+  if (!el) return;
+  const list = _aufgFilterStatus
+    ? _aufgabenCache.filter(a => a.status === _aufgFilterStatus)
+    : _aufgabenCache;
+
+  if (!list.length) {
+    el.innerHTML = `<div class="empty-state">Keine Aufgaben in dieser Ansicht.</div>`;
+    return;
+  }
+
+  const today = new Date().toISOString().split('T')[0];
+
+  el.innerHTML = `
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Titel</th><th>Priorität</th><th>Zugewiesen</th><th>Fällig</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          ${list.map(a => {
+            const ueberfaellig = a.faellig_am && a.faellig_am < today && a.status !== 'erledigt';
+            return `
+              <tr>
+                <td>
+                  <strong>${esc(a.titel)}</strong>
+                  ${a.beschreibung ? `<br><span class="text-muted text-xs">${esc(a.beschreibung)}</span>` : ''}
+                </td>
+                <td><span class="badge ${PRIO_BADGE[a.prioritaet] || ''}">${PRIO_LABELS[a.prioritaet] || a.prioritaet}</span></td>
+                <td class="text-muted text-sm">${a.zugewiesen_name ? esc(a.zugewiesen_name) : '—'}</td>
+                <td class="${ueberfaellig ? 'badge badge--abgelehnt' : 'text-muted'} text-sm">${a.faellig_am || '—'}</td>
+                <td><span class="badge ${AUFG_STATUS_BADGE[a.status] || ''}">${AUFG_STATUS_LABELS[a.status] || a.status}</span></td>
+                <td>
+                  <div class="btn-group">
+                    ${a.status !== 'erledigt' ? `
+                      <button class="btn btn--outline btn--sm" data-aufg-next="${a.id}" data-status="${a.status}">
+                        ${a.status === 'offen' ? 'Starten' : 'Erledigen'}
+                      </button>` : ''}
+                    <button class="btn btn--outline btn--sm" data-aufg-edit="${a.id}">Bearbeiten</button>
+                    ${isAdmin ? `<button class="btn btn--danger btn--sm" data-aufg-del="${a.id}">Löschen</button>` : ''}
+                  </div>
+                </td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  el.querySelectorAll('[data-aufg-next]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const next = btn.dataset.status === 'offen' ? 'in_arbeit' : 'erledigt';
+      try {
+        await api.updateAufgabe(btn.dataset.aufgNext, { status: next });
+        toast('Status aktualisiert', 'success');
+        refreshAufgaben(isAdmin);
+      } catch (e) { toast(e.message, 'error'); }
+    });
+  });
+  el.querySelectorAll('[data-aufg-edit]').forEach(btn => {
+    const a = _aufgabenCache.find(x => x.id === btn.dataset.aufgEdit);
+    btn.addEventListener('click', () => openAufgabeModal(a, isAdmin));
+  });
+  el.querySelectorAll('[data-aufg-del]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Aufgabe löschen?')) return;
+      try {
+        await api.deleteAufgabe(btn.dataset.aufgDel);
+        toast('Gelöscht', 'success');
+        refreshAufgaben(isAdmin);
+      } catch (e) { toast(e.message, 'error'); }
+    });
+  });
+}
+
+async function openAufgabeModal(a = null, isAdmin) {
+  const ex = document.getElementById('aufg-modal');
+  if (ex) ex.remove();
+  const mitglieder = await api.getMitglieder().catch(() => []);
+  const modal = document.createElement('div');
+  modal.id = 'aufg-modal';
+  modal.className = 'modal-overlay active';
+  modal.innerHTML = `
+    <div class="modal">
+      <div class="modal__header">
+        <h3>${a ? 'Aufgabe bearbeiten' : 'Neue Aufgabe'}</h3>
+        <button class="modal__close" id="close-aufg">✕</button>
+      </div>
+      <div class="modal__body">
+        <div class="form-grid">
+          <div class="form-group form-group--full">
+            <label>Titel</label>
+            <input type="text" id="aufg-titel" value="${esc(a?.titel || '')}" />
+          </div>
+          <div class="form-group form-group--full">
+            <label>Beschreibung <span class="text-muted">(optional)</span></label>
+            <textarea id="aufg-beschr" rows="2">${esc(a?.beschreibung || '')}</textarea>
+          </div>
+          <div class="form-group">
+            <label>Priorität</label>
+            <select id="aufg-prio">
+              ${Object.entries(PRIO_LABELS).map(([k,v]) =>
+                `<option value="${k}" ${(a?.prioritaet || 'normal') === k ? 'selected' : ''}>${v}</option>`
+              ).join('')}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Fällig am</label>
+            <input type="date" id="aufg-faellig" value="${a?.faellig_am || ''}" />
+          </div>
+          <div class="form-group">
+            <label>Zugewiesen an</label>
+            <select id="aufg-zugewiesen">
+              <option value="">— niemanden —</option>
+              ${mitglieder.filter(m => !m.archiviert).map(m =>
+                `<option value="${m.id}" ${a?.zugewiesen_an === m.id ? 'selected' : ''}>${esc(m.nachname)}, ${esc(m.vorname)}</option>`
+              ).join('')}
+            </select>
+          </div>
+          ${a ? `
+          <div class="form-group">
+            <label>Status</label>
+            <select id="aufg-status">
+              ${Object.entries(AUFG_STATUS_LABELS).map(([k,v]) =>
+                `<option value="${k}" ${a.status === k ? 'selected' : ''}>${v}</option>`
+              ).join('')}
+            </select>
+          </div>` : ''}
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--secondary" id="close-aufg2">Abbrechen</button>
+        <button class="btn btn--primary" id="save-aufg">Speichern</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  const close = () => modal.remove();
+  document.getElementById('close-aufg').addEventListener('click', close);
+  document.getElementById('close-aufg2').addEventListener('click', close);
+  document.getElementById('save-aufg').addEventListener('click', async () => {
+    const body = {
+      titel:         document.getElementById('aufg-titel').value.trim(),
+      beschreibung:  document.getElementById('aufg-beschr').value.trim() || null,
+      prioritaet:    document.getElementById('aufg-prio').value,
+      faellig_am:    document.getElementById('aufg-faellig').value || null,
+      zugewiesen_an: document.getElementById('aufg-zugewiesen').value || null,
+    };
+    if (a) body.status = document.getElementById('aufg-status').value;
+    if (!body.titel) { toast('Titel erforderlich', 'error'); return; }
+    try {
+      if (a) await api.updateAufgabe(a.id, body);
+      else   await api.createAufgabe(body);
+      toast('Gespeichert', 'success');
+      modal.remove();
+      refreshAufgaben(isAdmin);
+    } catch (e) { toast(e.message, 'error'); }
+  });
 }

@@ -252,11 +252,12 @@ export const api = {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
   },
-  uploadDocument: (file, category, accessLevel) => {
+  uploadDocument: (file, category, accessLevel, beschreibung) => {
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('category', category || 'Allgemein');
+    formData.append('category', category || 'Sonstiges');
     formData.append('access_level', accessLevel || 'all');
+    if (beschreibung) formData.append('beschreibung', beschreibung);
     const token = getToken();
     return fetch(`${BASE}/verein/dokumente`, {
       method: 'POST',
@@ -287,6 +288,31 @@ export const api = {
 
   // Verein — Ehrungen-Übersicht
   getEhrungen:           ()         => request('GET',    '/verein/ehrungen'),
+
+  // Verein — Inventar
+  getInventar:             ()         => request('GET',    '/verein/inventar'),
+  createInventar:          (body)     => request('POST',   '/verein/inventar', body),
+  updateInventar:          (id, body) => request('PUT',    `/verein/inventar/${id}`, body),
+  deleteInventar:          (id)       => request('DELETE', `/verein/inventar/${id}`),
+  getInventarAusleihen:    (id)       => request('GET',    `/verein/inventar/${id}/ausleihen`),
+  createAusleihe:          (id, body) => request('POST',   `/verein/inventar/${id}/ausleihen`, body),
+  returnAusleihe:          (id, body) => request('PUT',    `/verein/ausleihen/${id}/rueckgabe`, body),
+  deleteAusleihe:          (id)       => request('DELETE', `/verein/ausleihen/${id}`),
+
+  // Verein — Schlüssel
+  getSchluessel:           ()         => request('GET',    '/verein/schluessel'),
+  createSchluessel:        (body)     => request('POST',   '/verein/schluessel', body),
+  updateSchluessel:        (id, body) => request('PUT',    `/verein/schluessel/${id}`, body),
+  deleteSchluessel:        (id)       => request('DELETE', `/verein/schluessel/${id}`),
+  getSchluesselAusgaben:   (id)       => request('GET',    `/verein/schluessel/${id}/ausgaben`),
+  createSchluesselAusgabe: (id, body) => request('POST',   `/verein/schluessel/${id}/ausgaben`, body),
+  returnSchluesselAusgabe: (id, body) => request('PUT',    `/verein/schluessel-ausgaben/${id}/rueckgabe`, body),
+
+  // Verein — Aufgaben
+  getAufgaben:             ()         => request('GET',    '/verein/aufgaben'),
+  createAufgabe:           (body)     => request('POST',   '/verein/aufgaben', body),
+  updateAufgabe:           (id, body) => request('PUT',    `/verein/aufgaben/${id}`, body),
+  deleteAufgabe:           (id)       => request('DELETE', `/verein/aufgaben/${id}`),
 
   // Einsatzarten
   getIncidentTypes:    ()         => request('GET',    '/incident-types'),
