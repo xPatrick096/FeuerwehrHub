@@ -16,6 +16,7 @@ const MODULE_LABELS = {
   personal:        'Personal',
   fahrzeuge:       'Fahrzeuge',
   einsatzberichte: 'Einsatzberichte',
+  verein:          'Vereinsverwaltung',
 };
 
 export async function renderAdmin() {
