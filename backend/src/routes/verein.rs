@@ -956,7 +956,7 @@ pub struct QualifikationUebersicht {
 pub async fn list_alle_qualifikationen(
     State(state): State<AppState>,
 ) -> AppResult<Json<Vec<QualifikationUebersicht>>> {
-    let rows = sqlx::query_as::<_, QualifikationÜbersicht>(
+    let rows = sqlx::query_as::<_, QualifikationUebersicht>(
         "SELECT q.id, q.mitglied_id,
                 m.vorname || ' ' || m.nachname AS mitglied_name,
                 q.bezeichnung, q.erworben_am, q.gueltig_bis, q.bemerkung
