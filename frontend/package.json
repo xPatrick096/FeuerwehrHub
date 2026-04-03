@@ -2,6 +2,7 @@
   "name": "feuerwehrhub-frontend",
   "version": "1.1.1",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
