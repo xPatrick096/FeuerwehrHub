@@ -4,7 +4,7 @@ import { navigate } from '../router.js';
 import { renderShell, setShellInfo } from '../shell.js';
 import { esc } from '../utils.js';
 import {
-  GF_LEVEL, WL_LEVEL, STATUS_LABELS, STATUS_COLORS,
+  STATUS_LABELS, STATUS_COLORS,
   buildTabsHTML, buildTypeDropdown, buildTypeFilter,
   buildResourcesGrid, setupTabs, fillForm, setFormReadonly,
 } from './incident-form.js';
@@ -27,9 +27,10 @@ export async function renderIncidents() {
   _user = user;
   _mods = settings?.modules || {};
 
-  const isAdmin   = user?.role === 'admin' || user?.role === 'superuser';
-  const roleLevel = user?.role_level ?? 0;
-  const canCreate = isAdmin || roleLevel > 0;
+  const isAdmin    = user?.role === 'admin' || user?.role === 'superuser';
+  const perms      = user?.permissions || [];
+  const canApprove = isAdmin || perms.includes('einsatzberichte.approve');
+  const canCreate  = isAdmin || perms.includes('einsatzberichte') || canApprove;
 
   const content = document.getElementById('page-content');
   content.innerHTML = `
@@ -145,8 +146,8 @@ async function _loadStats() {
 
 function _renderTable({ items, total, page, per_page }) {
   const wrap      = document.getElementById('incident-table-wrap');
-  const isAdmin   = _user?.role === 'admin' || _user?.role === 'superuser';
-  const roleLevel = _user?.role_level ?? 0;
+  const isAdmin    = _user?.role === 'admin' || _user?.role === 'superuser';
+  const perms      = _user?.permissions || [];
 
   if (!items.length) {
     wrap.innerHTML = `<p style="color:#7d8590;font-size:13px;padding:20px 0">Keine Einsatzberichte gefunden.</p>`;
@@ -182,8 +183,8 @@ function _renderTable({ items, total, page, per_page }) {
               <td>
                 <div class="btn-group">
                   <button class="btn btn--outline btn--sm" data-action="view" data-id="${r.id}">Anzeigen</button>
-                  ${_canEdit(r, isAdmin, roleLevel) ? `<button class="btn btn--outline btn--sm" data-action="edit" data-id="${r.id}">Bearbeiten</button>` : ''}
-                  ${_canDelete(r, isAdmin, roleLevel) ? `<button class="btn btn--danger btn--sm" data-action="delete" data-id="${r.id}">Löschen</button>` : ''}
+                  ${_canEdit(r, isAdmin, perms) ? `<button class="btn btn--outline btn--sm" data-action="edit" data-id="${r.id}">Bearbeiten</button>` : ''}
+                  ${_canDelete(r, isAdmin, perms) ? `<button class="btn btn--danger btn--sm" data-action="delete" data-id="${r.id}">Löschen</button>` : ''}
                 </div>
               </td>
             </tr>`).join('')}
@@ -212,16 +213,18 @@ function _renderTable({ items, total, page, per_page }) {
   document.getElementById('pg-next')?.addEventListener('click', () => { _filters.page++; _load(); });
 }
 
-function _canEdit(r, isAdmin, level) {
+function _canEdit(r, isAdmin, perms) {
   if (isAdmin) return true;
-  if (r.status === 'entwurf') return r.created_by === _user?.id || level >= GF_LEVEL;
+  const canApprove = perms.includes('einsatzberichte.approve');
+  if (r.status === 'entwurf') return r.created_by === _user?.id || canApprove;
   return false;
 }
 
-function _canDelete(r, isAdmin, level) {
+function _canDelete(r, isAdmin, perms) {
   if (isAdmin) return true;
-  if (r.status === 'entwurf') return r.created_by === _user?.id || level >= GF_LEVEL;
-  if (r.status === 'freigegeben' || r.status === 'archiviert') return level >= WL_LEVEL;
+  const canApprove = perms.includes('einsatzberichte.approve');
+  if (r.status === 'entwurf') return r.created_by === _user?.id || canApprove;
+  if (r.status === 'freigegeben' || r.status === 'archiviert') return canApprove;
   return false;
 }
 
@@ -238,8 +241,9 @@ async function _openModal(id, viewOnly) {
 
   try {
     const r         = await api.getIncident(id);
-    const isAdmin   = _user?.role === 'admin' || _user?.role === 'superuser';
-    const roleLevel = _user?.role_level ?? 0;
+    const isAdmin    = _user?.role === 'admin' || _user?.role === 'superuser';
+    const perms      = _user?.permissions || [];
+    const canApprove = isAdmin || perms.includes('einsatzberichte.approve');
 
     title.textContent = `${r.incident_number || r.id.slice(0,8)} — ${r.incident_type_label}`;
 
@@ -253,9 +257,9 @@ async function _openModal(id, viewOnly) {
     if (_mods.personal)   loadPersonnelTab(id, true);
     loadAttachmentsTab(id, true);
 
-    const canRelease = (isAdmin || roleLevel >= GF_LEVEL) && r.status === 'entwurf';
-    const canArchive = (isAdmin || roleLevel >= GF_LEVEL) && r.status === 'freigegeben';
-    const canEdit    = _canEdit(r, isAdmin, roleLevel);
+    const canRelease = canApprove && r.status === 'entwurf';
+    const canArchive = canApprove && r.status === 'freigegeben';
+    const canEdit    = _canEdit(r, isAdmin, perms);
 
     footer.innerHTML = `
       ${canEdit    ? `<button class="btn btn--primary" id="btn-modal-edit">Bearbeiten</button>` : ''}

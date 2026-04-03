@@ -4,7 +4,7 @@ import { navigate } from '../router.js';
 import { renderShell, setShellInfo } from '../shell.js';
 import { esc } from '../utils.js';
 import {
-  GF_LEVEL, STATUS_LABELS, STATUS_COLORS,
+  STATUS_LABELS, STATUS_COLORS,
   buildTabsHTML, buildTypeDropdown, buildResourcesGrid,
   setupTabs, fillForm, collectBody,
 } from './incident-form.js';
@@ -37,10 +37,11 @@ export async function renderEditIncident() {
   }
 
   // Bearbeitungsrecht prüfen
-  const isAdmin   = user?.role === 'admin' || user?.role === 'superuser';
-  const roleLevel = user?.role_level ?? 0;
-  const canEdit   = isAdmin
-    || (report.status === 'entwurf' && (report.created_by === user?.id || roleLevel >= GF_LEVEL));
+  const isAdmin    = user?.role === 'admin' || user?.role === 'superuser';
+  const perms      = user?.permissions || [];
+  const canApprove = isAdmin || perms.includes('einsatzberichte.approve');
+  const canEdit    = isAdmin
+    || (report.status === 'entwurf' && (report.created_by === user?.id || canApprove));
 
   if (!canEdit) {
     toast('Keine Berechtigung zum Bearbeiten', 'error');

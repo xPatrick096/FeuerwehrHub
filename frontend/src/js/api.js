@@ -112,6 +112,7 @@ export const api = {
   removeFunction:   (id, roleId)=> request('DELETE', `/admin/users/${id}/functions/${roleId}`),
   resetPassword:  (id, body)  => request('POST',   `/admin/users/${id}/reset-password`, body),
   adminResetTotp: (id)        => request('POST',   `/admin/users/${id}/reset-totp`),
+  unlockUser:     (id)        => request('POST',   `/admin/users/${id}/unlock`),
   deleteUser:     (id)        => request('DELETE', `/admin/users/${id}`),
   getAuditLog:    ()          => request('GET',    '/admin/audit-log'),
 

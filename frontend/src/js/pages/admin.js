@@ -11,12 +11,15 @@ const ROLE_LABELS = {
 };
 
 const MODULE_LABELS = {
-  lager:           'Lager (Schreiben)',
-  'lager.approve': 'Lager (Genehmigen)',
-  personal:        'Personal',
-  fahrzeuge:       'Fahrzeuge',
-  einsatzberichte: 'Einsatzberichte',
-  verein:          'Vereinsverwaltung',
+  'lager.read':              'Lager (Nur lesen)',
+  lager:                     'Lager (Schreiben)',
+  'lager.approve':           'Lager (Genehmigen)',
+  personal:                  'Personal',
+  fahrzeuge:                 'Fahrzeuge',
+  'einsatzberichte.read':    'Einsatzberichte (Nur lesen)',
+  einsatzberichte:           'Einsatzberichte (Schreiben)',
+  'einsatzberichte.approve': 'Einsatzberichte (Genehmigen)',
+  verein:                    'Vereinsverwaltung',
 };
 
 export async function renderAdmin() {
@@ -678,6 +681,16 @@ export async function renderAdmin() {
       } catch (e) { toast(e.message, 'error'); }
     }
 
+    if (e.target.matches('[data-action="unlock"]')) {
+      if (!confirm(`Account "${username}" wirklich entsperren?`)) return;
+      try {
+        await api.unlockUser(id);
+        toast(`Account "${username}" entsperrt`);
+        const roles = await api.getRoles().catch(() => []);
+        await loadUsers(me, roles);
+      } catch (e) { toast(e.message, 'error'); }
+    }
+
     if (e.target.matches('[data-action="manage-functions"]')) {
       await openFunctionsModal(id, username);
     }
@@ -900,6 +913,7 @@ async function loadUsers(me, roles = []) {
             <th>Dienstgrad</th>
             <th>Funktionen</th>
             <th>2FA</th>
+            <th>Status</th>
             <th>Erstellt</th>
             <th>Aktionen</th>
           </tr>
@@ -912,6 +926,7 @@ async function loadUsers(me, roles = []) {
             const canReset = (me?.role === 'superuser' || (me?.role === 'admin' && u.role === 'user'));
             const canEditUser = !isSelf && !isSuperuser && canReset;
             const isPrivileged = u.role === 'admin' || u.role === 'superuser';
+            const isLocked = u.locked_until && new Date(u.locked_until) > new Date();
 
             const roleDropdown = isPrivileged
               ? `<span style="font-size:11px;color:#888">alle (Systemrolle)</span>`
@@ -941,6 +956,9 @@ async function loadUsers(me, roles = []) {
                     : '<span style="font-size:11px;color:#888">alle</span>'}
                 </td>
                 <td style="text-align:center">${u.totp_enabled ? `${icon('lock', 14)}` : '—'}</td>
+                <td style="text-align:center">
+                  ${isLocked ? `<span class="badge badge--danger" title="Gesperrt bis ${new Date(u.locked_until).toLocaleString('de-DE')}">Gesperrt</span>` : '—'}
+                </td>
                 <td style="font-size:12px;color:#666">
                   ${new Date(u.created_at).toLocaleDateString('de-DE')}
                 </td>
@@ -962,6 +980,11 @@ async function loadUsers(me, roles = []) {
                       <button class="btn btn--outline btn--sm"
                         data-action="reset-totp" data-id="${u.id}" data-username="${esc(u.username)}">
                         2FA Reset
+                      </button>` : ''}
+                    ${canReset && isLocked ? `
+                      <button class="btn btn--warning btn--sm"
+                        data-action="unlock" data-id="${u.id}" data-username="${esc(u.username)}">
+                        Entsperren
                       </button>` : ''}
                     ${canEdit ? `
                       <button class="btn btn--outline btn--sm"
@@ -1069,6 +1092,7 @@ async function loadAuditLog() {
       LOGIN_SUCCESS:    `${icon('check-circle', 14)} Login erfolgreich`,
       LOGIN_FAILED:     `${icon('alert-triangle', 14)} Login fehlgeschlagen`,
       ACCOUNT_LOCKED:   `${icon('lock', 14)} Account gesperrt`,
+      ACCOUNT_UNLOCKED: `${icon('unlock', 14)} Account entsperrt`,
       USER_CREATED:     `${icon('plus', 14)} Benutzer angelegt`,
       USER_DELETED:     `${icon('trash-2', 14)} Benutzer gelöscht`,
       PASSWORD_RESET:   `${icon('key', 14)} Passwort zurückgesetzt`,

@@ -20,20 +20,26 @@ use crate::{
     AppState,
 };
 
-const GF_LEVEL: i32 = 30;
-const WL_LEVEL: i32 = 50;
-
 // ── Hilfsfunktionen ───────────────────────────────────────────────────────────
 
-async fn user_role_level(db: &PgPool, user_id: Uuid) -> i32 {
-    sqlx::query_scalar::<_, Option<i32>>(
-        "SELECT r.level FROM users u LEFT JOIN roles r ON r.id = u.role_id WHERE u.id = $1"
+/// Prüft ob der User die Permission `einsatzberichte.approve` hat (direkt oder via Funktion).
+async fn has_approve_perm(db: &PgPool, user_id: Uuid) -> bool {
+    sqlx::query_scalar::<_, bool>(
+        "SELECT EXISTS (
+            SELECT 1 FROM (
+                SELECT unnest(COALESCE(u.permissions, '{}') || COALESCE(r.permissions, '{}')) AS perm
+                FROM users u LEFT JOIN roles r ON r.id = u.role_id WHERE u.id = $1
+                UNION ALL
+                SELECT unnest(fr.permissions)
+                FROM user_functions uf JOIN roles fr ON fr.id = uf.role_id WHERE uf.user_id = $1
+            ) t
+            WHERE t.perm = 'einsatzberichte.approve'
+         )"
     )
     .bind(user_id)
     .fetch_one(db)
     .await
-    .unwrap_or(None)
-    .unwrap_or(0)
+    .unwrap_or(false)
 }
 
 async fn next_incident_number(db: &PgPool, year: i32) -> AppResult<String> {
@@ -241,7 +247,7 @@ pub async fn list_incidents(
     let year     = q.year.unwrap_or_else(|| Utc::now().year());
 
     let is_elevated = claims.is_admin_or_above()
-        || user_role_level(&state.db, claims.sub).await >= GF_LEVEL;
+        || has_approve_perm(&state.db, claims.sub).await;
 
     // Filter: erhöhte Rechte → alle; sonst eigene Entwürfe + alle nicht-Entwürfe
     let (where_access, user_id_param) = if is_elevated {
@@ -435,13 +441,12 @@ pub async fn get_incident(
     .await?
     .ok_or(AppError::NotFound)?;
 
-    // Zugriffscheck: Entwurf nur von Ersteller oder GF+/Admin sehbar
+    // Zugriffscheck: fremde Entwürfe nur mit approve-Permission sehbar
     if report.status == "entwurf" && !claims.is_admin_or_above() {
-        if report.created_by != Some(claims.sub) {
-            let level = user_role_level(&state.db, claims.sub).await;
-            if level < GF_LEVEL {
-                return Err(AppError::Forbidden);
-            }
+        if report.created_by != Some(claims.sub)
+            && !has_approve_perm(&state.db, claims.sub).await
+        {
+            return Err(AppError::Forbidden);
         }
     }
 
@@ -464,18 +469,17 @@ pub async fn update_incident(
     .await?
     .ok_or(AppError::NotFound)?;
 
-    // Freigegeben / archiviert → nur Admin kann noch bearbeiten
+    // Freigegeben / archiviert → nur Admin
     if existing.status != "entwurf" && !claims.is_admin_or_above() {
         return Err(AppError::Forbidden);
     }
 
-    // Entwurf: nur eigener oder GF+
+    // Entwurf: eigener immer; fremder nur mit approve-Permission
     if existing.status == "entwurf" && !claims.is_admin_or_above() {
-        if existing.created_by != Some(claims.sub) {
-            let level = user_role_level(&state.db, claims.sub).await;
-            if level < GF_LEVEL {
-                return Err(AppError::Forbidden);
-            }
+        if existing.created_by != Some(claims.sub)
+            && !has_approve_perm(&state.db, claims.sub).await
+        {
+            return Err(AppError::Forbidden);
         }
     }
 
@@ -607,27 +611,22 @@ pub async fn delete_incident(
     .await?
     .ok_or(AppError::NotFound)?;
 
-    let level = if claims.is_admin_or_above() {
-        i32::MAX
-    } else {
-        user_role_level(&state.db, claims.sub).await
-    };
-
-    match existing.status.as_str() {
-        "entwurf" => {
-            // TF: nur eigener Entwurf; GF+: alle Entwürfe
-            let is_own = existing.created_by == Some(claims.sub);
-            if !is_own && level < GF_LEVEL {
-                return Err(AppError::Forbidden);
+    if !claims.is_admin_or_above() {
+        let can_approve = has_approve_perm(&state.db, claims.sub).await;
+        match existing.status.as_str() {
+            "entwurf" => {
+                let is_own = existing.created_by == Some(claims.sub);
+                if !is_own && !can_approve {
+                    return Err(AppError::Forbidden);
+                }
             }
-        }
-        "freigegeben" | "archiviert" => {
-            // Nur WL+ oder Admin
-            if level < WL_LEVEL {
-                return Err(AppError::Forbidden);
+            "freigegeben" | "archiviert" => {
+                if !can_approve {
+                    return Err(AppError::Forbidden);
+                }
             }
+            _ => return Err(AppError::Forbidden),
         }
-        _ => return Err(AppError::Forbidden),
     }
 
     sqlx::query("DELETE FROM incident_reports WHERE id = $1")
@@ -657,15 +656,7 @@ pub async fn set_status(
     .await?
     .ok_or(AppError::NotFound)?;
 
-    let level = if claims.is_admin_or_above() {
-        i32::MAX
-    } else {
-        user_role_level(&state.db, claims.sub).await
-    };
-
-    if level < GF_LEVEL {
-        return Err(AppError::Forbidden);
-    }
+    // Middleware hat einsatzberichte.approve bereits geprüft — kein Level-Check nötig
 
     let new_status = body.status.as_str();
     let valid_transition = matches!(
@@ -757,11 +748,10 @@ pub async fn get_changes(
     .ok_or(AppError::NotFound)?;
 
     if report.status == "entwurf" && !claims.is_admin_or_above() {
-        if report.created_by != Some(claims.sub) {
-            let level = user_role_level(&state.db, claims.sub).await;
-            if level < GF_LEVEL {
-                return Err(AppError::Forbidden);
-            }
+        if report.created_by != Some(claims.sub)
+            && !has_approve_perm(&state.db, claims.sub).await
+        {
+            return Err(AppError::Forbidden);
         }
     }
 
@@ -1168,9 +1158,10 @@ async fn ensure_incident_readable(db: &PgPool, id: Uuid, claims: &Claims) -> App
     .ok_or(AppError::NotFound)?;
 
     if report.status == "entwurf" && !claims.is_admin_or_above() {
-        if report.created_by != Some(claims.sub) {
-            let level = user_role_level(db, claims.sub).await;
-            if level < GF_LEVEL { return Err(AppError::Forbidden); }
+        if report.created_by != Some(claims.sub)
+            && !has_approve_perm(db, claims.sub).await
+        {
+            return Err(AppError::Forbidden);
         }
     }
     Ok(())
@@ -1185,14 +1176,16 @@ async fn ensure_incident_editable(db: &PgPool, id: Uuid, claims: &Claims) -> App
     .await?
     .ok_or(AppError::NotFound)?;
 
-    if report.status != "entwurf" && !claims.is_admin_or_above() {
+    if claims.is_admin_or_above() {
+        return Ok(());
+    }
+    if report.status != "entwurf" {
         return Err(AppError::Forbidden);
     }
-    if report.status == "entwurf" && !claims.is_admin_or_above() {
-        if report.created_by != Some(claims.sub) {
-            let level = user_role_level(db, claims.sub).await;
-            if level < GF_LEVEL { return Err(AppError::Forbidden); }
-        }
+    if report.created_by != Some(claims.sub)
+        && !has_approve_perm(db, claims.sub).await
+    {
+        return Err(AppError::Forbidden);
     }
     Ok(())
 }
@@ -1200,19 +1193,47 @@ async fn ensure_incident_editable(db: &PgPool, id: Uuid, claims: &Claims) -> App
 // ── Router ────────────────────────────────────────────────────────────────────
 
 pub fn router(state: AppState) -> Router<AppState> {
-    Router::new()
-        .route("/stats",                    get(get_stats))
-        .route("/",                         get(list_incidents).post(create_incident))
-        .route("/:id",                      get(get_incident).put(update_incident).delete(delete_incident))
-        .route("/:id/status",               put(set_status))
-        .route("/:id/changes",              get(get_changes))
-        .route("/:id/fahrzeuge",            get(list_incident_vehicles).post(add_incident_vehicle))
+    // Approve-Routen — benötigen einsatzberichte.approve
+    let approve_routes = Router::new()
+        .route("/:id/status",  put(set_status))
+        .route("/:id",         delete(delete_incident))
+        .route_layer(middleware::from_fn_with_state(
+            state.clone(), require_module("einsatzberichte.approve"),
+        ))
+        .route_layer(middleware::from_fn_with_state(state.clone(), require_auth));
+
+    // Schreib-Routen — benötigen einsatzberichte (oder approve, via Hierarchie nicht nötig da approve eigene layer hat)
+    let write_routes = Router::new()
+        .route("/",             post(create_incident))
+        .route("/:id",          put(update_incident))
+        .route("/:id/fahrzeuge",            post(add_incident_vehicle))
         .route("/:id/fahrzeuge/:fid",       put(update_incident_vehicle).delete(remove_incident_vehicle))
-        .route("/:id/personal",             get(list_incident_personnel).post(add_incident_personnel))
+        .route("/:id/personal",             post(add_incident_personnel))
         .route("/:id/personal/:pid",        delete(remove_incident_personnel))
-        .route("/:id/anhaenge",             get(list_attachments).post(upload_attachment))
-        .route("/:id/anhaenge/:aid/download", get(download_attachment))
+        .route("/:id/anhaenge",             post(upload_attachment))
         .route("/:id/anhaenge/:aid",        delete(delete_attachment))
-        .route_layer(middleware::from_fn_with_state(state.clone(), require_module("einsatzberichte")))
-        .route_layer(middleware::from_fn_with_state(state, require_auth))
+        .route_layer(middleware::from_fn_with_state(
+            state.clone(), require_module("einsatzberichte"),
+        ))
+        .route_layer(middleware::from_fn_with_state(state.clone(), require_auth));
+
+    // Lese-Routen — benötigen einsatzberichte.read (oder höher, via Hierarchie in check_module)
+    let read_routes = Router::new()
+        .route("/stats",                        get(get_stats))
+        .route("/",                             get(list_incidents))
+        .route("/:id",                          get(get_incident))
+        .route("/:id/changes",                  get(get_changes))
+        .route("/:id/fahrzeuge",                get(list_incident_vehicles))
+        .route("/:id/personal",                 get(list_incident_personnel))
+        .route("/:id/anhaenge",                 get(list_attachments))
+        .route("/:id/anhaenge/:aid/download",   get(download_attachment))
+        .route_layer(middleware::from_fn_with_state(
+            state.clone(), require_module("einsatzberichte.read"),
+        ))
+        .route_layer(middleware::from_fn_with_state(state, require_auth));
+
+    Router::new()
+        .merge(read_routes)
+        .merge(write_routes)
+        .merge(approve_routes)
 }

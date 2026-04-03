@@ -2335,11 +2335,12 @@ function openEventModal(ev, isAdmin) {
   modal.querySelector('#close-ev').addEventListener('click', close);
   modal.querySelector('#close-ev2').addEventListener('click', close);
   modal.querySelector('#save-ev').addEventListener('click', async () => {
+    const toISO = v => v ? new Date(v).toISOString() : null;
     const body = {
       titel:       modal.querySelector('#ev-titel').value.trim(),
       typ:         modal.querySelector('#ev-typ').value,
-      datum_von:   modal.querySelector('#ev-von').value,
-      datum_bis:   modal.querySelector('#ev-bis').value || null,
+      datum_von:   toISO(modal.querySelector('#ev-von').value),
+      datum_bis:   toISO(modal.querySelector('#ev-bis').value),
       ort:         modal.querySelector('#ev-ort').value.trim() || null,
       beschreibung:modal.querySelector('#ev-beschr').value.trim() || null,
     };

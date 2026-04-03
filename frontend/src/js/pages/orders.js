@@ -11,8 +11,10 @@ export async function renderOrders() {
   const [settings, user] = await Promise.all([api.getSettings(), api.me()]);
   setShellInfo(settings?.ff_name, user, settings?.modules);
   renderShell('orders');
-  const canApprove = user?.role === 'admin' || user?.role === 'superuser'
-    || (user?.permissions || []).includes('lager.approve');
+  const isAdmin    = user?.role === 'admin' || user?.role === 'superuser';
+  const perms      = user?.permissions || [];
+  const canApprove = isAdmin || perms.includes('lager.approve');
+  const canWrite   = isAdmin || perms.includes('lager') || canApprove;
 
   const content = document.getElementById('page-content');
   content.innerHTML = `

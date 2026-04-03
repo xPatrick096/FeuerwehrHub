@@ -623,24 +623,40 @@ pub async fn resubmit_order(
 }
 
 pub fn router(state: AppState) -> Router<AppState> {
-    // Genehmigungsrouten — benötigen lager.approve
+    // Approve-Routen — benötigen lager.approve
     let approve_routes = Router::new()
-        .route("/:id/approve",   post(approve_order))
-        .route("/:id/reject",    post(reject_order))
-        .route_layer(middleware::from_fn_with_state(state.clone(), require_module("lager.approve")))
+        .route("/:id/approve", post(approve_order))
+        .route("/:id/reject",  post(reject_order))
+        .route_layer(middleware::from_fn_with_state(
+            state.clone(), require_module("lager.approve"),
+        ))
         .route_layer(middleware::from_fn_with_state(state.clone(), require_auth));
 
-    // Standard-Lager-Routen
-    let lager_routes = Router::new()
-        .route("/", get(list_orders).post(create_order))
-        .route("/stats", get(get_stats))
-        .route("/:id", get(get_order).put(update_order).delete(delete_order))
+    // Schreib-Routen — benötigen lager
+    let write_routes = Router::new()
+        .route("/",              post(create_order))
+        .route("/:id",           put(update_order).delete(delete_order))
         .route("/:id/delivery",  post(add_delivery))
         .route("/:id/status",    post(set_status))
         .route("/:id/submit",    post(submit_order))
         .route("/:id/resubmit",  post(resubmit_order))
-        .route_layer(middleware::from_fn_with_state(state.clone(), require_module("lager")))
+        .route_layer(middleware::from_fn_with_state(
+            state.clone(), require_module("lager"),
+        ))
+        .route_layer(middleware::from_fn_with_state(state.clone(), require_auth));
+
+    // Lese-Routen — benötigen lager.read (oder höher, via Hierarchie)
+    let read_routes = Router::new()
+        .route("/",      get(list_orders))
+        .route("/stats", get(get_stats))
+        .route("/:id",   get(get_order))
+        .route_layer(middleware::from_fn_with_state(
+            state.clone(), require_module("lager.read"),
+        ))
         .route_layer(middleware::from_fn_with_state(state, require_auth));
 
-    Router::new().merge(lager_routes).merge(approve_routes)
+    Router::new()
+        .merge(read_routes)
+        .merge(write_routes)
+        .merge(approve_routes)
 }

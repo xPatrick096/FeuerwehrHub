@@ -32,6 +32,7 @@ pub struct UserEntry {
     pub role_id: Option<Uuid>,
     pub assigned_role_name: Option<String>,
     pub created_at: DateTime<Utc>,
+    pub locked_until: Option<DateTime<Utc>>,
 }
 
 #[derive(Deserialize)]
@@ -73,7 +74,7 @@ pub async fn list_users(
 
     let users = sqlx::query_as::<_, UserEntry>(
         "SELECT u.id, u.username, u.display_name, u.role, u.is_admin, u.totp_enabled,
-                u.permissions, u.role_id, r.name as assigned_role_name, u.created_at
+                u.permissions, u.role_id, r.name as assigned_role_name, u.created_at, u.locked_until
          FROM users u
          LEFT JOIN roles r ON r.id = u.role_id
          ORDER BY u.created_at ASC"
@@ -142,7 +143,7 @@ pub async fn create_user(
 
     let row = sqlx::query_as::<_, UserEntry>(
         "SELECT u.id, u.username, u.display_name, u.role, u.is_admin, u.totp_enabled,
-                u.permissions, u.role_id, r.name as assigned_role_name, u.created_at
+                u.permissions, u.role_id, r.name as assigned_role_name, u.created_at, u.locked_until
          FROM users u LEFT JOIN roles r ON r.id = u.role_id WHERE u.id = $1"
     )
     .bind(new_id)
@@ -218,7 +219,7 @@ pub async fn update_user(
 
     let row = sqlx::query_as::<_, UserEntry>(
         "SELECT u.id, u.username, u.display_name, u.role, u.is_admin, u.totp_enabled,
-                u.permissions, u.role_id, r.name as assigned_role_name, u.created_at
+                u.permissions, u.role_id, r.name as assigned_role_name, u.created_at, u.locked_until
          FROM users u LEFT JOIN roles r ON r.id = u.role_id WHERE u.id = $1"
     )
     .bind(id)
@@ -272,7 +273,7 @@ pub async fn update_role(
 
     let row = sqlx::query_as::<_, UserEntry>(
         "SELECT u.id, u.username, u.display_name, u.role, u.is_admin, u.totp_enabled,
-                u.permissions, u.role_id, r.name as assigned_role_name, u.created_at
+                u.permissions, u.role_id, r.name as assigned_role_name, u.created_at, u.locked_until
          FROM users u LEFT JOIN roles r ON r.id = u.role_id WHERE u.id = $1"
     )
     .bind(updated)
@@ -431,7 +432,12 @@ pub async fn update_permissions(
     }
 
     // Nur bekannte Module erlauben
-    let known: &[&str] = &["lager", "lager.approve", "personal", "fahrzeuge", "einsatzberichte"];
+    let known: &[&str] = &[
+        "lager.read", "lager", "lager.approve",
+        "personal", "fahrzeuge",
+        "einsatzberichte.read", "einsatzberichte", "einsatzberichte.approve",
+        "verein",
+    ];
     let permissions: Vec<String> = body.permissions
         .into_iter()
         .filter(|p| known.contains(&p.as_str()))
@@ -680,6 +686,45 @@ pub async fn get_update_status(
     })))
 }
 
+// ── Handler: User entsperren ──────────────────────────────────────────────────
+
+pub async fn unlock_user(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(id): Path<Uuid>,
+) -> AppResult<Json<serde_json::Value>> {
+    if !claims.is_admin_or_above() {
+        return Err(AppError::Forbidden);
+    }
+
+    let target = sqlx::query_as::<_, (String,)>("SELECT role FROM users WHERE id = $1")
+        .bind(id)
+        .fetch_optional(&state.db)
+        .await?
+        .ok_or(AppError::NotFound)?;
+
+    // Admin darf keine anderen Admins/Superuser entsperren
+    if !claims.is_superuser() && (target.0 == "admin" || target.0 == "superuser") {
+        return Err(AppError::Forbidden);
+    }
+
+    let result = sqlx::query(
+        "UPDATE users SET locked_until = NULL, failed_login_attempts = 0 WHERE id = $1"
+    )
+    .bind(id)
+    .execute(&state.db)
+    .await?;
+
+    if result.rows_affected() == 0 {
+        return Err(AppError::NotFound);
+    }
+
+    audit::log(&state.db, Some(claims.sub), &claims.username, "ACCOUNT_UNLOCKED",
+        Some("user"), Some(id), None).await;
+
+    Ok(Json(serde_json::json!({ "message": "Account entsperrt" })))
+}
+
 // ── Router ────────────────────────────────────────────────────────────────────
 
 pub fn router(state: AppState) -> Router<AppState> {
@@ -691,6 +736,7 @@ pub fn router(state: AppState) -> Router<AppState> {
         .route("/users/:id/assign-role", put(assign_role))
         .route("/users/:id", put(update_user).delete(delete_user))
         .route("/users/:id/reset-totp", post(reset_totp))
+        .route("/users/:id/unlock", post(unlock_user))
         .route("/users/:id/functions", get(list_user_functions).post(assign_function))
         .route("/users/:id/functions/:role_id", delete(remove_function))
         .route("/audit-log", get(get_audit_log))

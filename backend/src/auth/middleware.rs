@@ -100,31 +100,64 @@ pub async fn require_admin(
 
 // ── Modul-Berechtigungsprüfung ────────────────────────────────────────────────
 
+/// Gibt alle Permissions zurück, die Zugriff auf `module` gewähren.
+/// Beispiel: "lager.read" → auch User mit "lager" oder "lager.approve" dürfen rein.
+/// Gibt None zurück wenn keine Hierarchie gilt (exakter Match genügt).
+fn accepted_permissions(module: &str) -> Option<Vec<&'static str>> {
+    match module {
+        "lager.read"              => Some(vec!["lager.read", "lager", "lager.approve"]),
+        "lager"                   => Some(vec!["lager", "lager.approve"]),
+        "einsatzberichte.read"    => Some(vec!["einsatzberichte.read", "einsatzberichte", "einsatzberichte.approve"]),
+        "einsatzberichte"         => Some(vec!["einsatzberichte", "einsatzberichte.approve"]),
+        _                         => None,
+    }
+}
+
 /// Prüft ob ein User Zugriff auf ein Modul hat (DB-Lookup, wirkt sofort bei Änderungen).
 /// Admins und Superuser haben immer Zugriff.
+/// Für Module mit Hierarchie (lager, einsatzberichte) reicht eine höhere Permission aus.
 async fn check_module(state: &AppState, claims: &Claims, module: &str) -> Result<(), AppError> {
     if claims.is_admin_or_above() {
         return Ok(());
     }
 
-    let has_perm: bool = sqlx::query_scalar(
-        "SELECT $1 = ANY(
-            SELECT unnest(COALESCE(u.permissions, '{}') || COALESCE(r.permissions, '{}'))
-            FROM users u
-            LEFT JOIN roles r ON r.id = u.role_id
-            WHERE u.id = $2
-            UNION
-            SELECT unnest(fr.permissions)
-            FROM user_functions uf
-            JOIN roles fr ON fr.id = uf.role_id
-            WHERE uf.user_id = $2
-         )"
-    )
-    .bind(module)
-    .bind(claims.sub)
-    .fetch_one(&state.db)
-    .await
-    .unwrap_or(false);
+    let has_perm: bool = if let Some(accepted) = accepted_permissions(module) {
+        // Hierarchie-Prüfung: User hat Zugriff wenn er irgendeine der akzeptierten Permissions besitzt
+        let accepted_owned: Vec<String> = accepted.iter().map(|s| s.to_string()).collect();
+        sqlx::query_scalar(
+            "SELECT EXISTS (
+                SELECT 1 FROM (
+                    SELECT unnest(COALESCE(u.permissions, '{}') || COALESCE(r.permissions, '{}')) AS perm
+                    FROM users u LEFT JOIN roles r ON r.id = u.role_id WHERE u.id = $2
+                    UNION ALL
+                    SELECT unnest(fr.permissions)
+                    FROM user_functions uf JOIN roles fr ON fr.id = uf.role_id WHERE uf.user_id = $2
+                ) t
+                WHERE t.perm = ANY($1)
+             )"
+        )
+        .bind(&accepted_owned)
+        .bind(claims.sub)
+        .fetch_one(&state.db)
+        .await
+        .unwrap_or(false)
+    } else {
+        // Exakter Match (personal, fahrzeuge, verein, lager.approve, einsatzberichte.approve, ...)
+        sqlx::query_scalar(
+            "SELECT $1 = ANY(
+                SELECT unnest(COALESCE(u.permissions, '{}') || COALESCE(r.permissions, '{}'))
+                FROM users u LEFT JOIN roles r ON r.id = u.role_id WHERE u.id = $2
+                UNION
+                SELECT unnest(fr.permissions)
+                FROM user_functions uf JOIN roles fr ON fr.id = uf.role_id WHERE uf.user_id = $2
+             )"
+        )
+        .bind(module)
+        .bind(claims.sub)
+        .fetch_one(&state.db)
+        .await
+        .unwrap_or(false)
+    };
 
     if has_perm { Ok(()) } else { Err(AppError::Forbidden) }
 }
