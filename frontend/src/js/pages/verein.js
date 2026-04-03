@@ -10,7 +10,8 @@ export async function renderVerein() {
   renderShell('verein');
 
   const content = document.getElementById('page-content');
-  const isAdmin = user?.role === 'admin' || user?.role === 'superuser';
+  const isAdmin = user?.role === 'admin' || user?.role === 'superuser'
+    || (user?.permissions || []).includes('verein');
 
   content.innerHTML = `
     <div class="page-header">

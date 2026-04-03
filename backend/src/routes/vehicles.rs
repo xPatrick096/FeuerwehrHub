@@ -149,10 +149,6 @@ pub async fn create_vehicle(
     Extension(claims): Extension<Claims>,
     Json(body): Json<VehicleBody>,
 ) -> AppResult<Json<Vehicle>> {
-    if !claims.is_admin_or_above() {
-        return Err(AppError::Forbidden);
-    }
-
     let name = body.name.trim().to_string();
     if name.is_empty() {
         return Err(AppError::BadRequest("Fahrzeugname darf nicht leer sein".into()));
@@ -202,10 +198,6 @@ pub async fn update_vehicle(
     Path(id): Path<Uuid>,
     Json(body): Json<VehicleBody>,
 ) -> AppResult<Json<Vehicle>> {
-    if !claims.is_admin_or_above() {
-        return Err(AppError::Forbidden);
-    }
-
     let name = body.name.trim().to_string();
     if name.is_empty() {
         return Err(AppError::BadRequest("Fahrzeugname darf nicht leer sein".into()));
@@ -259,9 +251,6 @@ pub async fn delete_vehicle(
     Extension(claims): Extension<Claims>,
     Path(id): Path<Uuid>,
 ) -> AppResult<Json<serde_json::Value>> {
-    if !claims.is_admin_or_above() {
-        return Err(AppError::Forbidden);
-    }
 
     let result = sqlx::query("DELETE FROM vehicles WHERE id = $1")
         .bind(id)
@@ -299,9 +288,6 @@ pub async fn create_inspection(
     Path(vehicle_id): Path<Uuid>,
     Json(body): Json<InspectionBody>,
 ) -> AppResult<Json<VehicleInspection>> {
-    if !claims.is_admin_or_above() {
-        return Err(AppError::Forbidden);
-    }
 
     let name = body.name.trim().to_string();
     if name.is_empty() {
@@ -331,9 +317,6 @@ pub async fn update_inspection(
     Path((vehicle_id, iid)): Path<(Uuid, Uuid)>,
     Json(body): Json<InspectionBody>,
 ) -> AppResult<Json<VehicleInspection>> {
-    if !claims.is_admin_or_above() {
-        return Err(AppError::Forbidden);
-    }
 
     let name = body.name.trim().to_string();
     if name.is_empty() {
@@ -365,9 +348,6 @@ pub async fn delete_inspection(
     Extension(claims): Extension<Claims>,
     Path((vehicle_id, iid)): Path<(Uuid, Uuid)>,
 ) -> AppResult<Json<serde_json::Value>> {
-    if !claims.is_admin_or_above() {
-        return Err(AppError::Forbidden);
-    }
 
     let result = sqlx::query(
         "DELETE FROM vehicle_inspections WHERE id = $1 AND vehicle_id = $2"
@@ -512,9 +492,7 @@ pub async fn update_trip(
     Path((vehicle_id, tid)): Path<(Uuid, Uuid)>,
     Json(body): Json<TripBody>,
 ) -> AppResult<Json<VehicleTrip>> {
-    if !claims.is_admin_or_above() {
-        return Err(AppError::Forbidden);
-    }
+
     let reason = match body.reason.as_deref().unwrap_or("sonstiges") {
         "uebung" | "einsatz" | "werkstatt" | "sonstiges" => body.reason.as_deref().unwrap_or("sonstiges"),
         _ => return Err(AppError::BadRequest("Ungültiger Anlass".into())),
@@ -543,9 +521,7 @@ pub async fn delete_trip(
     Extension(claims): Extension<Claims>,
     Path((vehicle_id, tid)): Path<(Uuid, Uuid)>,
 ) -> AppResult<Json<serde_json::Value>> {
-    if !claims.is_admin_or_above() {
-        return Err(AppError::Forbidden);
-    }
+
     let r = sqlx::query("DELETE FROM vehicle_trips WHERE id=$1 AND vehicle_id=$2")
         .bind(tid).bind(vehicle_id).execute(&state.db).await?;
     if r.rows_affected() == 0 { return Err(AppError::NotFound); }
@@ -622,9 +598,7 @@ pub async fn update_fueling(
     Path((vehicle_id, fid)): Path<(Uuid, Uuid)>,
     Json(body): Json<FuelingBody>,
 ) -> AppResult<Json<VehicleFueling>> {
-    if !claims.is_admin_or_above() {
-        return Err(AppError::Forbidden);
-    }
+
     let fuel_type = validate_fuel_type(body.fuel_type.as_deref())?;
     let row = sqlx::query_as::<_, VehicleFueling>(
         "UPDATE vehicle_fuelings SET fueling_date=$1, km_stand=$2, liters=$3, fuel_type=$4, cost_eur=$5, notes=$6
@@ -650,9 +624,7 @@ pub async fn delete_fueling(
     Extension(claims): Extension<Claims>,
     Path((vehicle_id, fid)): Path<(Uuid, Uuid)>,
 ) -> AppResult<Json<serde_json::Value>> {
-    if !claims.is_admin_or_above() {
-        return Err(AppError::Forbidden);
-    }
+
     let r = sqlx::query("DELETE FROM vehicle_fuelings WHERE id=$1 AND vehicle_id=$2")
         .bind(fid).bind(vehicle_id).execute(&state.db).await?;
     if r.rows_affected() == 0 { return Err(AppError::NotFound); }
@@ -768,9 +740,7 @@ pub async fn update_defect_status(
     Path((vehicle_id, did)): Path<(Uuid, Uuid)>,
     Json(body): Json<DefectStatusBody>,
 ) -> AppResult<Json<VehicleDefect>> {
-    if !claims.is_admin_or_above() {
-        return Err(AppError::Forbidden);
-    }
+
     let status = validate_defect_status(&body.status)?;
     let resolved_at = if status == "behoben" || status == "nicht_reproduzierbar" {
         Some("NOW()")
@@ -812,9 +782,7 @@ pub async fn delete_defect(
     Extension(claims): Extension<Claims>,
     Path((vehicle_id, did)): Path<(Uuid, Uuid)>,
 ) -> AppResult<Json<serde_json::Value>> {
-    if !claims.is_admin_or_above() {
-        return Err(AppError::Forbidden);
-    }
+
     let r = sqlx::query("DELETE FROM vehicle_defects WHERE id=$1 AND vehicle_id=$2")
         .bind(did).bind(vehicle_id).execute(&state.db).await?;
     if r.rows_affected() == 0 { return Err(AppError::NotFound); }
@@ -963,7 +931,7 @@ pub async fn create_equipment(
     Path(vehicle_id): Path<Uuid>,
     Json(body): Json<EquipmentBody>,
 ) -> AppResult<Json<VehicleEquipment>> {
-    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+
     let name = body.name.trim().to_string();
     if name.is_empty() { return Err(AppError::BadRequest("Bezeichnung darf nicht leer sein".into())); }
     let status = validate_equipment_status(body.status.as_deref())?;
@@ -988,7 +956,7 @@ pub async fn update_equipment(
     Path((vehicle_id, eid)): Path<(Uuid, Uuid)>,
     Json(body): Json<EquipmentBody>,
 ) -> AppResult<Json<VehicleEquipment>> {
-    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+
     let name = body.name.trim().to_string();
     if name.is_empty() { return Err(AppError::BadRequest("Bezeichnung darf nicht leer sein".into())); }
     let status = validate_equipment_status(body.status.as_deref())?;
@@ -1011,7 +979,7 @@ pub async fn delete_equipment(
     Extension(claims): Extension<Claims>,
     Path((vehicle_id, eid)): Path<(Uuid, Uuid)>,
 ) -> AppResult<Json<serde_json::Value>> {
-    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+
     let r = sqlx::query("DELETE FROM vehicle_equipment WHERE id=$1 AND vehicle_id=$2")
         .bind(eid).bind(vehicle_id).execute(&state.db).await?;
     if r.rows_affected() == 0 { return Err(AppError::NotFound); }
@@ -1088,7 +1056,7 @@ pub async fn create_template(
     Path(vehicle_id): Path<Uuid>,
     Json(body): Json<TemplateBody>,
 ) -> AppResult<Json<ChecklistTemplateDetail>> {
-    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+
     let name = body.name.trim().to_string();
     if name.is_empty() { return Err(AppError::BadRequest("Name darf nicht leer sein".into())); }
     let interval = validate_interval(body.interval.as_deref())?;
@@ -1121,7 +1089,7 @@ pub async fn delete_template(
     Extension(claims): Extension<Claims>,
     Path((vehicle_id, tid)): Path<(Uuid, Uuid)>,
 ) -> AppResult<Json<serde_json::Value>> {
-    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+
     let r = sqlx::query(
         "DELETE FROM vehicle_checklist_templates WHERE id=$1 AND vehicle_id=$2"
     )
@@ -1281,7 +1249,7 @@ pub async fn delete_checklist(
     Extension(claims): Extension<Claims>,
     Path((vehicle_id, cid)): Path<(Uuid, Uuid)>,
 ) -> AppResult<Json<serde_json::Value>> {
-    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+
     let r = sqlx::query("DELETE FROM vehicle_checklists WHERE id=$1 AND vehicle_id=$2")
         .bind(cid).bind(vehicle_id).execute(&state.db).await?;
     if r.rows_affected() == 0 { return Err(AppError::NotFound); }

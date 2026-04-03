@@ -46,12 +46,12 @@ export function renderShell(activePage) {
               <span class="sidebar__item__icon">${icon('user', 16)}</span> Mein Bereich
             </button>
             <div class="sidebar__divider"></div>
-            ${(canAccess(currentUser, 'lager') || canAccess(currentUser, 'lager.approve')) && activeModules['lager'] ? `
+            ${(canAccess(currentUser, 'lager.read') || canAccess(currentUser, 'lager') || canAccess(currentUser, 'lager.approve')) && activeModules['lager'] ? `
             <div class="sidebar__module">${icon('package', 14)} Lager</div>
             <button class="sidebar__item${activePage === 'orders' ? ' active' : ''}" data-page="orders">
               <span class="sidebar__item__icon">${icon('clipboard-list', 16)}</span> Bestellübersicht
             </button>
-            ${canAccess(currentUser, 'lager') ? `
+            ${(canAccess(currentUser, 'lager') || canAccess(currentUser, 'lager.approve')) ? `
             <button class="sidebar__item${activePage === 'new-order' ? ' active' : ''}" data-page="new-order">
               <span class="sidebar__item__icon">${icon('plus', 16)}</span> Neue Bestellung
             </button>
@@ -77,7 +77,7 @@ export function renderShell(activePage) {
             </button>
             <div class="sidebar__divider"></div>` : ''}
 
-            ${canAccess(currentUser, 'einsatzberichte') && activeModules['einsatzberichte'] ? `
+            ${(canAccess(currentUser, 'einsatzberichte.read') || canAccess(currentUser, 'einsatzberichte') || canAccess(currentUser, 'einsatzberichte.approve')) && activeModules['einsatzberichte'] ? `
             <div class="sidebar__module">${icon('siren', 14)} Einsätze</div>
             <button class="sidebar__item${activePage === 'incidents' ? ' active' : ''}" data-page="incidents">
               <span class="sidebar__item__icon">${icon('file-text', 16)}</span> Einsatzberichte

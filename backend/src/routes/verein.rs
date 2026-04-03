@@ -15,7 +15,7 @@ use uuid::Uuid;
 
 use crate::{
     audit,
-    auth::middleware::{require_auth, Claims},
+    auth::middleware::{require_auth, require_module, Claims},
     errors::{AppError, AppResult},
     AppState,
 };
@@ -68,9 +68,6 @@ pub async fn update_briefkopf(
     Extension(claims): Extension<Claims>,
     Json(body): Json<UpdateBriefkopf>,
 ) -> AppResult<Json<Briefkopf>> {
-    if !claims.is_admin_or_above() {
-        return Err(AppError::Forbidden);
-    }
 
     for (key, val) in [
         ("ff_email",   body.ff_email.as_deref().unwrap_or("")),
@@ -115,9 +112,6 @@ pub async fn upload_logo(
     Extension(claims): Extension<Claims>,
     mut multipart: Multipart,
 ) -> AppResult<Json<serde_json::Value>> {
-    if !claims.is_admin_or_above() {
-        return Err(AppError::Forbidden);
-    }
 
     while let Some(field) = multipart.next_field().await
         .map_err(|e| AppError::BadRequest(e.to_string()))? {
@@ -159,9 +153,7 @@ pub async fn delete_logo(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
 ) -> AppResult<Json<serde_json::Value>> {
-    if !claims.is_admin_or_above() {
-        return Err(AppError::Forbidden);
-    }
+
     let dir = FilePath::new(&state.config.data_dir).join("verein");
     let mut deleted = false;
     for ext in ["png", "jpg", "webp"] {
@@ -211,9 +203,7 @@ pub async fn create_vorstand(
     Extension(claims): Extension<Claims>,
     Json(body): Json<VorstandBody>,
 ) -> AppResult<Json<Vorstand>> {
-    if !claims.is_admin_or_above() {
-        return Err(AppError::Forbidden);
-    }
+
     if body.name.trim().is_empty() || body.funktion.trim().is_empty() {
         return Err(AppError::BadRequest("Name und Funktion sind erforderlich".into()));
     }
@@ -238,9 +228,7 @@ pub async fn update_vorstand(
     Path(id): Path<Uuid>,
     Json(body): Json<VorstandBody>,
 ) -> AppResult<Json<Vorstand>> {
-    if !claims.is_admin_or_above() {
-        return Err(AppError::Forbidden);
-    }
+
     let row = sqlx::query_as::<_, Vorstand>(
         "UPDATE verein_vorstand SET name=$1, funktion=$2, seit=$3, bis=$4, sort_order=$5
          WHERE id=$6
@@ -263,9 +251,7 @@ pub async fn delete_vorstand(
     Extension(claims): Extension<Claims>,
     Path(id): Path<Uuid>,
 ) -> AppResult<Json<serde_json::Value>> {
-    if !claims.is_admin_or_above() {
-        return Err(AppError::Forbidden);
-    }
+
     let res = sqlx::query("DELETE FROM verein_vorstand WHERE id=$1")
         .bind(id).execute(&state.db).await?;
     if res.rows_affected() == 0 {
@@ -323,9 +309,7 @@ pub async fn create_post(
     Extension(claims): Extension<Claims>,
     Json(body): Json<VereinPostBody>,
 ) -> AppResult<Json<VereinPost>> {
-    if !claims.is_admin_or_above() {
-        return Err(AppError::Forbidden);
-    }
+
     if body.title.trim().is_empty() {
         return Err(AppError::BadRequest("Titel darf nicht leer sein".into()));
     }
@@ -363,9 +347,7 @@ pub async fn update_post(
     Path(id): Path<Uuid>,
     Json(body): Json<VereinPostBody>,
 ) -> AppResult<Json<VereinPost>> {
-    if !claims.is_admin_or_above() {
-        return Err(AppError::Forbidden);
-    }
+
     let visibility = body.visibility.as_deref().unwrap_or("all");
     let row = sqlx::query_as::<_, VereinPost>(
         "UPDATE verein_posts
@@ -391,9 +373,7 @@ pub async fn delete_post(
     Extension(claims): Extension<Claims>,
     Path(id): Path<Uuid>,
 ) -> AppResult<Json<serde_json::Value>> {
-    if !claims.is_admin_or_above() {
-        return Err(AppError::Forbidden);
-    }
+
     let res = sqlx::query("DELETE FROM verein_posts WHERE id=$1")
         .bind(id).execute(&state.db).await?;
     if res.rows_affected() == 0 {
@@ -441,9 +421,6 @@ pub async fn upload_document(
     Extension(claims): Extension<Claims>,
     mut multipart: Multipart,
 ) -> AppResult<Json<VereinDocument>> {
-    if !claims.is_admin_or_above() {
-        return Err(AppError::Forbidden);
-    }
 
     let mut file_data: Option<(Vec<u8>, String, String)> = None; // (bytes, filename, mime)
     let mut category     = "Sonstiges".to_string();
@@ -571,9 +548,7 @@ pub async fn delete_document(
     Extension(claims): Extension<Claims>,
     Path(id): Path<Uuid>,
 ) -> AppResult<Json<serde_json::Value>> {
-    if !claims.is_admin_or_above() {
-        return Err(AppError::Forbidden);
-    }
+
     let row = sqlx::query_as::<_, DeletedPath>(
         "DELETE FROM verein_documents WHERE id=$1 RETURNING file_path"
     )
@@ -1107,7 +1082,7 @@ pub async fn create_inventar(
     Extension(claims): Extension<Claims>,
     Json(body): Json<CreateInventar>,
 ) -> AppResult<Json<Inventar>> {
-    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+
     let row = sqlx::query_as::<_, Inventar>(
         "INSERT INTO verein_inventar (name, kategorie, seriennummer, zustand, standort, bemerkung)
          VALUES ($1, COALESCE($2,'sonstige'), $3, COALESCE($4,'gut'), $5, $6)
@@ -1127,7 +1102,7 @@ pub async fn update_inventar(
     Path(id): Path<Uuid>,
     Json(body): Json<UpdateInventar>,
 ) -> AppResult<Json<Inventar>> {
-    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+
     let row = sqlx::query_as::<_, Inventar>(
         "UPDATE verein_inventar SET
             name         = COALESCE($1, name),
@@ -1154,7 +1129,7 @@ pub async fn delete_inventar(
     Extension(claims): Extension<Claims>,
     Path(id): Path<Uuid>,
 ) -> AppResult<Json<serde_json::Value>> {
-    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+
     let n = sqlx::query("UPDATE verein_inventar SET archiviert = TRUE WHERE id = $1")
         .bind(id).execute(&state.db).await?.rows_affected();
     if n == 0 { return Err(AppError::NotFound); }
@@ -1259,7 +1234,7 @@ pub async fn delete_ausleihe(
     Extension(claims): Extension<Claims>,
     Path(id): Path<Uuid>,
 ) -> AppResult<Json<serde_json::Value>> {
-    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+
     sqlx::query("DELETE FROM verein_ausleihen WHERE id = $1")
         .bind(id).execute(&state.db).await?;
     Ok(Json(serde_json::json!({ "ok": true })))
@@ -1344,7 +1319,7 @@ pub async fn create_schluessel(
     Extension(claims): Extension<Claims>,
     Json(body): Json<CreateSchluessel>,
 ) -> AppResult<Json<Schluessel>> {
-    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+
     let row = sqlx::query_as::<_, Schluessel>(
         "INSERT INTO verein_schluessel (bezeichnung, schloss_bereich, kopien_anzahl, bemerkung)
          VALUES ($1,$2,COALESCE($3,1),$4)
@@ -1364,7 +1339,7 @@ pub async fn update_schluessel(
     Path(id): Path<Uuid>,
     Json(body): Json<UpdateSchluessel>,
 ) -> AppResult<Json<Schluessel>> {
-    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+
     let row = sqlx::query_as::<_, Schluessel>(
         "UPDATE verein_schluessel SET
             bezeichnung     = COALESCE($1, bezeichnung),
@@ -1385,7 +1360,7 @@ pub async fn delete_schluessel(
     Extension(claims): Extension<Claims>,
     Path(id): Path<Uuid>,
 ) -> AppResult<Json<serde_json::Value>> {
-    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+
     let n = sqlx::query("DELETE FROM verein_schluessel WHERE id = $1")
         .bind(id).execute(&state.db).await?.rows_affected();
     if n == 0 { return Err(AppError::NotFound); }
@@ -1560,7 +1535,7 @@ pub async fn delete_aufgabe(
     Extension(claims): Extension<Claims>,
     Path(id): Path<Uuid>,
 ) -> AppResult<Json<serde_json::Value>> {
-    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+
     let n = sqlx::query("DELETE FROM verein_aufgaben WHERE id = $1")
         .bind(id).execute(&state.db).await?.rows_affected();
     if n == 0 { return Err(AppError::NotFound); }
@@ -1643,7 +1618,7 @@ pub async fn create_event(
     Extension(claims): Extension<Claims>,
     Json(body): Json<CreateEvent>,
 ) -> AppResult<Json<VereinEvent>> {
-    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+
     let row = sqlx::query_as::<_, VereinEvent>(
         "INSERT INTO verein_events (titel, typ, datum_von, datum_bis, ort, beschreibung, erstellt_von)
          VALUES ($1, COALESCE($2,'sonstiges'), $3, $4, $5, $6, $7)
@@ -1664,7 +1639,7 @@ pub async fn update_event(
     Path(id): Path<Uuid>,
     Json(body): Json<UpdateEvent>,
 ) -> AppResult<Json<VereinEvent>> {
-    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+
     let row = sqlx::query_as::<_, VereinEvent>(
         "UPDATE verein_events SET
             titel        = COALESCE($1, titel),
@@ -1690,7 +1665,7 @@ pub async fn delete_event(
     Extension(claims): Extension<Claims>,
     Path(id): Path<Uuid>,
 ) -> AppResult<Json<serde_json::Value>> {
-    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+
     let n = sqlx::query("DELETE FROM verein_events WHERE id = $1")
         .bind(id).execute(&state.db).await?.rows_affected();
     if n == 0 { return Err(AppError::NotFound); }
@@ -1738,7 +1713,7 @@ pub async fn set_antwort_admin(
     Path((event_id, mitglied_id)): Path<(Uuid, Uuid)>,
     Json(body): Json<SetAntwort>,
 ) -> AppResult<Json<EventAntwort>> {
-    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+
     set_antwort_for_mitglied(&state.db, event_id, mitglied_id, &body.antwort, body.kommentar.as_deref()).await
 }
 
@@ -1903,7 +1878,7 @@ pub async fn create_protokoll(
     Extension(claims): Extension<Claims>,
     Json(body): Json<CreateProtokoll>,
 ) -> AppResult<Json<Protokoll>> {
-    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+
     let row = sqlx::query_as::<_, Protokoll>(
         "INSERT INTO verein_protokolle (titel, datum, ort, event_id, protokollant, anwesende, erstellt_von)
          VALUES ($1,$2,$3,$4,$5,$6,$7)
@@ -1923,7 +1898,7 @@ pub async fn update_protokoll(
     Path(id): Path<Uuid>,
     Json(body): Json<UpdateProtokoll>,
 ) -> AppResult<Json<Protokoll>> {
-    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+
     let row = sqlx::query_as::<_, Protokoll>(
         "UPDATE verein_protokolle SET
             titel        = COALESCE($1, titel),
@@ -1947,7 +1922,7 @@ pub async fn delete_protokoll(
     Extension(claims): Extension<Claims>,
     Path(id): Path<Uuid>,
 ) -> AppResult<Json<serde_json::Value>> {
-    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+
     let n = sqlx::query("DELETE FROM verein_protokolle WHERE id = $1")
         .bind(id).execute(&state.db).await?.rows_affected();
     if n == 0 { return Err(AppError::NotFound); }
@@ -1960,7 +1935,7 @@ pub async fn create_top(
     Path(protokoll_id): Path<Uuid>,
     Json(body): Json<CreateTop>,
 ) -> AppResult<Json<ProtokollTop>> {
-    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+
     let next_pos: i64 = sqlx::query_scalar(
         "SELECT COALESCE(MAX(position), 0) + 1 FROM verein_protokoll_tops WHERE protokoll_id = $1"
     )
@@ -1983,7 +1958,7 @@ pub async fn update_top(
     Path(id): Path<Uuid>,
     Json(body): Json<UpdateTop>,
 ) -> AppResult<Json<ProtokollTop>> {
-    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+
     let row = sqlx::query_as::<_, ProtokollTop>(
         "UPDATE verein_protokoll_tops SET
             titel     = COALESCE($1, titel),
@@ -2003,7 +1978,7 @@ pub async fn delete_top(
     Extension(claims): Extension<Claims>,
     Path(id): Path<Uuid>,
 ) -> AppResult<Json<serde_json::Value>> {
-    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+
     sqlx::query("DELETE FROM verein_protokoll_tops WHERE id = $1")
         .bind(id).execute(&state.db).await?;
     Ok(Json(serde_json::json!({ "ok": true })))
@@ -2134,7 +2109,7 @@ pub async fn create_finanz_kategorie(
     Extension(claims): Extension<Claims>,
     Json(body): Json<CreateKategorie>,
 ) -> AppResult<Json<FinanzKategorie>> {
-    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+
     let row = sqlx::query_as::<_, FinanzKategorie>(
         "INSERT INTO verein_finanz_kategorien (name, typ) VALUES ($1, $2)
          RETURNING id, name, typ, created_at"
@@ -2150,7 +2125,7 @@ pub async fn delete_finanz_kategorie(
     Extension(claims): Extension<Claims>,
     Path(id): Path<Uuid>,
 ) -> AppResult<Json<serde_json::Value>> {
-    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+
     let n = sqlx::query("DELETE FROM verein_finanz_kategorien WHERE id = $1")
         .bind(id).execute(&state.db).await?.rows_affected();
     if n == 0 { return Err(AppError::NotFound); }
@@ -2187,7 +2162,7 @@ pub async fn create_buchung(
     Extension(claims): Extension<Claims>,
     Json(body): Json<CreateBuchung>,
 ) -> AppResult<Json<Buchung>> {
-    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+
     if body.bezeichnung.trim().is_empty() {
         return Err(AppError::BadRequest("Bezeichnung erforderlich".into()));
     }
@@ -2222,7 +2197,7 @@ pub async fn update_buchung(
     Path(id): Path<Uuid>,
     Json(body): Json<UpdateBuchung>,
 ) -> AppResult<Json<Buchung>> {
-    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+
     let row = sqlx::query_as::<_, Buchung>(
         "UPDATE verein_buchungen SET
              datum        = COALESCE($1, datum),
@@ -2260,7 +2235,7 @@ pub async fn delete_buchung(
     Extension(claims): Extension<Claims>,
     Path(id): Path<Uuid>,
 ) -> AppResult<Json<serde_json::Value>> {
-    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+
     let n = sqlx::query("DELETE FROM verein_buchungen WHERE id = $1")
         .bind(id).execute(&state.db).await?.rows_affected();
     if n == 0 { return Err(AppError::NotFound); }
@@ -2315,7 +2290,7 @@ pub async fn create_beitrag(
     Extension(claims): Extension<Claims>,
     Json(body): Json<CreateBeitrag>,
 ) -> AppResult<Json<Beitrag>> {
-    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+
     let row = sqlx::query_as::<_, Beitrag>(
         "INSERT INTO verein_beitraege (mitglied_id, jahr, betrag, bezahlt_am, status, notiz)
          VALUES ($1, $2, $3, $4, COALESCE($5, 'offen'), $6)
@@ -2340,7 +2315,7 @@ pub async fn update_beitrag(
     Path(id): Path<Uuid>,
     Json(body): Json<UpdateBeitrag>,
 ) -> AppResult<Json<Beitrag>> {
-    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+
     let row = sqlx::query_as::<_, Beitrag>(
         "UPDATE verein_beitraege SET
              betrag     = COALESCE($1, betrag),
@@ -2368,7 +2343,7 @@ pub async fn delete_beitrag(
     Extension(claims): Extension<Claims>,
     Path(id): Path<Uuid>,
 ) -> AppResult<Json<serde_json::Value>> {
-    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+
     let n = sqlx::query("DELETE FROM verein_beitraege WHERE id = $1")
         .bind(id).execute(&state.db).await?.rows_affected();
     if n == 0 { return Err(AppError::NotFound); }
@@ -2380,7 +2355,7 @@ pub async fn generate_beitraege(
     Extension(claims): Extension<Claims>,
     Json(body): Json<GenerateBeitraegeBody>,
 ) -> AppResult<Json<serde_json::Value>> {
-    if !claims.is_admin_or_above() { return Err(AppError::Forbidden); }
+
     // Alle aktiven Mitglieder die noch keinen Beitrag für das Jahr haben
     let inserted: i64 = sqlx::query_scalar(
         "WITH ins AS (
@@ -2456,6 +2431,7 @@ pub fn router(state: AppState) -> Router<AppState> {
         .route("/finanz/beitraege",            post(create_beitrag))
         .route("/finanz/beitraege/generieren", post(generate_beitraege))
         .route("/finanz/beitraege/:id",        put(update_beitrag).delete(delete_beitrag))
+        .route_layer(middleware::from_fn_with_state(state.clone(), require_module("verein")))
         .route_layer(middleware::from_fn_with_state(state.clone(), require_auth));
 
     Router::new()
