@@ -13,7 +13,7 @@ export async function renderLogin() {
     }
   } catch (_) { /* ignorieren, normaler Login-Flow */ }
 
-  const app = document.getElementById('app');
+  const app = document.getElementById('page-content');
 
   app.innerHTML = `
     <div class="auth-page">
@@ -41,7 +41,7 @@ export async function renderLogin() {
   `;
 
   // Enter-Taste
-  app.querySelectorAll('input').forEach(inp => {
+  document.querySelectorAll('#page-content input').forEach(inp => {
     inp.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
   });
   app.querySelector('#btn-login').addEventListener('click', doLogin);
@@ -127,7 +127,7 @@ function renderTotpSetup() {
         <strong>Scanne den QR-Code</strong>
         Öffne deine Authenticator-App und scanne den Code.
       </div>
-      <div id="qr-uri" style="word-break:break-all;font-size:11px;background:#0d1117;color:#7d8590;padding:10px;border-radius:8px;border:1px solid #21273d;margin-bottom:12px;font-family:monospace;"></div>
+      <div id="qr-uri" style="word-break:break-all;font-size:11px;background:#f4f5f7;color:#64748b;padding:10px;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:12px;font-family:monospace;"></div>
       <div class="form-group">
         <label>Code zum Bestätigen</label>
         <input type="text" id="totp-confirm-code" class="totp-code-input"

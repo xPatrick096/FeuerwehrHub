@@ -15,7 +15,7 @@ body {
   font-size: $font-size-md;
   color: $text;
   background: $bg;
-  color-scheme: dark;          // Lässt Browser-native Elemente (Dropdown, Scrollbar) dunkel rendern
+  color-scheme: light;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

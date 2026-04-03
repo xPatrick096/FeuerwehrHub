@@ -1,30 +1,30 @@
-// ── Dark Theme ────────────────────────────────────────────────────────────────
-$bg:            #0d1117;
-$bg-card:       #161b27;
-$bg-card-hover: #1c2335;
-$border:        #21273d;
-$text:          #e6edf3;
-$text-muted:    #7d8590;
-$text-subtle:   #4c5462;
+// ── Light Theme ───────────────────────────────────────────────────────────────
+$bg:            #f4f5f7;
+$bg-card:       #ffffff;
+$bg-card-hover: #f8fafc;
+$border:        #e2e8f0;
+$text:          #1e293b;
+$text-muted:    #64748b;
+$text-subtle:   #94a3b8;
 
-// ── Akzentfarbe ───────────────────────────────────────────────────────────────
+// ── Akzentfarbe (Feuerwehr-Rot) ───────────────────────────────────────────────
 $rot:           #e63022;
 $rot-dunkel:    #b5261b;
-$rot-hell:      rgba(230, 48, 34, 0.15);
-$rot-border:    rgba(230, 48, 34, 0.30);   // Hover-Border-Akzent
-$rot-glow:      rgba(230, 48, 34, 0.35);   // Button-Shadow Hover
-$rot-focus:     rgba(230, 48, 34, 0.12);   // Input Focus-Ring
-$rot-subtle:    rgba(230, 48, 34, 0.05);   // Ganz subtiler Hintergrund
+$rot-hell:      rgba(230, 48, 34, 0.10);
+$rot-border:    rgba(230, 48, 34, 0.25);
+$rot-glow:      rgba(230, 48, 34, 0.25);
+$rot-focus:     rgba(230, 48, 34, 0.10);
+$rot-subtle:    rgba(230, 48, 34, 0.04);
 
 // ── Statusfarben ──────────────────────────────────────────────────────────────
-$gruen:         #3fb950;
-$gruen-hell:    rgba(63, 185, 80, 0.15);
-$orange:        #d29922;
-$orange-hell:   rgba(210, 153, 34, 0.15);
-$blau:          #388bfd;
-$blau-hell:     rgba(56, 139, 253, 0.15);
-$lila:          #a371f7;
-$lila-hell:     rgba(163, 113, 247, 0.15);
+$gruen:         #16a34a;
+$gruen-hell:    rgba(22, 163, 74, 0.12);
+$orange:        #d97706;
+$orange-hell:   rgba(217, 119, 6, 0.12);
+$blau:          #2563eb;
+$blau-hell:     rgba(37, 99, 235, 0.12);
+$lila:          #7c3aed;
+$lila-hell:     rgba(124, 58, 237, 0.12);
 
 // ── Typografie ────────────────────────────────────────────────────────────────
 $font-family:   'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -45,9 +45,9 @@ $space-xl:  32px;
 $space-2xl: 48px;
 
 // ── Schatten ──────────────────────────────────────────────────────────────────
-$schatten-sm:  0 1px 6px rgba(0,0,0,0.35);
-$schatten-md:  0 4px 16px rgba(0,0,0,0.45);
-$schatten-lg:  0 8px 32px rgba(0,0,0,0.55);
+$schatten-sm:  0 1px 3px rgba(0,0,0,0.08);
+$schatten-md:  0 4px 12px rgba(0,0,0,0.10);
+$schatten-lg:  0 8px 24px rgba(0,0,0,0.12);
 
 // ── Border-Radius ─────────────────────────────────────────────────────────────
 $radius-sm:   4px;
@@ -57,8 +57,9 @@ $radius-xl:   16px;
 $radius-pill: 999px;
 
 // ── Layout ────────────────────────────────────────────────────────────────────
-$sidebar-width:     220px;
-$header-height:     64px;
+$topnav-height:     52px;
+$header-height:     52px;    // Alias für Kompatibilität
+$sidebar-width:     220px;   // nicht mehr aktiv, für Referenz behalten
 $content-max-width: 1200px;
 
 // ── Transitions ───────────────────────────────────────────────────────────────

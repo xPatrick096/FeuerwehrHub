@@ -1,0 +1,36 @@
+@use 'variables' as *;
+
+// Gemeinsame Basis-Styles für Formularfelder
+@mixin field-base {
+  padding: 8px 12px;
+  border: 1px solid $border;
+  border-radius: $radius-md;
+  color: $text;
+  background: $bg;
+  transition: border-color $transition-fast, box-shadow $transition-fast;
+
+  &:focus-visible {
+    outline: none;
+    border-color: $rot;
+    box-shadow: 0 0 0 3px $rot-focus;
+  }
+
+  &::placeholder { color: $text-subtle; }
+  option { background: $bg-card; }
+}
+
+// Inline-Eingabefelder im Beschaffungsformular (randlos, transparent)
+@mixin beschaffung-input {
+  width: 100%;
+  border: none;
+  border-radius: 0;
+  padding: $space-sm $space-md;
+  font-size: $font-size-md;
+  background: transparent;
+  color: $text;
+  box-shadow: none;
+  outline: none;
+
+  &:focus-visible { background: $rot-subtle; }
+  option { background: $bg-card; }
+}

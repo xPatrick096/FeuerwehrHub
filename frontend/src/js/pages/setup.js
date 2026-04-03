@@ -4,7 +4,7 @@ import { navigate } from '../router.js';
 import { icon, renderIcons } from '../icons.js';
 
 export function renderSetup() {
-  const app = document.getElementById('app');
+  const app = document.getElementById('page-content');
 
   app.innerHTML = `
     <div class="auth-page">
@@ -43,7 +43,7 @@ export function renderSetup() {
   `;
 
   document.getElementById('btn-setup').addEventListener('click', doSetup);
-  renderIcons(document.getElementById('app'));
+  renderIcons(document.getElementById('page-content'));
 }
 
 async function doSetup() {

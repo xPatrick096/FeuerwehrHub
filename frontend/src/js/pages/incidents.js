@@ -113,7 +113,7 @@ export async function renderIncidents() {
 
 async function _load() {
   const wrap = document.getElementById('incident-table-wrap');
-  wrap.innerHTML = `<p style="color:#7d8590;font-size:13px">Lade...</p>`;
+  wrap.innerHTML = `<p style="color:#64748b;font-size:13px">Lade...</p>`;
   try {
     const data = await api.getIncidents(_filters);
     _renderTable(data);
@@ -128,16 +128,16 @@ async function _loadStats() {
     const row = document.getElementById('stats-row');
     if (!row) return;
     const tile = (v, l, c) =>
-      `<div style="background:#161b27;border:1px solid #21273d;border-radius:10px;padding:12px 16px;min-width:90px;flex:1">
+      `<div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:10px;padding:12px 16px;min-width:90px;flex:1">
         <div style="font-size:20px;font-weight:800;color:${c}">${v}</div>
-        <div style="font-size:11px;color:#7d8590;margin-top:2px">${l}</div>
+        <div style="font-size:11px;color:#64748b;margin-top:2px">${l}</div>
       </div>`;
     row.innerHTML =
-      tile(s.total,     'Gesamt',         '#e6edf3') +
+      tile(s.total,     'Gesamt',         '#1e293b') +
       tile(s.brand,     'Brand',          '#e63022') +
       tile(s.thl,       'THL',            '#f0a500') +
-      tile(s.fehlalarm, 'Fehlalarm',      '#7d8590') +
-      tile(s.sonstiges, 'Sonstiges',      '#7d8590') +
+      tile(s.fehlalarm, 'Fehlalarm',      '#64748b') +
+      tile(s.sonstiges, 'Sonstiges',      '#64748b') +
       tile(s.entwurf,   'Entwürfe offen', s.entwurf > 0 ? '#f0a500' : '#3fb950');
   } catch (_) {}
 }
@@ -150,7 +150,7 @@ function _renderTable({ items, total, page, per_page }) {
   const perms      = _user?.permissions || [];
 
   if (!items.length) {
-    wrap.innerHTML = `<p style="color:#7d8590;font-size:13px;padding:20px 0">Keine Einsatzberichte gefunden.</p>`;
+    wrap.innerHTML = `<p style="color:#64748b;font-size:13px;padding:20px 0">Keine Einsatzberichte gefunden.</p>`;
     return;
   }
 
@@ -168,7 +168,7 @@ function _renderTable({ items, total, page, per_page }) {
         <tbody>
           ${items.map(r => `
             <tr>
-              <td style="font-size:12px;color:#7d8590">${esc(r.incident_number || '—')}</td>
+              <td style="font-size:12px;color:#64748b">${esc(r.incident_number || '—')}</td>
               <td>${_fmtDate(r.incident_date)}</td>
               <td>${esc(r.incident_type_label)}</td>
               <td>${esc(r.location)}</td>
@@ -194,7 +194,7 @@ function _renderTable({ items, total, page, per_page }) {
     ${totalPages > 1 ? `
       <div style="display:flex;justify-content:center;gap:8px;margin-top:16px;align-items:center">
         <button class="btn btn--outline btn--sm" id="pg-prev" ${page <= 1 ? 'disabled' : ''}>← Zurück</button>
-        <span style="font-size:13px;color:#7d8590">Seite ${page} / ${totalPages} (${total})</span>
+        <span style="font-size:13px;color:#64748b">Seite ${page} / ${totalPages} (${total})</span>
         <button class="btn btn--outline btn--sm" id="pg-next" ${page >= totalPages ? 'disabled' : ''}>Weiter →</button>
       </div>` : ''}
   `;

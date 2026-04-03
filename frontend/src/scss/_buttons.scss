@@ -1,0 +1,84 @@
+@use 'variables' as *;
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: $space-sm;
+  padding: 8px 16px;
+  border: none;
+  border-radius: $radius-md;
+  cursor: pointer;
+  font-size: $font-size-sm;
+  font-weight: 600;
+  transition: all $transition-fast;
+  white-space: nowrap;
+  text-decoration: none;
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  &--primary {
+    background: $rot;
+    color: #fff;
+    &:hover:not(:disabled) {
+      background: $rot-dunkel;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px $rot-glow;
+    }
+  }
+
+  &--secondary {
+    background: $bg-card-hover;
+    color: $text;
+    border: 1px solid $border;
+    &:hover:not(:disabled) { background: $border; }
+  }
+
+  &--success {
+    background: $gruen;
+    color: #fff;
+    &:hover:not(:disabled) { background: darken($gruen, 8%); }
+  }
+
+  &--warning {
+    background: $orange;
+    color: #fff;
+    &:hover:not(:disabled) { filter: brightness(0.9); }
+  }
+
+  &--outline {
+    background: transparent;
+    color: $text-muted;
+    border: 1px solid $border;
+    &:hover:not(:disabled) { background: $bg-card-hover; color: $text; border-color: $text-muted; }
+  }
+
+  &--danger {
+    background: transparent;
+    color: $rot;
+    border: 1px solid $rot;
+    &:hover:not(:disabled) { background: $rot-hell; }
+  }
+
+  &--ghost {
+    background: transparent;
+    color: $text-muted;
+    border: 1px solid transparent;
+    &:hover:not(:disabled) { background: $bg-card-hover; color: $text; border-color: $border; }
+    &.btn--danger { color: $rot; &:hover:not(:disabled) { background: $rot-hell; border-color: $rot; } }
+  }
+
+  &--sm   { padding: 5px 10px;  font-size: $font-size-xs; border-radius: $radius-sm; }
+  &--xs   { padding: 3px 7px;   font-size: $font-size-xs; border-radius: $radius-sm; }
+  &--lg   { padding: 11px 22px; font-size: $font-size-md; }
+  &--full { width: 100%; justify-content: center; }
+  &--active { outline: 2px solid currentColor; outline-offset: 2px; }
+}
+
+.btn-group {
+  display: flex;
+  gap: $space-sm;
+  flex-wrap: wrap;
+}

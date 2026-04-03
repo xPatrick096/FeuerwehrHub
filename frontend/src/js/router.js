@@ -1,8 +1,8 @@
 import { api } from './api.js';
+import { canAccess } from '../lib/permissions.js';
 
 const routes = {};
 const routePermissions = {};
-let currentPage = null;
 
 export function registerRoute(hash, fn, requiredPermission) {
   routes[hash] = fn;
@@ -29,21 +29,12 @@ export function initRouter() {
       const requiredPerm = routePermissions[hash];
       if (requiredPerm) {
         const user = await api.me().catch(() => null);
-        const isAdmin = user?.role === 'admin' || user?.role === 'superuser';
-        const perms = user?.permissions || [];
-        const allowed = Array.isArray(requiredPerm) ? requiredPerm : [requiredPerm];
-        const hasPerm = isAdmin || allowed.some(p => perms.includes(p));
-        if (!hasPerm) {
-          window.location.hash = '#/'; // → Startseite, immer zugänglich
+        if (!canAccess(user, requiredPerm)) {
+          window.location.hash = '#/';
           return;
         }
       }
 
-      if (currentPage) {
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        document.querySelectorAll('.sidebar__item').forEach(b => b.classList.remove('active'));
-      }
-      currentPage = hash;
       handler();
     }
   }

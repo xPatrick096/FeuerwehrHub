@@ -1,0 +1,32 @@
+@use 'variables' as *;
+
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: $radius-pill;
+  font-size: $font-size-xs;
+  font-weight: 600;
+
+  // Status-Bestellungen / Einsätze
+  &--offen         { background: $rot-hell;      color: #dc2626; }
+  &--teillieferung { background: $orange-hell;   color: $orange; }
+  &--vollstaendig  { background: $gruen-hell;    color: $gruen; }
+  &--storniert     { background: $bg-card-hover; color: $text-muted; }
+  &--entwurf       { background: #f1f5f9;        color: #64748b; }
+  &--ausstehend    { background: #eff6ff;        color: #2563eb; }
+  &--genehmigt     { background: $gruen-hell;    color: $gruen; }
+  &--abgelehnt     { background: $rot-hell;      color: #dc2626; }
+
+  // Rollen
+  &--superuser { background: $orange-hell; color: $orange; }
+  &--admin     { background: $lila-hell;   color: $lila; }
+  &--user      { background: $bg-card-hover; color: $text-muted; }
+
+  // Semantische Farb-Aliase
+  &--green  { background: $gruen-hell;    color: $gruen; }
+  &--red    { background: $rot-hell;      color: #dc2626; }
+  &--orange { background: $orange-hell;   color: $orange; }
+  &--blue   { background: $blau-hell;     color: $blau; }
+  &--purple { background: $lila-hell;     color: $lila; }
+  &--gray   { background: $bg-card-hover; color: $text-muted; }
+}

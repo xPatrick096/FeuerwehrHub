@@ -96,15 +96,15 @@ export async function renderVehicles() {
           </div>
           <div class="form-group" style="grid-column:1/-1">
             <label>Besatzungsstärke
-              <span style="font-size:11px;color:#7d8590;font-weight:400;margin-left:6px">Führung / Unterführung / Mannschaft (z.B. 0/1/8)</span>
+              <span style="font-size:11px;color:#64748b;font-weight:400;margin-left:6px">Führung / Unterführung / Mannschaft (z.B. 0/1/8)</span>
             </label>
             <div style="display:flex;gap:8px;align-items:center">
               <input type="number" id="v-str-lead" value="0" min="0" max="99"
                 style="width:70px;text-align:center" title="Führung" />
-              <span style="color:#7d8590;font-size:18px;font-weight:300">/</span>
+              <span style="color:#64748b;font-size:18px;font-weight:300">/</span>
               <input type="number" id="v-str-sub" value="0" min="0" max="99"
                 style="width:70px;text-align:center" title="Unterführung" />
-              <span style="color:#7d8590;font-size:18px;font-weight:300">/</span>
+              <span style="color:#64748b;font-size:18px;font-weight:300">/</span>
               <input type="number" id="v-str-crew" value="0" min="0" max="99"
                 style="width:70px;text-align:center" title="Mannschaft" />
             </div>
@@ -140,7 +140,7 @@ export async function renderVehicles() {
           <div class="form-group" style="grid-column:1/-1">
             <label>Bemerkung</label>
             <textarea id="v-notes" rows="3"
-              style="width:100%;resize:vertical;padding:8px;border:1px solid #21273d;border-radius:8px;font-size:14px;background:#0d1117;color:#e6edf3"
+              style="width:100%;resize:vertical;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;background:#f4f5f7;color:#1e293b"
               placeholder="Freitext..."></textarea>
           </div>
         </div>
@@ -256,7 +256,7 @@ export async function renderVehicles() {
           <div class="form-group" style="margin-top:12px">
             <label>Gesamtnotiz</label>
             <textarea id="fill-notes" rows="2"
-              style="width:100%;resize:vertical;padding:8px;border:1px solid #21273d;border-radius:8px;font-size:14px;background:#0d1117;color:#e6edf3"></textarea>
+              style="width:100%;resize:vertical;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;background:#f4f5f7;color:#1e293b"></textarea>
           </div>
         </div>
         <div class="modal__footer">
@@ -377,7 +377,7 @@ export async function renderVehicles() {
           <div class="form-group">
             <label>Beschreibung</label>
             <textarea id="defect-desc" rows="3"
-              style="width:100%;resize:vertical;padding:8px;border:1px solid #21273d;border-radius:8px;font-size:14px;background:#0d1117;color:#e6edf3"
+              style="width:100%;resize:vertical;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;background:#f4f5f7;color:#1e293b"
               placeholder="Details zum Defekt..."></textarea>
           </div>
           <div class="form-group">
@@ -440,7 +440,7 @@ export async function renderVehicles() {
           <div class="form-group">
             <label>Kommentar hinzufügen</label>
             <textarea id="comment-body" rows="2"
-              style="width:100%;resize:vertical;padding:8px;border:1px solid #21273d;border-radius:8px;font-size:14px;background:#0d1117;color:#e6edf3"
+              style="width:100%;resize:vertical;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;background:#f4f5f7;color:#1e293b"
               placeholder="Statusupdate, Rückfrage..."></textarea>
           </div>
           <button class="btn btn--primary" id="btn-submit-comment">Kommentar senden</button>
@@ -501,7 +501,7 @@ async function loadVehicleList(isAdmin) {
   const detailWrap = document.getElementById('vehicle-detail-wrap');
   listWrap.style.display   = 'block';
   detailWrap.style.display = 'none';
-  listWrap.innerHTML = '<p style="color:#7d8590;font-size:13px">Lade...</p>';
+  listWrap.innerHTML = '<p style="color:#64748b;font-size:13px">Lade...</p>';
 
   try {
     const vehicles = await api.getVehicles();
@@ -509,7 +509,7 @@ async function loadVehicleList(isAdmin) {
     if (!vehicles.length) {
       listWrap.innerHTML = `
         <div class="card">
-          <div class="card__body" style="text-align:center;padding:32px;color:#7d8590">
+          <div class="card__body" style="text-align:center;padding:32px;color:#64748b">
             Noch keine Fahrzeuge eingetragen.
             ${isAdmin ? `<br><br><button class="btn btn--primary" id="btn-empty-new">Fahrzeug anlegen</button>` : ''}
           </div>
@@ -521,19 +521,19 @@ async function loadVehicleList(isAdmin) {
     }
 
     const rows = vehicles.map(v => {
-      const statusColor = STATUS_COLORS[v.status] || '#7d8590';
+      const statusColor = STATUS_COLORS[v.status] || '#64748b';
       const statusLabel = STATUS_LABELS[v.status] || v.status;
       const strength = `${v.strength_leadership}/${v.strength_sub}/${v.strength_crew}`;
       return `
         <tr class="vehicle-row" data-id="${v.id}" style="cursor:pointer">
           <td style="padding:10px 16px">
             <strong>${esc(v.name)}</strong>
-            ${v.short_name ? `<span style="color:#7d8590;font-size:11px;margin-left:6px">${esc(v.short_name)}</span>` : ''}
+            ${v.short_name ? `<span style="color:#64748b;font-size:11px;margin-left:6px">${esc(v.short_name)}</span>` : ''}
           </td>
-          <td style="padding:10px 16px;color:#7d8590">${esc(TYPE_LABELS[v.vehicle_type] || v.vehicle_type)}</td>
-          <td style="padding:10px 16px;color:#7d8590">${esc(v.base_type || '–')}</td>
-          <td style="padding:10px 16px;color:#7d8590">${esc(v.license_plate || '–')}</td>
-          <td style="padding:10px 16px;color:#7d8590">${strength}</td>
+          <td style="padding:10px 16px;color:#64748b">${esc(TYPE_LABELS[v.vehicle_type] || v.vehicle_type)}</td>
+          <td style="padding:10px 16px;color:#64748b">${esc(v.base_type || '–')}</td>
+          <td style="padding:10px 16px;color:#64748b">${esc(v.license_plate || '–')}</td>
+          <td style="padding:10px 16px;color:#64748b">${strength}</td>
           <td style="padding:10px 16px">
             <span style="color:${statusColor};font-size:12px;font-weight:600">${statusLabel}</span>
           </td>
@@ -545,18 +545,18 @@ async function loadVehicleList(isAdmin) {
         <div class="card__header" style="display:flex;justify-content:space-between;align-items:center">
           <span>Alle Fahrzeuge (${vehicles.length})</span>
           <input type="text" id="vehicle-search" placeholder="Suchen..." maxlength="100"
-            style="background:#0d1117;border:1px solid #21273d;color:#e6edf3;padding:6px 10px;border-radius:6px;font-size:13px;width:200px" />
+            style="background:#f4f5f7;border:1px solid #e2e8f0;color:#1e293b;padding:6px 10px;border-radius:6px;font-size:13px;width:200px" />
         </div>
         <div class="card__body" style="padding:0">
           <table style="width:100%;border-collapse:collapse;font-size:13px">
             <thead>
-              <tr style="background:#0d1117">
-                <th style="padding:10px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;text-align:left">Fahrzeug</th>
-                <th style="padding:10px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;text-align:left">Typ</th>
-                <th style="padding:10px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;text-align:left">Grund-Typ</th>
-                <th style="padding:10px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;text-align:left">Kennzeichen</th>
-                <th style="padding:10px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;text-align:left">Stärke (F/U/M)</th>
-                <th style="padding:10px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;text-align:left">Status</th>
+              <tr style="background:#f4f5f7">
+                <th style="padding:10px 16px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;text-align:left">Fahrzeug</th>
+                <th style="padding:10px 16px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;text-align:left">Typ</th>
+                <th style="padding:10px 16px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;text-align:left">Grund-Typ</th>
+                <th style="padding:10px 16px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;text-align:left">Kennzeichen</th>
+                <th style="padding:10px 16px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;text-align:left">Stärke (F/U/M)</th>
+                <th style="padding:10px 16px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;text-align:left">Status</th>
               </tr>
             </thead>
             <tbody id="vehicle-tbody">${rows}</tbody>
@@ -584,7 +584,7 @@ async function loadVehicleList(isAdmin) {
 
 function styleVehicleRows() {
   document.querySelectorAll('.vehicle-row').forEach((tr, i) => {
-    tr.style.borderBottom = '1px solid #21273d';
+    tr.style.borderBottom = '1px solid #e2e8f0';
     tr.style.background = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)';
     tr.addEventListener('mouseenter', () => tr.style.background = 'rgba(230,48,34,0.06)');
     tr.addEventListener('mouseleave', () => tr.style.background = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)');
@@ -598,17 +598,17 @@ async function openVehicleDetail(id, vehicles, isAdmin) {
   const detailWrap = document.getElementById('vehicle-detail-wrap');
   listWrap.style.display   = 'none';
   detailWrap.style.display = 'block';
-  detailWrap.innerHTML     = '<p style="color:#7d8590;font-size:13px">Lade...</p>';
+  detailWrap.innerHTML     = '<p style="color:#64748b;font-size:13px">Lade...</p>';
 
   try {
     const v = await api.getVehicle(id);
-    const statusColor = STATUS_COLORS[v.status] || '#7d8590';
+    const statusColor = STATUS_COLORS[v.status] || '#64748b';
     const statusLabel = STATUS_LABELS[v.status] || v.status;
 
     detailWrap.innerHTML = `
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
         <button class="btn btn--outline btn--sm" id="btn-back-vehicles">← Zurück</button>
-        <h2 style="margin:0;font-size:18px;font-weight:700;color:#e6edf3">${esc(v.name)}</h2>
+        <h2 style="margin:0;font-size:18px;font-weight:700;color:#1e293b">${esc(v.name)}</h2>
         <span style="color:${statusColor};font-size:12px;font-weight:600;background:${statusColor}22;padding:3px 10px;border-radius:20px">${statusLabel}</span>
         ${isAdmin ? `
           <div style="margin-left:auto;display:flex;gap:8px">
@@ -618,12 +618,12 @@ async function openVehicleDetail(id, vehicles, isAdmin) {
       </div>
 
       <!-- Tabs -->
-      <div style="display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid #21273d;padding-bottom:0;flex-wrap:wrap">
-        <button class="v-tab active" data-tab="uebersicht"  style="padding:8px 16px;background:none;border:none;color:#e6edf3;font-size:13px;font-weight:600;cursor:pointer;border-bottom:2px solid #e63022;margin-bottom:-1px;font-family:inherit">Übersicht</button>
-        <button class="v-tab"        data-tab="fahrtenbuch" style="padding:8px 16px;background:none;border:none;color:#7d8590;font-size:13px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;font-family:inherit">Fahrtenbuch</button>
-        <button class="v-tab"        data-tab="stoerungen"  style="padding:8px 16px;background:none;border:none;color:#7d8590;font-size:13px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;font-family:inherit">Störungen</button>
-        <button class="v-tab"        data-tab="geraete"     style="padding:8px 16px;background:none;border:none;color:#7d8590;font-size:13px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;font-family:inherit">Geräte</button>
-        <button class="v-tab"        data-tab="checklisten" style="padding:8px 16px;background:none;border:none;color:#7d8590;font-size:13px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;font-family:inherit">Checklisten</button>
+      <div style="display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid #e2e8f0;padding-bottom:0;flex-wrap:wrap">
+        <button class="v-tab active" data-tab="uebersicht"  style="padding:8px 16px;background:none;border:none;color:#1e293b;font-size:13px;font-weight:600;cursor:pointer;border-bottom:2px solid #e63022;margin-bottom:-1px;font-family:inherit">Übersicht</button>
+        <button class="v-tab"        data-tab="fahrtenbuch" style="padding:8px 16px;background:none;border:none;color:#64748b;font-size:13px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;font-family:inherit">Fahrtenbuch</button>
+        <button class="v-tab"        data-tab="stoerungen"  style="padding:8px 16px;background:none;border:none;color:#64748b;font-size:13px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;font-family:inherit">Störungen</button>
+        <button class="v-tab"        data-tab="geraete"     style="padding:8px 16px;background:none;border:none;color:#64748b;font-size:13px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;font-family:inherit">Geräte</button>
+        <button class="v-tab"        data-tab="checklisten" style="padding:8px 16px;background:none;border:none;color:#64748b;font-size:13px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;font-family:inherit">Checklisten</button>
       </div>
 
       <div id="tab-uebersicht">
@@ -648,7 +648,7 @@ async function openVehicleDetail(id, vehicles, isAdmin) {
               ${field('Höhe',             v.height_m  != null ? v.height_m  + ' m'  : null)}
               ${field('Gesamtgewicht',    v.weight_kg != null ? v.weight_kg + ' kg' : null)}
             </div>
-            ${v.notes ? `<div style="margin-top:16px;padding-top:12px;border-top:1px solid #21273d;font-size:13px;color:#7d8590;white-space:pre-wrap">${esc(v.notes)}</div>` : ''}
+            ${v.notes ? `<div style="margin-top:16px;padding-top:12px;border-top:1px solid #e2e8f0;font-size:13px;color:#64748b;white-space:pre-wrap">${esc(v.notes)}</div>` : ''}
           </div>
         </div>
         <div class="card">
@@ -656,7 +656,7 @@ async function openVehicleDetail(id, vehicles, isAdmin) {
             <span>Fristen & Prüfungen</span>
             ${isAdmin ? `<button class="btn btn--primary btn--sm" id="btn-new-inspection">+ Frist</button>` : ''}
           </div>
-          <div id="inspections-wrap"><p style="color:#7d8590;font-size:13px;padding:16px">Lade...</p></div>
+          <div id="inspections-wrap"><p style="color:#64748b;font-size:13px;padding:16px">Lade...</p></div>
         </div>
       </div>
 
@@ -666,14 +666,14 @@ async function openVehicleDetail(id, vehicles, isAdmin) {
             <span>Fahrtenprotokoll</span>
             <button class="btn btn--primary btn--sm" id="btn-new-trip">+ Fahrt</button>
           </div>
-          <div id="trips-wrap"><p style="color:#7d8590;font-size:13px;padding:16px">Lade...</p></div>
+          <div id="trips-wrap"><p style="color:#64748b;font-size:13px;padding:16px">Lade...</p></div>
         </div>
         <div class="card">
           <div class="card__header" style="display:flex;justify-content:space-between;align-items:center">
             <span>Tankprotokoll</span>
             <button class="btn btn--primary btn--sm" id="btn-new-fueling">+ Tankvorgang</button>
           </div>
-          <div id="fuelings-wrap"><p style="color:#7d8590;font-size:13px;padding:16px">Lade...</p></div>
+          <div id="fuelings-wrap"><p style="color:#64748b;font-size:13px;padding:16px">Lade...</p></div>
         </div>
       </div>
 
@@ -683,7 +683,7 @@ async function openVehicleDetail(id, vehicles, isAdmin) {
             <span>Störungsmeldungen</span>
             <button class="btn btn--primary btn--sm" id="btn-new-defect">+ Störung melden</button>
           </div>
-          <div id="defects-wrap"><p style="color:#7d8590;font-size:13px;padding:16px">Lade...</p></div>
+          <div id="defects-wrap"><p style="color:#64748b;font-size:13px;padding:16px">Lade...</p></div>
         </div>
       </div>
 
@@ -693,7 +693,7 @@ async function openVehicleDetail(id, vehicles, isAdmin) {
             <span>Beladung & Ausrüstung</span>
             ${isAdmin ? `<button class="btn btn--primary btn--sm" id="btn-new-equipment">+ Gerät</button>` : ''}
           </div>
-          <div id="equipment-wrap"><p style="color:#7d8590;font-size:13px;padding:16px">Lade...</p></div>
+          <div id="equipment-wrap"><p style="color:#64748b;font-size:13px;padding:16px">Lade...</p></div>
         </div>
       </div>
 
@@ -704,13 +704,13 @@ async function openVehicleDetail(id, vehicles, isAdmin) {
               <span>Vorlagen</span>
               ${isAdmin ? `<button class="btn btn--primary btn--sm" id="btn-new-template">+ Vorlage</button>` : ''}
             </div>
-            <div id="templates-wrap"><p style="color:#7d8590;font-size:13px;padding:16px">Lade...</p></div>
+            <div id="templates-wrap"><p style="color:#64748b;font-size:13px;padding:16px">Lade...</p></div>
           </div>
           <div class="card">
             <div class="card__header" style="display:flex;justify-content:space-between;align-items:center">
               <span>Historie</span>
             </div>
-            <div id="checklists-wrap"><p style="color:#7d8590;font-size:13px;padding:16px">Lade...</p></div>
+            <div id="checklists-wrap"><p style="color:#64748b;font-size:13px;padding:16px">Lade...</p></div>
           </div>
         </div>
       </div>
@@ -720,12 +720,12 @@ async function openVehicleDetail(id, vehicles, isAdmin) {
     document.querySelectorAll('.v-tab').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.v-tab').forEach(b => {
-          b.style.color = '#7d8590';
+          b.style.color = '#64748b';
           b.style.borderBottomColor = 'transparent';
           b.style.fontWeight = '500';
           b.classList.remove('active');
         });
-        btn.style.color = '#e6edf3';
+        btn.style.color = '#1e293b';
         btn.style.borderBottomColor = '#e63022';
         btn.style.fontWeight = '600';
         btn.classList.add('active');
@@ -790,15 +790,15 @@ function field(label, value) {
   if (value == null || value === '') return '';
   return `
     <div>
-      <div style="font-size:11px;color:#7d8590;margin-bottom:2px">${label}</div>
-      <div style="color:#e6edf3;font-weight:500">${esc(String(value))}</div>
+      <div style="font-size:11px;color:#64748b;margin-bottom:2px">${label}</div>
+      <div style="color:#1e293b;font-weight:500">${esc(String(value))}</div>
     </div>`;
 }
 
 // ── Fristen-Tabelle ────────────────────────────────────────────────────────────
 
 function ampelDot(nextDate) {
-  if (!nextDate) return '<span style="color:#7d8590">•</span>';
+  if (!nextDate) return '<span style="color:#64748b">•</span>';
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const nd = new Date(nextDate);
@@ -811,16 +811,16 @@ function ampelDot(nextDate) {
 
 function renderInspectionsTable(inspections, isAdmin) {
   if (!inspections.length) {
-    return `<div class="card__body" style="color:#7d8590;font-size:13px">Keine Fristen eingetragen.</div>`;
+    return `<div class="card__body" style="color:#64748b;font-size:13px">Keine Fristen eingetragen.</div>`;
   }
   const rows = inspections.map(insp => `
     <tr class="insp-row" data-id="${insp.id}">
       <td style="padding:10px 16px">${ampelDot(insp.next_date)}</td>
-      <td style="padding:10px 16px;color:#e6edf3">${esc(insp.name)}</td>
-      <td style="padding:10px 16px;color:#7d8590">${insp.last_date ? formatDate(insp.last_date) : '–'}</td>
-      <td style="padding:10px 16px;color:#7d8590">${insp.next_date ? formatDate(insp.next_date) : '–'}</td>
-      <td style="padding:10px 16px;color:#7d8590">${insp.interval_months ? insp.interval_months + ' Monate' : '–'}</td>
-      <td style="padding:10px 16px;color:#7d8590;font-size:12px">${esc(insp.notes || '')}</td>
+      <td style="padding:10px 16px;color:#1e293b">${esc(insp.name)}</td>
+      <td style="padding:10px 16px;color:#64748b">${insp.last_date ? formatDate(insp.last_date) : '–'}</td>
+      <td style="padding:10px 16px;color:#64748b">${insp.next_date ? formatDate(insp.next_date) : '–'}</td>
+      <td style="padding:10px 16px;color:#64748b">${insp.interval_months ? insp.interval_months + ' Monate' : '–'}</td>
+      <td style="padding:10px 16px;color:#64748b;font-size:12px">${esc(insp.notes || '')}</td>
       ${isAdmin ? `
       <td style="padding:10px 16px">
         <div class="btn-group">
@@ -833,14 +833,14 @@ function renderInspectionsTable(inspections, isAdmin) {
   return `
     <table style="width:100%;border-collapse:collapse;font-size:13px">
       <thead>
-        <tr style="background:#0d1117">
-          <th style="padding:10px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;width:28px"></th>
-          <th style="padding:10px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;text-align:left">Bezeichnung</th>
-          <th style="padding:10px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;text-align:left">Letztes Datum</th>
-          <th style="padding:10px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;text-align:left">Nächstes Datum</th>
-          <th style="padding:10px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;text-align:left">Intervall</th>
-          <th style="padding:10px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;text-align:left">Notiz</th>
-          <th style="padding:10px 16px;border-bottom:1px solid #21273d"></th>
+        <tr style="background:#f4f5f7">
+          <th style="padding:10px 16px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;width:28px"></th>
+          <th style="padding:10px 16px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;text-align:left">Bezeichnung</th>
+          <th style="padding:10px 16px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;text-align:left">Letztes Datum</th>
+          <th style="padding:10px 16px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;text-align:left">Nächstes Datum</th>
+          <th style="padding:10px 16px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;text-align:left">Intervall</th>
+          <th style="padding:10px 16px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;text-align:left">Notiz</th>
+          <th style="padding:10px 16px;border-bottom:1px solid #e2e8f0"></th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
@@ -1055,7 +1055,7 @@ async function loadTrips(vehicleId, isAdmin) {
   try {
     const trips = await api.getTrips(vehicleId);
     if (!trips.length) {
-      wrap.innerHTML = `<div style="padding:16px;color:#7d8590;font-size:13px">Keine Fahrten eingetragen.</div>`;
+      wrap.innerHTML = `<div style="padding:16px;color:#64748b;font-size:13px">Keine Fahrten eingetragen.</div>`;
       return;
     }
     const rows = trips.map(t => {
@@ -1063,11 +1063,11 @@ async function loadTrips(vehicleId, isAdmin) {
         ? `${t.km_start} → ${t.km_end} (${t.km_end - t.km_start} km)`
         : (t.km_start != null ? `ab ${t.km_start} km` : '–');
       return `<tr class="trip-row">
-        <td style="padding:9px 16px;color:#7d8590">${formatDate(t.trip_date)}</td>
-        <td style="padding:9px 16px;color:#e6edf3">${esc(t.driver || '–')}</td>
-        <td style="padding:9px 16px;color:#7d8590">${REASON_LABELS[t.reason] || t.reason}</td>
-        <td style="padding:9px 16px;color:#7d8590">${km}</td>
-        <td style="padding:9px 16px;color:#7d8590;font-size:12px">${esc(t.notes || '')}</td>
+        <td style="padding:9px 16px;color:#64748b">${formatDate(t.trip_date)}</td>
+        <td style="padding:9px 16px;color:#1e293b">${esc(t.driver || '–')}</td>
+        <td style="padding:9px 16px;color:#64748b">${REASON_LABELS[t.reason] || t.reason}</td>
+        <td style="padding:9px 16px;color:#64748b">${km}</td>
+        <td style="padding:9px 16px;color:#64748b;font-size:12px">${esc(t.notes || '')}</td>
         ${isAdmin ? `<td style="padding:9px 16px">
           <div class="btn-group">
             <button class="btn btn--outline btn--sm" data-action="edit-trip" data-id="${t.id}">Bearb.</button>
@@ -1076,13 +1076,13 @@ async function loadTrips(vehicleId, isAdmin) {
       </tr>`;
     }).join('');
     wrap.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:13px">
-      <thead><tr style="background:#0d1117">
-        <th style="padding:9px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;text-align:left">Datum</th>
-        <th style="padding:9px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;text-align:left">Fahrer</th>
-        <th style="padding:9px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;text-align:left">Anlass</th>
-        <th style="padding:9px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;text-align:left">Kilometer</th>
-        <th style="padding:9px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;text-align:left">Notiz</th>
-        <th style="border-bottom:1px solid #21273d"></th>
+      <thead><tr style="background:#f4f5f7">
+        <th style="padding:9px 16px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;text-align:left">Datum</th>
+        <th style="padding:9px 16px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;text-align:left">Fahrer</th>
+        <th style="padding:9px 16px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;text-align:left">Anlass</th>
+        <th style="padding:9px 16px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;text-align:left">Kilometer</th>
+        <th style="padding:9px 16px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;text-align:left">Notiz</th>
+        <th style="border-bottom:1px solid #e2e8f0"></th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
@@ -1119,16 +1119,16 @@ async function loadFuelings(vehicleId, isAdmin) {
   try {
     const fuelings = await api.getFuelings(vehicleId);
     if (!fuelings.length) {
-      wrap.innerHTML = `<div style="padding:16px;color:#7d8590;font-size:13px">Keine Tankvorgänge eingetragen.</div>`;
+      wrap.innerHTML = `<div style="padding:16px;color:#64748b;font-size:13px">Keine Tankvorgänge eingetragen.</div>`;
       return;
     }
     const rows = fuelings.map(f => `
       <tr class="fueling-row">
-        <td style="padding:9px 16px;color:#7d8590">${formatDate(f.fueling_date)}</td>
-        <td style="padding:9px 16px;color:#7d8590">${f.km_stand != null ? f.km_stand + ' km' : '–'}</td>
-        <td style="padding:9px 16px;color:#e6edf3">${f.liters != null ? f.liters.toFixed(1) + ' L' : '–'}</td>
-        <td style="padding:9px 16px;color:#7d8590">${FUEL_LABELS[f.fuel_type] || f.fuel_type}</td>
-        <td style="padding:9px 16px;color:#7d8590">${f.cost_eur != null ? f.cost_eur.toFixed(2) + ' €' : '–'}</td>
+        <td style="padding:9px 16px;color:#64748b">${formatDate(f.fueling_date)}</td>
+        <td style="padding:9px 16px;color:#64748b">${f.km_stand != null ? f.km_stand + ' km' : '–'}</td>
+        <td style="padding:9px 16px;color:#1e293b">${f.liters != null ? f.liters.toFixed(1) + ' L' : '–'}</td>
+        <td style="padding:9px 16px;color:#64748b">${FUEL_LABELS[f.fuel_type] || f.fuel_type}</td>
+        <td style="padding:9px 16px;color:#64748b">${f.cost_eur != null ? f.cost_eur.toFixed(2) + ' €' : '–'}</td>
         ${isAdmin ? `<td style="padding:9px 16px">
           <div class="btn-group">
             <button class="btn btn--outline btn--sm" data-action="edit-fueling" data-id="${f.id}">Bearb.</button>
@@ -1136,13 +1136,13 @@ async function loadFuelings(vehicleId, isAdmin) {
           </div></td>` : '<td></td>'}
       </tr>`).join('');
     wrap.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:13px">
-      <thead><tr style="background:#0d1117">
-        <th style="padding:9px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;text-align:left">Datum</th>
-        <th style="padding:9px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;text-align:left">km-Stand</th>
-        <th style="padding:9px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;text-align:left">Liter</th>
-        <th style="padding:9px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;text-align:left">Kraftstoff</th>
-        <th style="padding:9px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;text-align:left">Kosten</th>
-        <th style="border-bottom:1px solid #21273d"></th>
+      <thead><tr style="background:#f4f5f7">
+        <th style="padding:9px 16px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;text-align:left">Datum</th>
+        <th style="padding:9px 16px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;text-align:left">km-Stand</th>
+        <th style="padding:9px 16px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;text-align:left">Liter</th>
+        <th style="padding:9px 16px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;text-align:left">Kraftstoff</th>
+        <th style="padding:9px 16px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;text-align:left">Kosten</th>
+        <th style="border-bottom:1px solid #e2e8f0"></th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
@@ -1266,7 +1266,7 @@ function openFuelingModal(f, vehicleId, isAdmin) {
 
 // ── Störungsmeldungen ──────────────────────────────────────────────────────────
 
-const PRIORITY_COLORS = { niedrig: '#7d8590', mittel: '#f0a500', hoch: '#e63022', kritisch: '#e63022' };
+const PRIORITY_COLORS = { niedrig: '#64748b', mittel: '#f0a500', hoch: '#e63022', kritisch: '#e63022' };
 const PRIORITY_LABELS = { niedrig: 'Niedrig', mittel: 'Mittel', hoch: 'Hoch', kritisch: '⚠ Kritisch' };
 const DEFECT_STATUS_LABELS = {
   offen: 'Offen', in_bearbeitung: 'In Bearbeitung',
@@ -1274,7 +1274,7 @@ const DEFECT_STATUS_LABELS = {
 };
 const DEFECT_STATUS_COLORS = {
   offen: '#e63022', in_bearbeitung: '#f0a500',
-  behoben: '#3fb950', nicht_reproduzierbar: '#7d8590',
+  behoben: '#3fb950', nicht_reproduzierbar: '#64748b',
 };
 
 async function loadDefects(vehicleId, isAdmin) {
@@ -1283,25 +1283,25 @@ async function loadDefects(vehicleId, isAdmin) {
   try {
     const defects = await api.getDefects(vehicleId);
     if (!defects.length) {
-      wrap.innerHTML = `<div style="padding:16px;color:#7d8590;font-size:13px">Keine Störungsmeldungen vorhanden.</div>`;
+      wrap.innerHTML = `<div style="padding:16px;color:#64748b;font-size:13px">Keine Störungsmeldungen vorhanden.</div>`;
       return;
     }
     wrap.innerHTML = defects.map(d => {
-      const sc = DEFECT_STATUS_COLORS[d.status] || '#7d8590';
+      const sc = DEFECT_STATUS_COLORS[d.status] || '#64748b';
       const sl = DEFECT_STATUS_LABELS[d.status] || d.status;
-      const pc = PRIORITY_COLORS[d.priority]    || '#7d8590';
+      const pc = PRIORITY_COLORS[d.priority]    || '#64748b';
       const pl = PRIORITY_LABELS[d.priority]    || d.priority;
       return `
-        <div class="defect-card" data-id="${d.id}" style="border-bottom:1px solid #21273d;padding:14px 16px">
+        <div class="defect-card" data-id="${d.id}" style="border-bottom:1px solid #e2e8f0;padding:14px 16px">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
             <div style="flex:1">
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-                <span style="font-size:13px;font-weight:600;color:#e6edf3">${esc(d.title)}</span>
+                <span style="font-size:13px;font-weight:600;color:#1e293b">${esc(d.title)}</span>
                 <span style="font-size:11px;color:${pc};font-weight:600">${pl}</span>
                 <span style="font-size:11px;color:${sc};background:${sc}22;padding:2px 8px;border-radius:20px;font-weight:600">${sl}</span>
               </div>
-              ${d.description ? `<div style="font-size:12px;color:#7d8590;margin-bottom:4px">${esc(d.description)}</div>` : ''}
-              <div style="font-size:11px;color:#4c5462">
+              ${d.description ? `<div style="font-size:12px;color:#64748b;margin-bottom:4px">${esc(d.description)}</div>` : ''}
+              <div style="font-size:11px;color:#94a3b8">
                 Gemeldet von ${esc(d.reported_by_name || 'Unbekannt')} · ${formatDateTime(d.reported_at)}
                 ${d.resolved_at ? ` · Behoben: ${formatDateTime(d.resolved_at)}` : ''}
               </div>
@@ -1408,18 +1408,18 @@ function openStatusModal(vehicleId, defectId, currentStatus, currentNote, isAdmi
 
 async function openCommentsModal(vehicleId, defectId, isAdmin) {
   document.getElementById('modal-comments').style.display = 'flex';
-  document.getElementById('comments-list').innerHTML = '<p style="color:#7d8590;font-size:13px">Lade...</p>';
+  document.getElementById('comments-list').innerHTML = '<p style="color:#64748b;font-size:13px">Lade...</p>';
 
   const reload = async () => {
     const comments = await api.getDefectComments(vehicleId, defectId);
     const list = document.getElementById('comments-list');
     list.innerHTML = comments.length
       ? comments.map(c => `
-          <div style="padding:10px 0;border-bottom:1px solid #21273d">
-            <div style="font-size:11px;color:#4c5462;margin-bottom:3px">${esc(c.author_name || 'Unbekannt')} · ${formatDateTime(c.created_at)}</div>
-            <div style="font-size:13px;color:#e6edf3">${esc(c.body)}</div>
+          <div style="padding:10px 0;border-bottom:1px solid #e2e8f0">
+            <div style="font-size:11px;color:#94a3b8;margin-bottom:3px">${esc(c.author_name || 'Unbekannt')} · ${formatDateTime(c.created_at)}</div>
+            <div style="font-size:13px;color:#1e293b">${esc(c.body)}</div>
           </div>`).join('')
-      : `<p style="color:#7d8590;font-size:13px">Noch keine Kommentare.</p>`;
+      : `<p style="color:#64748b;font-size:13px">Noch keine Kommentare.</p>`;
   };
 
   await reload();
@@ -1444,7 +1444,7 @@ async function openCommentsModal(vehicleId, defectId, isAdmin) {
 // ── Geräte / Beladungsliste ────────────────────────────────────────────────────
 
 const EQ_STATUS_LABELS = { ok: 'In Ordnung', defekt: 'Defekt', ausgebaut: 'Ausgebaut' };
-const EQ_STATUS_COLORS = { ok: '#3fb950', defekt: '#e63022', ausgebaut: '#7d8590' };
+const EQ_STATUS_COLORS = { ok: '#3fb950', defekt: '#e63022', ausgebaut: '#64748b' };
 
 async function loadEquipment(vehicleId, isAdmin) {
   const wrap = document.getElementById('equipment-wrap');
@@ -1452,18 +1452,18 @@ async function loadEquipment(vehicleId, isAdmin) {
   try {
     const items = await api.getEquipment(vehicleId);
     if (!items.length) {
-      wrap.innerHTML = `<div style="padding:16px;color:#7d8590;font-size:13px">Keine Geräte eingetragen.</div>`;
+      wrap.innerHTML = `<div style="padding:16px;color:#64748b;font-size:13px">Keine Geräte eingetragen.</div>`;
       return;
     }
     const rows = items.map(e => {
-      const sc = EQ_STATUS_COLORS[e.status] || '#7d8590';
+      const sc = EQ_STATUS_COLORS[e.status] || '#64748b';
       const sl = EQ_STATUS_LABELS[e.status] || e.status;
       return `<tr class="eq-row">
-        <td style="padding:9px 16px;color:#e6edf3;font-weight:500">${esc(e.name)}</td>
-        <td style="padding:9px 16px;color:#7d8590">${esc(e.serial_number || '–')}</td>
-        <td style="padding:9px 16px;color:#7d8590">${esc(e.manufacturer || '–')}</td>
+        <td style="padding:9px 16px;color:#1e293b;font-weight:500">${esc(e.name)}</td>
+        <td style="padding:9px 16px;color:#64748b">${esc(e.serial_number || '–')}</td>
+        <td style="padding:9px 16px;color:#64748b">${esc(e.manufacturer || '–')}</td>
         <td style="padding:9px 16px">${ampelDot(e.next_inspection)}</td>
-        <td style="padding:9px 16px;color:#7d8590">${e.next_inspection ? formatDate(e.next_inspection) : '–'}</td>
+        <td style="padding:9px 16px;color:#64748b">${e.next_inspection ? formatDate(e.next_inspection) : '–'}</td>
         <td style="padding:9px 16px"><span style="color:${sc};font-size:12px;font-weight:600">${sl}</span></td>
         ${isAdmin ? `<td style="padding:9px 16px">
           <div class="btn-group">
@@ -1473,14 +1473,14 @@ async function loadEquipment(vehicleId, isAdmin) {
       </tr>`;
     }).join('');
     wrap.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:13px">
-      <thead><tr style="background:#0d1117">
-        <th style="padding:9px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;text-align:left">Bezeichnung</th>
-        <th style="padding:9px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;text-align:left">Seriennummer</th>
-        <th style="padding:9px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;text-align:left">Hersteller</th>
-        <th style="padding:9px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;width:28px"></th>
-        <th style="padding:9px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;text-align:left">Nächste Prüfung</th>
-        <th style="padding:9px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d;text-align:left">Status</th>
-        <th style="border-bottom:1px solid #21273d"></th>
+      <thead><tr style="background:#f4f5f7">
+        <th style="padding:9px 16px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;text-align:left">Bezeichnung</th>
+        <th style="padding:9px 16px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;text-align:left">Seriennummer</th>
+        <th style="padding:9px 16px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;text-align:left">Hersteller</th>
+        <th style="padding:9px 16px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;width:28px"></th>
+        <th style="padding:9px 16px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;text-align:left">Nächste Prüfung</th>
+        <th style="padding:9px 16px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;text-align:left">Status</th>
+        <th style="border-bottom:1px solid #e2e8f0"></th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
@@ -1567,14 +1567,14 @@ async function loadTemplates(vehicleId, isAdmin) {
   try {
     const templates = await api.getTemplates(vehicleId);
     if (!templates.length) {
-      wrap.innerHTML = `<div style="padding:16px;color:#7d8590;font-size:13px">Keine Vorlagen.</div>`;
+      wrap.innerHTML = `<div style="padding:16px;color:#64748b;font-size:13px">Keine Vorlagen.</div>`;
       return;
     }
     wrap.innerHTML = templates.map(t => `
-      <div style="padding:12px 16px;border-bottom:1px solid #21273d;display:flex;justify-content:space-between;align-items:center">
+      <div style="padding:12px 16px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center">
         <div>
-          <div style="font-size:13px;font-weight:600;color:#e6edf3">${esc(t.name)}</div>
-          <div style="font-size:11px;color:#7d8590;margin-top:2px">
+          <div style="font-size:13px;font-weight:600;color:#1e293b">${esc(t.name)}</div>
+          <div style="font-size:11px;color:#64748b;margin-top:2px">
             ${INTERVAL_LABELS[t.interval] || t.interval} · ${t.items.length} Punkte
           </div>
         </div>
@@ -1608,15 +1608,15 @@ async function loadChecklists(vehicleId, isAdmin) {
   try {
     const list = await api.getChecklists(vehicleId);
     if (!list.length) {
-      wrap.innerHTML = `<div style="padding:16px;color:#7d8590;font-size:13px">Noch keine ausgefüllten Checklisten.</div>`;
+      wrap.innerHTML = `<div style="padding:16px;color:#64748b;font-size:13px">Noch keine ausgefüllten Checklisten.</div>`;
       return;
     }
     wrap.innerHTML = list.map(c => {
       const mangel = c.mangel_count > 0;
-      return `<div style="padding:12px 16px;border-bottom:1px solid #21273d;display:flex;justify-content:space-between;align-items:center">
+      return `<div style="padding:12px 16px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center">
         <div>
-          <div style="font-size:13px;font-weight:600;color:#e6edf3">${esc(c.template_name || '–')}</div>
-          <div style="font-size:11px;color:#7d8590;margin-top:2px">
+          <div style="font-size:13px;font-weight:600;color:#1e293b">${esc(c.template_name || '–')}</div>
+          <div style="font-size:11px;color:#64748b;margin-top:2px">
             ${formatDateTime(c.filled_at)} · ${esc(c.filled_name || 'Unbekannt')}
             · <span style="color:#3fb950">${c.ok_count} OK</span>
             ${mangel ? `· <span style="color:#e63022">${c.mangel_count} Mängel</span>` : ''}
@@ -1667,7 +1667,7 @@ function setupTemplateModal(vehicleId, isAdmin) {
     div.innerHTML = `
       <input type="text" class="tpl-item-input" maxlength="200"
         placeholder="Prüfpunkt ${idx + 1}"
-        style="flex:1;background:#0d1117;border:1px solid #21273d;color:#e6edf3;padding:6px 10px;border-radius:6px;font-size:13px" />
+        style="flex:1;background:#f4f5f7;border:1px solid #e2e8f0;color:#1e293b;padding:6px 10px;border-radius:6px;font-size:13px" />
       <button type="button" style="background:none;border:none;color:#e63022;cursor:pointer;font-size:16px;padding:4px">✕</button>`;
     div.querySelector('button').addEventListener('click', () => div.remove());
     wrap.appendChild(div);
@@ -1714,8 +1714,8 @@ function openFillModal(template, vehicleId, isAdmin) {
 
   const wrap = document.getElementById('fill-items-wrap');
   wrap.innerHTML = template.items.map((item, i) => `
-    <div style="padding:10px 0;border-bottom:1px solid #21273d">
-      <div style="font-size:13px;color:#e6edf3;margin-bottom:6px">${esc(item.label)}</div>
+    <div style="padding:10px 0;border-bottom:1px solid #e2e8f0">
+      <div style="font-size:13px;color:#1e293b;margin-bottom:6px">${esc(item.label)}</div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px;color:#3fb950">
           <input type="radio" name="item-${i}" value="ok" checked /> OK
@@ -1723,11 +1723,11 @@ function openFillModal(template, vehicleId, isAdmin) {
         <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px;color:#e63022">
           <input type="radio" name="item-${i}" value="mangel" /> Mangel
         </label>
-        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px;color:#7d8590">
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px;color:#64748b">
           <input type="radio" name="item-${i}" value="nicht_geprueft" /> Nicht geprüft
         </label>
         <input type="text" class="fill-note-${i}" maxlength="300" placeholder="Notiz..."
-          style="flex:1;min-width:120px;background:#0d1117;border:1px solid #21273d;color:#e6edf3;padding:4px 8px;border-radius:6px;font-size:12px" />
+          style="flex:1;min-width:120px;background:#f4f5f7;border:1px solid #e2e8f0;color:#1e293b;padding:4px 8px;border-radius:6px;font-size:12px" />
       </div>
     </div>`).join('');
 
@@ -1779,10 +1779,10 @@ async function openChecklistDetail(vehicleId, checklistId, isAdmin) {
   document.getElementById('modal-fill-title').textContent = `${detail.template_name || 'Checkliste'} — Ergebnis`;
   const wrap = document.getElementById('fill-items-wrap');
   wrap.innerHTML = detail.entries.map(e => {
-    const color = e.result === 'ok' ? '#3fb950' : e.result === 'mangel' ? '#e63022' : '#7d8590';
+    const color = e.result === 'ok' ? '#3fb950' : e.result === 'mangel' ? '#e63022' : '#64748b';
     const label = e.result === 'ok' ? '✓ OK' : e.result === 'mangel' ? '✗ Mangel' : '– Nicht geprüft';
-    return `<div style="padding:8px 0;border-bottom:1px solid #21273d;display:flex;justify-content:space-between;align-items:center;font-size:13px">
-      <span style="color:#e6edf3">${esc(e.item_label)}</span>
+    return `<div style="padding:8px 0;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;font-size:13px">
+      <span style="color:#1e293b">${esc(e.item_label)}</span>
       <span style="color:${color};font-weight:600;font-size:12px">${label}${e.note ? ` — ${esc(e.note)}` : ''}</span>
     </div>`;
   }).join('');
@@ -1825,7 +1825,7 @@ async function openChecklistDetail(vehicleId, checklistId, isAdmin) {
 
 function styleGenericRows(cls) {
   document.querySelectorAll('.' + cls).forEach((tr, i) => {
-    tr.style.borderBottom = '1px solid #21273d';
+    tr.style.borderBottom = '1px solid #e2e8f0';
     tr.style.background = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)';
   });
 }

@@ -1,0 +1,33 @@
+@use 'variables' as *;
+
+#toast-container {
+  position: fixed;
+  bottom: $space-lg;
+  right: $space-lg;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: $space-sm;
+}
+
+.toast {
+  background: $bg-card;
+  border: 1px solid $border;
+  color: $text;
+  padding: 10px $space-md;
+  border-radius: $radius-lg;
+  box-shadow: $schatten-lg;
+  font-size: $font-size-sm;
+  font-weight: 500;
+  animation: toast-in 0.2s ease;
+  border-left: 3px solid $gruen;
+  min-width: 240px;
+
+  &--error   { border-left-color: $rot; }
+  &--warning { border-left-color: $orange; }
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}

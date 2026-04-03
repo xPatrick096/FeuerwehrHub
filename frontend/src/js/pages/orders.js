@@ -59,7 +59,7 @@ export async function renderOrders() {
             <tbody id="orders-tbody"></tbody>
           </table>
         </div>
-        <div id="pagination-bar" style="display:none;align-items:center;justify-content:space-between;padding:10px 16px;border-top:1px solid #21273d;font-size:13px;color:#7d8590">
+        <div id="pagination-bar" style="display:none;align-items:center;justify-content:space-between;padding:10px 16px;border-top:1px solid #e2e8f0;font-size:13px;color:#64748b">
           <span id="page-info"></span>
           <div class="btn-group">
             <button class="btn btn--outline btn--sm" id="btn-prev-page">← Zurück</button>
@@ -126,12 +126,12 @@ export async function renderOrders() {
   const rejectModal = document.createElement('div');
   rejectModal.innerHTML = `
     <div id="reject-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:400;align-items:center;justify-content:center">
-      <div style="background:#161b27;border:1px solid #21273d;border-radius:12px;padding:24px;width:100%;max-width:420px">
+      <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:24px;width:100%;max-width:420px">
         <h3 style="margin:0 0 12px;font-size:16px">Ablehnen</h3>
         <div class="form-group">
           <label>Ablehnungsgrund</label>
           <textarea id="reject-reason" rows="3" placeholder="Bitte Grund angeben..."
-            style="width:100%;resize:vertical;padding:8px;border:1px solid #21273d;border-radius:6px;background:#0d1117;color:#e6edf3;font-size:13px"></textarea>
+            style="width:100%;resize:vertical;padding:8px;border:1px solid #e2e8f0;border-radius:6px;background:#f4f5f7;color:#1e293b;font-size:13px"></textarea>
         </div>
         <div class="btn-group" style="margin-top:12px">
           <button class="btn btn--danger"  id="btn-confirm-reject">Ablehnen</button>
@@ -198,9 +198,9 @@ export async function renderOrders() {
             <table style="border-collapse:collapse;width:100%;font-size:0.85em">
               <thead>
                 <tr>
-                  <th style="padding:2px 8px 2px 0;color:#7d8590;font-weight:600;white-space:nowrap;border-bottom:1px solid #21273d;width:60px">Menge</th>
-                  <th style="padding:2px 8px 2px 0;color:#7d8590;font-weight:600;white-space:nowrap;border-bottom:1px solid #21273d;width:110px">Einheit</th>
-                  <th style="padding:2px 8px 2px 0;color:#7d8590;font-weight:600;white-space:nowrap;border-bottom:1px solid #21273d">Gegenstand / Leistung</th>
+                  <th style="padding:2px 8px 2px 0;color:#64748b;font-weight:600;white-space:nowrap;border-bottom:1px solid #e2e8f0;width:60px">Menge</th>
+                  <th style="padding:2px 8px 2px 0;color:#64748b;font-weight:600;white-space:nowrap;border-bottom:1px solid #e2e8f0;width:110px">Einheit</th>
+                  <th style="padding:2px 8px 2px 0;color:#64748b;font-weight:600;white-space:nowrap;border-bottom:1px solid #e2e8f0">Gegenstand / Leistung</th>
                 </tr>
               </thead>
               <tbody>
@@ -214,7 +214,7 @@ export async function renderOrders() {
               </tbody>
             </table>`;
         } else {
-          positionsHtml = `<span style="color:#7d8590">${esc(o.article_name) || '—'}</span>`;
+          positionsHtml = `<span style="color:#64748b">${esc(o.article_name) || '—'}</span>`;
         }
 
         return `
@@ -440,19 +440,19 @@ export async function renderOrders() {
         <div style="margin-bottom:12px;padding:10px 14px;background:#2d1212;border:1px solid #e6302244;border-radius:8px;font-size:0.9em">
           <strong style="color:#ff8a80">Ablehnungsgrund:</strong><br>
           <span style="color:#ffcdd2">${esc(order.rejection_reason)}</span>
-          ${order.approved_by_name ? `<br><span style="color:#7d8590;font-size:11px">Abgelehnt von: ${esc(order.approved_by_name)}</span>` : ''}
+          ${order.approved_by_name ? `<br><span style="color:#64748b;font-size:11px">Abgelehnt von: ${esc(order.approved_by_name)}</span>` : ''}
         </div>
       ` : ''}
 
       ${order.approval_status === 'genehmigt' && order.approved_by_name ? `
-        <div style="margin-bottom:12px;font-size:0.9em;color:#7d8590">
+        <div style="margin-bottom:12px;font-size:0.9em;color:#64748b">
           Genehmigt von: ${esc(order.approved_by_name)}
           ${order.approved_at ? ` · ${formatDate(order.approved_at)}` : ''}
         </div>
       ` : ''}
 
       ${order.notes ? `
-        <div style="font-size:0.9em;color:#7d8590">
+        <div style="font-size:0.9em;color:#64748b">
           <strong>Interne Anmerkungen:</strong><br>${esc(order.notes)}
         </div>
       ` : ''}
@@ -485,7 +485,7 @@ export async function renderOrders() {
         <tr>
           <td style="padding:6px 8px 6px 0">
             <strong>${esc(p.gegenstand)}</strong>
-            ${p.menge || p.einheit ? `<br><small style="color:#7d8590">${esc(p.menge || '')} ${esc(p.einheit || '')}</small>` : ''}
+            ${p.menge || p.einheit ? `<br><small style="color:#64748b">${esc(p.menge || '')} ${esc(p.einheit || '')}</small>` : ''}
           </td>
           <td style="padding:6px 8px">
             <select class="delivery-status-select" data-index="${i}" style="width:130px">
@@ -534,9 +534,9 @@ export async function renderOrders() {
       <table style="width:100%;margin-bottom:16px">
         <thead>
           <tr>
-            <th style="padding:4px 8px 4px 0;color:#7d8590;font-weight:600;font-size:0.85em">Position</th>
-            <th style="padding:4px 8px;color:#7d8590;font-weight:600;font-size:0.85em">Status</th>
-            <th style="padding:4px 0;color:#7d8590;font-weight:600;font-size:0.85em">Menge erhalten</th>
+            <th style="padding:4px 8px 4px 0;color:#64748b;font-weight:600;font-size:0.85em">Position</th>
+            <th style="padding:4px 8px;color:#64748b;font-weight:600;font-size:0.85em">Status</th>
+            <th style="padding:4px 0;color:#64748b;font-weight:600;font-size:0.85em">Menge erhalten</th>
           </tr>
         </thead>
         <tbody>${posRows}</tbody>

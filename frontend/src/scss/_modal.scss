@@ -1,0 +1,110 @@
+@use 'variables' as *;
+
+// Zwei Verwendungsmuster im Projekt:
+// A) .modal[style="display:flex"] > .modal__backdrop + .modal__box > __header/__body/__footer
+// B) .modal-overlay.active > .modal > __header/__body/__footer
+
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(4px);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+
+  &.active { display: flex; }
+}
+
+.modal {
+  // Muster B: .modal ist die Box (direkt in .modal-overlay)
+  background: $bg-card;
+  border: 1px solid $border;
+  border-radius: $radius-xl;
+  box-shadow: $schatten-lg;
+  width: 90%;
+  max-width: 540px;
+  max-height: 90vh;
+  overflow-y: auto;
+
+  // Muster A: .modal ist der Container (gesteuert per inline style)
+  &[style*="display: flex"],
+  &[style*="display:flex"] {
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(4px);
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    width: 100%;
+    max-width: none;
+    max-height: none;
+    overflow-y: visible;
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+
+  // Muster A: optionales Backdrop-Element
+  &__backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(4px);
+  }
+
+  // Muster A: die eigentliche Box innerhalb des Containers
+  &__box {
+    position: relative;
+    z-index: 1;
+    background: $bg-card;
+    border: 1px solid $border;
+    border-radius: $radius-xl;
+    box-shadow: $schatten-lg;
+    width: 90%;
+    max-width: 540px;
+    max-height: 90vh;
+    overflow-y: auto;
+
+    &--lg { max-width: 720px; }
+    &--xl { max-width: 900px; }
+  }
+
+  &__header {
+    background: $bg-card-hover;
+    border-bottom: 1px solid $border;
+    color: $text;
+    padding: 14px $space-lg;
+    font-size: $font-size-md;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__close {
+    background: none;
+    border: none;
+    color: $text-muted;
+    font-size: 18px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 2px;
+    border-radius: $radius-sm;
+    transition: color $transition-fast;
+    &:hover { color: $text; }
+  }
+
+  &__body { padding: $space-lg; }
+
+  &__footer {
+    padding: $space-md $space-lg;
+    border-top: 1px solid $border;
+    display: flex;
+    justify-content: flex-end;
+    gap: $space-sm;
+    background: $bg-card-hover;
+  }
+}

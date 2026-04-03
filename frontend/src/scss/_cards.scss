@@ -1,0 +1,33 @@
+@use 'variables' as *;
+
+.card {
+  background: $bg-card;
+  border: 1px solid $border;
+  border-radius: $radius-xl;
+  margin-bottom: $space-lg;
+  overflow: hidden;
+  transition: border-color $transition-fast, box-shadow $transition-fast;
+
+  &:hover { box-shadow: $schatten-sm; }
+
+  &__header {
+    background: $bg-card-hover;
+    border-bottom: 1px solid $border;
+    color: $text;
+    padding: 12px $space-lg;
+    font-size: $font-size-md;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__body {
+    padding: $space-lg;
+  }
+
+  &--rot {
+    border-top: 2px solid $rot;
+    .card__header { background: $rot-hell; color: $text; border-bottom-color: rgba(230,48,34,0.2); }
+  }
+}

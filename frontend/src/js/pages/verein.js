@@ -1019,7 +1019,7 @@ async function loadEhrungen() {
           <div class="stat-card__label">Ablaufende Qualifikationen</div>
         </div>
         <div class="stat-card">
-          <div class="stat-card__number" style="color:${geburtstage.length > 0 ? '#3fb950' : '#7d8590'}">${geburtstage.length}</div>
+          <div class="stat-card__number" style="color:${geburtstage.length > 0 ? '#3fb950' : '#64748b'}">${geburtstage.length}</div>
           <div class="stat-card__label">Geburtstage (60 Tage)</div>
         </div>
       </div>
@@ -2087,7 +2087,7 @@ function renderVeranstaltungenList(isAdmin) {
       ${isAdmin ? `<button class="btn btn--primary btn--sm" id="btn-new-event">+ Neu</button>` : ''}
     </div>
 
-    <h4 style="margin:0 0 .5rem;color:var(--text-muted, #7d8590)">Bevorstehend</h4>
+    <h4 style="margin:0 0 .5rem;color:var(--text-muted, #64748b)">Bevorstehend</h4>
     ${upcoming.length === 0 ? `<p class="empty-state">Keine bevorstehenden Veranstaltungen</p>` : `
     <div class="table-wrapper">
       <table class="data-table">
@@ -2101,7 +2101,7 @@ function renderVeranstaltungenList(isAdmin) {
       </table>
     </div>`}
 
-    <h4 style="margin:1.5rem 0 .5rem;color:var(--text-muted, #7d8590)">Vergangen</h4>
+    <h4 style="margin:1.5rem 0 .5rem;color:var(--text-muted, #64748b)">Vergangen</h4>
     ${past.length === 0 ? `<p class="empty-state">Keine vergangenen Veranstaltungen</p>` : `
     <div class="table-wrapper">
       <table class="data-table">
@@ -2792,8 +2792,8 @@ async function refreshBuchungen(isAdmin, filter = {}) {
               <td>${new Date(b.datum).toLocaleDateString('de-DE')}</td>
               <td>
                 ${esc(b.bezeichnung)}
-                ${b.mitglied_name ? `<br><small style="color:#7d8590">${esc(b.mitglied_name)}</small>` : ''}
-                ${b.notiz ? `<br><small style="color:#7d8590">${esc(b.notiz)}</small>` : ''}
+                ${b.mitglied_name ? `<br><small style="color:#64748b">${esc(b.mitglied_name)}</small>` : ''}
+                ${b.notiz ? `<br><small style="color:#64748b">${esc(b.notiz)}</small>` : ''}
               </td>
               <td>${b.kategorie_name ? esc(b.kategorie_name) : '—'}</td>
               <td><span class="badge ${b.typ === 'einnahme' ? 'badge--green' : 'badge--red'}">${b.typ === 'einnahme' ? 'Einnahme' : 'Ausgabe'}</span></td>
@@ -2958,7 +2958,7 @@ async function refreshBeitraege(isAdmin, filter = {}) {
       <div class="stats-row" style="margin-bottom:1.5rem">
         <div class="stat-card"><div class="stat-card__label">Offen</div><div class="stat-card__value" style="color:#ffb74d">${offen}</div></div>
         <div class="stat-card"><div class="stat-card__label">Bezahlt</div><div class="stat-card__value" style="color:#3fb950">${bezahlt}</div></div>
-        <div class="stat-card"><div class="stat-card__label">Befreit</div><div class="stat-card__value" style="color:#7d8590">${befreit}</div></div>
+        <div class="stat-card"><div class="stat-card__label">Befreit</div><div class="stat-card__value" style="color:#64748b">${befreit}</div></div>
         <div class="stat-card"><div class="stat-card__label">Eingang</div><div class="stat-card__value" style="color:#3fb950">${fmtEuro(eingang)} / ${fmtEuro(summe)}</div></div>
       </div>
 
@@ -3108,7 +3108,7 @@ function openGenerierModal(isAdmin) {
         <button class="modal__close" id="close-gen">&times;</button>
       </div>
       <div class="modal__body">
-        <p style="color:#7d8590;font-size:13px;margin:0 0 1rem">
+        <p style="color:#64748b;font-size:13px;margin:0 0 1rem">
           Erstellt Beitragseinträge für alle aktiven Mitglieder die noch keinen Eintrag für das gewählte Jahr haben.
         </p>
         <div class="form-grid">
@@ -3252,7 +3252,7 @@ async function loadSchreibenEditor() {
       <div>
         <h3 style="margin:0 0 1rem">Vorschau</h3>
         <div id="schreiben-preview" class="schreiben-preview">
-          <p style="color:#7d8590;font-size:13px">Felder ausfüllen und auf Vorschau klicken</p>
+          <p style="color:#64748b;font-size:13px">Felder ausfüllen und auf Vorschau klicken</p>
         </div>
       </div>
     </div>
@@ -3330,7 +3330,7 @@ async function loadSchreibenEditor() {
 async function renderJahresbericht(jahr) {
   const el = document.getElementById('jb-content');
   if (!el) return;
-  el.innerHTML = `<p style="color:#7d8590">Lade Daten...</p>`;
+  el.innerHTML = `<p style="color:#64748b">Lade Daten...</p>`;
   try {
     const [summary, buchungen, beitraege, mitglieder, events, einsatzStats] = await Promise.all([
       api.getFinanzSummary({ jahr }),
@@ -3353,16 +3353,16 @@ async function renderJahresbericht(jahr) {
         </div>
 
         <h2 style="margin:0 0 .25rem">Jahresbericht ${jahr}</h2>
-        <p style="color:#7d8590;font-size:13px;margin:0 0 2rem">Erstellt am ${new Date().toLocaleDateString('de-DE')}</p>
+        <p style="color:#64748b;font-size:13px;margin:0 0 2rem">Erstellt am ${new Date().toLocaleDateString('de-DE')}</p>
 
-        <h3 style="margin:0 0 .75rem;border-bottom:1px solid var(--border,#21273d);padding-bottom:.5rem">Mitglieder</h3>
+        <h3 style="margin:0 0 .75rem;border-bottom:1px solid var(--border,#e2e8f0);padding-bottom:.5rem">Mitglieder</h3>
         <div class="stats-row" style="margin-bottom:2rem">
           <div class="stat-card"><div class="stat-card__label">Aktive Mitglieder</div><div class="stat-card__value">${aktiveMitglieder.length}</div></div>
           <div class="stat-card"><div class="stat-card__label">Gesamt</div><div class="stat-card__value">${(mitglieder||[]).filter(m=>!m.archiviert).length}</div></div>
         </div>
 
         ${einsatzStats ? `
-        <h3 style="margin:0 0 .75rem;border-bottom:1px solid var(--border,#21273d);padding-bottom:.5rem">Einsätze ${jahr}</h3>
+        <h3 style="margin:0 0 .75rem;border-bottom:1px solid var(--border,#e2e8f0);padding-bottom:.5rem">Einsätze ${jahr}</h3>
         <div class="stats-row" style="margin-bottom:2rem">
           <div class="stat-card"><div class="stat-card__label">Gesamt</div><div class="stat-card__value">${einsatzStats.total ?? 0}</div></div>
           <div class="stat-card"><div class="stat-card__label">Brand</div><div class="stat-card__value" style="color:#e63022">${einsatzStats.brand ?? 0}</div></div>
@@ -3370,7 +3370,7 @@ async function renderJahresbericht(jahr) {
           <div class="stat-card"><div class="stat-card__label">Sonstige</div><div class="stat-card__value">${einsatzStats.sonstige ?? 0}</div></div>
         </div>` : ''}
 
-        <h3 style="margin:0 0 .75rem;border-bottom:1px solid var(--border,#21273d);padding-bottom:.5rem">Veranstaltungen ${jahr}</h3>
+        <h3 style="margin:0 0 .75rem;border-bottom:1px solid var(--border,#e2e8f0);padding-bottom:.5rem">Veranstaltungen ${jahr}</h3>
         <div class="stats-row" style="margin-bottom:2rem">
           <div class="stat-card"><div class="stat-card__label">Gesamt</div><div class="stat-card__value">${eventsJahr.length}</div></div>
           ${Object.entries({ uebung:'Übungen', versammlung:'Versammlungen', fest:'Feste', arbeitsdienst:'Arbeitsdienste' }).map(([k,v]) => {
@@ -3379,7 +3379,7 @@ async function renderJahresbericht(jahr) {
           }).join('')}
         </div>
 
-        <h3 style="margin:0 0 .75rem;border-bottom:1px solid var(--border,#21273d);padding-bottom:.5rem">Finanzen ${jahr}</h3>
+        <h3 style="margin:0 0 .75rem;border-bottom:1px solid var(--border,#e2e8f0);padding-bottom:.5rem">Finanzen ${jahr}</h3>
         <div class="stats-row" style="margin-bottom:1rem">
           <div class="stat-card"><div class="stat-card__label">Einnahmen</div><div class="stat-card__value" style="color:#3fb950">${fmtEuro(summary.einnahmen)}</div></div>
           <div class="stat-card"><div class="stat-card__label">Ausgaben</div><div class="stat-card__value" style="color:#ff8a80">${fmtEuro(summary.ausgaben)}</div></div>
@@ -3387,7 +3387,7 @@ async function renderJahresbericht(jahr) {
         </div>
 
         ${beitraege.length > 0 ? `
-        <p style="color:#7d8590;font-size:13px;margin:.5rem 0 2rem">Mitgliedsbeiträge: ${beitragBezahlt} bezahlt, ${beitragOffen} ausstehend</p>` : ''}
+        <p style="color:#64748b;font-size:13px;margin:.5rem 0 2rem">Mitgliedsbeiträge: ${beitragBezahlt} bezahlt, ${beitragOffen} ausstehend</p>` : ''}
 
         ${buchungen.length > 0 ? `
         <h4 style="margin:0 0 .5rem">Buchungsübersicht</h4>

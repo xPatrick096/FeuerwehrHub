@@ -1,0 +1,172 @@
+@use 'variables' as *;
+
+// ── Dashboard-Karten ──────────────────────────────────────────────────────────
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: $space-md;
+}
+
+.dashboard-card {
+  background: $bg-card;
+  border: 1px solid $border;
+  border-radius: $radius-xl;
+  padding: $space-lg;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  transition: all $transition-md;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 2px;
+    background: linear-gradient(90deg, $rot, transparent);
+    opacity: 0;
+    transition: opacity $transition-md;
+  }
+
+  &__icon {
+    width: 48px;
+    height: 48px;
+    background: $rot-hell;
+    border: 1px solid $rot-border;
+    border-radius: $radius-lg;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    margin: 0 auto $space-sm;
+  }
+
+  &__label {
+    font-size: $font-size-md;
+    font-weight: 700;
+    color: $text;
+    margin-bottom: 4px;
+  }
+
+  &__desc { font-size: $font-size-sm; color: $text-muted; line-height: 1.5; }
+
+  &__soon {
+    margin-top: $space-sm;
+    font-size: $font-size-2xs;
+    color: $text-muted;
+    background: $bg-card-hover;
+    border: 1px solid $border;
+    border-radius: $radius-pill;
+    padding: 2px 10px;
+    display: inline-block;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  &--active {
+    cursor: pointer;
+    &:hover {
+      border-color: $rot-border;
+      background: $bg-card-hover;
+      transform: translateY(-3px);
+      box-shadow: $schatten-md;
+
+      &::after { opacity: 1; }
+    }
+  }
+
+  &--soon {
+    opacity: 0.55;
+    cursor: default;
+  }
+}
+
+.announcement-card {
+  border-left: 3px solid $rot;
+}
+
+// ── Widget-Grid ───────────────────────────────────────────────────────────────
+.widget-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-top: 24px;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.widget-card {
+  background: $bg-card;
+  border: 1px solid $border;
+  border-radius: $radius-xl;
+  overflow: hidden;
+  transition: box-shadow $transition-fast;
+
+  &:hover { box-shadow: $schatten-md; }
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid $border;
+    border-left: 3px solid transparent;
+
+    h3 {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 600;
+      color: $text;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    a {
+      font-size: 11px;
+      color: $text-muted;
+      text-decoration: none;
+      white-space: nowrap;
+      &:hover { color: $text; }
+    }
+  }
+
+  &__body { padding: 14px 16px; }
+
+  // Modul-Akzentfarben (stimmen mit Shell.svelte MODULE_ACCENTS überein)
+  &--fahrzeuge       .widget-card__header { border-left-color: #2563eb; }
+  &--einsatzberichte .widget-card__header { border-left-color: #e63022; }
+  &--personal        .widget-card__header { border-left-color: #16a34a; }
+  &--lager           .widget-card__header { border-left-color: #d97706; }
+  &--termine         .widget-card__header { border-left-color: #7c3aed; }
+}
+
+.stat-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.stat-tile {
+  background: $bg-card-hover;
+  border: 1px solid $border;
+  border-radius: 10px;
+  padding: 12px 14px;
+  flex: 1;
+  min-width: 90px;
+
+  &__value {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+
+  &__label {
+    font-size: 11px;
+    color: $text-muted;
+    margin-top: 3px;
+  }
+}

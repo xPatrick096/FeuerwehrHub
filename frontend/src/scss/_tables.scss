@@ -1,0 +1,42 @@
+@use 'variables' as *;
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th {
+  background: $bg-card-hover;
+  padding: 10px 12px;
+  text-align: left;
+  font-size: $font-size-xs;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: $text-muted;
+  border-bottom: 1px solid $border;
+  white-space: nowrap;
+}
+
+td {
+  padding: 10px 12px;
+  border-bottom: 1px solid $border;
+  vertical-align: middle;
+  color: $text;
+
+  &:last-child { white-space: nowrap; }
+}
+
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: $bg-card-hover; }
+
+.table-empty {
+  text-align: center;
+  padding: $space-2xl;
+  color: $text-muted;
+  font-style: italic;
+}

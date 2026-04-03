@@ -1,0 +1,89 @@
+@use 'variables' as *;
+@use 'mixins' as *;
+
+// ── Formular-Layout ───────────────────────────────────────────────────────────
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: $space-md;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+
+  &--full { grid-column: 1 / -1; }
+
+  label {
+    font-size: $font-size-xs;
+    font-weight: 600;
+    color: $text-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  input, select, textarea {
+    @include field-base;
+  }
+
+  textarea { resize: vertical; min-height: 80px; }
+}
+
+// ── Filter-Bar ────────────────────────────────────────────────────────────────
+.filter-bar {
+  display: flex;
+  gap: $space-sm;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: $space-md;
+
+  input, select {
+    @include field-base;
+    padding: 7px 12px;
+    background: $bg-card;
+    font-size: $font-size-sm;
+  }
+}
+
+// ── Toggle Switch ─────────────────────────────────────────────────────────────
+.toggle-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+
+  input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+
+    &:checked + .toggle-switch__track { background: $rot; }
+    &:checked + .toggle-switch__track::after { transform: translateX(20px); }
+    &:disabled + .toggle-switch__track { opacity: 0.35; cursor: not-allowed; }
+  }
+
+  &__track {
+    display: block;
+    width: 44px;
+    height: 24px;
+    background: $border;
+    border-radius: 12px;
+    transition: background $transition-md;
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 18px;
+      height: 18px;
+      background: $bg-card;
+      border-radius: 50%;
+      transition: transform $transition-md;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+  }
+}

@@ -1,0 +1,41 @@
+@use 'variables' as *;
+
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: $space-md;
+  margin-bottom: $space-lg;
+}
+
+.stat-card {
+  background: $bg-card;
+  border: 1px solid $border;
+  border-radius: $radius-lg;
+  padding: $space-md;
+  text-align: center;
+  transition: border-color $transition-fast, transform $transition-fast;
+
+  &:hover { border-color: $rot-border; transform: translateY(-1px); }
+
+  &__number,
+  &__value {
+    font-size: $font-size-2xl;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 6px;
+    letter-spacing: -0.02em;
+  }
+
+  &__label {
+    font-size: $font-size-xs;
+    color: $text-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+  }
+
+  &--offen         .stat-card__number { color: #dc2626; }
+  &--teillieferung .stat-card__number { color: $orange; }
+  &--vollstaendig  .stat-card__number { color: $gruen; }
+  &--gesamt        .stat-card__number { color: $text; }
+}

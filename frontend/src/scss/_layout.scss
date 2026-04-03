@@ -12,7 +12,7 @@
 // ── Header ────────────────────────────────────────────────────────────────────
 .header {
   height: $header-height;
-  background: rgba(13, 17, 23, 0.92);
+  background: $bg-card;
   backdrop-filter: blur(12px);
   border-bottom: 1px solid $border;
   color: $text;
@@ -198,6 +198,20 @@
 }
 
 // ── Main Content ──────────────────────────────────────────────────────────────
+// Wird jetzt von Shell.svelte als #page-content bereitgestellt.
+// Padding und Scroll kommen von hier, damit alle Seiten einheitlich aussehen.
+#page-content {
+  padding: $space-lg;
+  background: $bg;
+  min-height: 100%;
+}
+
+// Auth-Seiten (Login, Setup) brauchen kein Padding — zentrieren sich selbst
+#page-content:has(> .auth-page) {
+  padding: 0;
+}
+
+// Legacy — wird nicht mehr gerendert, bleibt als Fallback
 .main-content {
   flex: 1;
   overflow-y: auto;

@@ -48,7 +48,7 @@ function _renderVehiclesTab(wrap, incidentId, rows, vehicleOptions, readonly) {
           ${rows.map(r => `
             <tr data-vid="${r.id}">
               <td style="font-weight:500">${esc(r.vehicle_name)}</td>
-              <td style="color:#7d8590">${esc(r.callsign || '—')}</td>
+              <td style="color:#64748b">${esc(r.callsign || '—')}</td>
               <td>${fmt(r.alarm_time)}</td>
               <td>${fmt(r.departure_time)}</td>
               <td>${fmt(r.arrival_time)}</td>
@@ -64,10 +64,10 @@ function _renderVehiclesTab(wrap, incidentId, rows, vehicleOptions, readonly) {
             </tr>`).join('')}
         </tbody>
       </table>
-    </div>` : `<p style="color:#7d8590;font-size:13px;margin-bottom:16px">Noch keine Fahrzeuge eingetragen.</p>`;
+    </div>` : `<p style="color:#64748b;font-size:13px;margin-bottom:16px">Noch keine Fahrzeuge eingetragen.</p>`;
 
   const addFormHTML = readonly ? '' : `
-    <div id="v-add-form" style="display:none;background:#161b27;border:1px solid #21273d;border-radius:10px;padding:16px;margin-bottom:12px">
+    <div id="v-add-form" style="display:none;background:#ffffff;border:1px solid #e2e8f0;border-radius:10px;padding:16px;margin-bottom:12px">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
         <div class="form-group" style="grid-column:1/-1">
           <label style="font-size:12px">Fahrzeug</label>
@@ -259,7 +259,7 @@ function _renderPersonnelTab(wrap, incidentId, rows, memberOptions, readonly) {
           ${rows.map(r => `
             <tr>
               <td style="font-weight:500">${esc(r.display_name)}</td>
-              <td style="color:#7d8590">${esc(r.role_name || '—')}</td>
+              <td style="color:#64748b">${esc(r.role_name || '—')}</td>
               <td>${esc(r.function || '—')}</td>
               ${!readonly ? `
                 <td>
@@ -269,12 +269,12 @@ function _renderPersonnelTab(wrap, incidentId, rows, memberOptions, readonly) {
         </tbody>
       </table>
     </div>
-    <div style="font-size:12px;color:#7d8590;margin-bottom:12px">
+    <div style="font-size:12px;color:#64748b;margin-bottom:12px">
       ${rows.length} eingesetzte Kraft${rows.length !== 1 ? 'kräfte' : ''}
-    </div>` : `<p style="color:#7d8590;font-size:13px;margin-bottom:16px">Noch keine Kräfte eingetragen.</p>`;
+    </div>` : `<p style="color:#64748b;font-size:13px;margin-bottom:16px">Noch keine Kräfte eingetragen.</p>`;
 
   const addFormHTML = readonly ? '' : `
-    <div id="p-add-form" style="display:none;background:#161b27;border:1px solid #21273d;border-radius:10px;padding:16px;margin-bottom:12px">
+    <div id="p-add-form" style="display:none;background:#ffffff;border:1px solid #e2e8f0;border-radius:10px;padding:16px;margin-bottom:12px">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
         <div class="form-group" style="grid-column:1/-1">
           <label style="font-size:12px">Person aus dem System wählen (optional)</label>
@@ -389,31 +389,31 @@ function _renderAttachmentsTab(wrap, incidentId, attachments, readonly) {
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
       ${attachments.map(a => `
         <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;
-                    background:#161b27;border:1px solid #21273d;border-radius:8px">
+                    background:#ffffff;border:1px solid #e2e8f0;border-radius:8px">
           <span style="font-size:20px;flex-shrink:0">${_fileIcon(a.mime_type)}</span>
           <div style="flex:1;min-width:0">
             <div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"
                  title="${esc(a.filename)}">${esc(a.filename)}</div>
-            <div style="font-size:11px;color:#7d8590">${fmtSize(a.file_size)} · ${fmtDate(a.created_at)}</div>
+            <div style="font-size:11px;color:#64748b">${fmtSize(a.file_size)} · ${fmtDate(a.created_at)}</div>
           </div>
           <button class="btn btn--outline btn--sm" data-action="download"
                   data-id="${a.id}" data-name="${esc(a.filename)}">↓ Download</button>
           ${!readonly ? `<button class="btn btn--danger btn--sm"
                   data-action="delete" data-id="${a.id}">✕</button>` : ''}
         </div>`).join('')}
-    </div>` : `<p style="color:#7d8590;font-size:13px;margin-bottom:16px">Keine Anhänge vorhanden.</p>`;
+    </div>` : `<p style="color:#64748b;font-size:13px;margin-bottom:16px">Keine Anhänge vorhanden.</p>`;
 
   const uploadHTML = readonly ? '' : `
     <div id="attach-drop-zone"
-         style="border:2px dashed #21273d;border-radius:8px;padding:24px;text-align:center;cursor:pointer;
+         style="border:2px dashed #e2e8f0;border-radius:8px;padding:24px;text-align:center;cursor:pointer;
                 transition:border-color 0.15s">
       <div>${icon('paperclip', 28)}</div>
-      <div style="font-size:13px;color:#7d8590;margin-top:6px">Datei hierher ziehen oder klicken zum Auswählen</div>
-      <div style="font-size:11px;color:#7d8590;margin-top:2px">Bilder (JPEG/PNG/GIF/WebP), PDF, Word (docx), ODT, Text — max. 20 MB</div>
+      <div style="font-size:13px;color:#64748b;margin-top:6px">Datei hierher ziehen oder klicken zum Auswählen</div>
+      <div style="font-size:11px;color:#64748b;margin-top:2px">Bilder (JPEG/PNG/GIF/WebP), PDF, Word (docx), ODT, Text — max. 20 MB</div>
       <input type="file" id="attach-file-input" style="display:none"
              accept="image/*,.pdf,.docx,.odt,.txt">
     </div>
-    <div id="attach-progress" style="display:none;margin-top:8px;font-size:13px;color:#7d8590;text-align:center">
+    <div id="attach-progress" style="display:none;margin-top:8px;font-size:13px;color:#64748b;text-align:center">
       Wird hochgeladen...
     </div>
   `;
@@ -450,11 +450,11 @@ function _renderAttachmentsTab(wrap, incidentId, attachments, readonly) {
       dropZone.style.borderColor = '#e63022';
     });
     dropZone.addEventListener('dragleave', () => {
-      dropZone.style.borderColor = '#21273d';
+      dropZone.style.borderColor = '#e2e8f0';
     });
     dropZone.addEventListener('drop', e => {
       e.preventDefault();
-      dropZone.style.borderColor = '#21273d';
+      dropZone.style.borderColor = '#e2e8f0';
       const file = e.dataTransfer.files[0];
       if (file) _uploadFile(incidentId, file, readonly);
     });
