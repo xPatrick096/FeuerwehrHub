@@ -1,11 +1,11 @@
 use axum::{
-    extract::{Path, State},
+    extract::{Path, Query, State},
     middleware,
     response::IntoResponse,
     routing::{delete, get, post, put},
     Extension, Json, Router,
 };
-use chrono::{DateTime, NaiveDate, Utc};
+use chrono::{DateTime, Datelike, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -831,11 +831,80 @@ pub async fn list_member_emergency_contacts(
     Ok(Json(contacts))
 }
 
+// ── Anwesenheits-Chart (Dashboard) ────────────────────────────────────────────
+
+#[derive(Deserialize)]
+pub struct ChartQuery {
+    pub year: Option<i32>,
+}
+
+#[derive(Serialize)]
+pub struct AttendanceChartEntry {
+    pub month:   i32,
+    pub present: i64,
+    pub absent:  i64,
+    pub excused: i64,
+    pub total:   i64,
+}
+
+#[derive(Serialize)]
+pub struct AttendanceChartResponse {
+    pub year:   i32,
+    pub months: Vec<AttendanceChartEntry>,
+}
+
+pub async fn get_attendance_chart(
+    State(state): State<AppState>,
+    Extension(_claims): Extension<Claims>,
+    Query(q): Query<ChartQuery>,
+) -> AppResult<Json<AttendanceChartResponse>> {
+    let year = q.year.unwrap_or_else(|| Utc::now().year());
+
+    #[derive(sqlx::FromRow)]
+    struct Row {
+        month:   i32,
+        status:  String,
+        count:   i64,
+    }
+
+    let rows = sqlx::query_as::<_, Row>(
+        "SELECT EXTRACT(MONTH FROM service_date)::int AS month,
+                status,
+                COUNT(*) AS count
+         FROM service_attendance
+         WHERE EXTRACT(YEAR FROM service_date) = $1
+         GROUP BY month, status
+         ORDER BY month"
+    )
+    .bind(year)
+    .fetch_all(&state.db)
+    .await?;
+
+    let mut months: Vec<AttendanceChartEntry> = (1..=12)
+        .map(|m| AttendanceChartEntry { month: m, present: 0, absent: 0, excused: 0, total: 0 })
+        .collect();
+
+    for row in rows {
+        if let Some(entry) = months.get_mut((row.month - 1) as usize) {
+            match row.status.as_str() {
+                "present" => entry.present = row.count,
+                "absent"  => entry.absent  = row.count,
+                "excused" => entry.excused = row.count,
+                _         => {}
+            }
+            entry.total += row.count;
+        }
+    }
+
+    Ok(Json(AttendanceChartResponse { year, months }))
+}
+
 // ── Router ────────────────────────────────────────────────────────────────────
 
 pub fn router(state: AppState) -> Router<AppState> {
     Router::new()
         .route("/stats",                                        get(get_personal_stats))
+        .route("/stats/attendance-chart",                       get(get_attendance_chart))
         .route("/members",                                      get(list_members))
         .route("/members/:id/details",                          get(get_details).put(update_details))
         .route("/members/:id/qualifications",                   get(list_qualifications).post(create_qualification))

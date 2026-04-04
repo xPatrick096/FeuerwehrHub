@@ -234,6 +234,21 @@ pub struct StatsResponse {
     pub entwurf:     i64,
 }
 
+#[derive(Serialize)]
+pub struct MonthlyChartEntry {
+    pub month:     i32,
+    pub brand:     i64,
+    pub thl:       i64,
+    pub fehlalarm: i64,
+    pub sonstiges: i64,
+}
+
+#[derive(Serialize)]
+pub struct ChartResponse {
+    pub year:    i32,
+    pub months:  Vec<MonthlyChartEntry>,
+}
+
 // ── Liste ─────────────────────────────────────────────────────────────────────
 
 pub async fn list_incidents(
@@ -731,6 +746,54 @@ pub async fn get_stats(
     Ok(Json(StatsResponse { year, total, brand, thl, fehlalarm, sonstiges, entwurf }))
 }
 
+// ── Chart-Daten (Einsätze pro Monat) ──────────────────────────────────────────
+
+pub async fn get_stats_chart(
+    State(state): State<AppState>,
+    Extension(_claims): Extension<Claims>,
+    Query(q): Query<ListQuery>,
+) -> AppResult<Json<ChartResponse>> {
+    let year = q.year.unwrap_or_else(|| Utc::now().year());
+
+    #[derive(sqlx::FromRow)]
+    struct Row {
+        month: i32,
+        category: Option<String>,
+        count: i64,
+    }
+
+    let rows = sqlx::query_as::<_, Row>(
+        "SELECT EXTRACT(MONTH FROM ir.incident_date)::int AS month,
+                COALESCE(it.category, 'sonstiges') AS category,
+                COUNT(*) AS count
+         FROM incident_reports ir
+         LEFT JOIN incident_types it ON it.key = ir.incident_type_key
+         WHERE EXTRACT(YEAR FROM ir.incident_date) = $1
+         GROUP BY month, category
+         ORDER BY month"
+    )
+    .bind(year)
+    .fetch_all(&state.db)
+    .await?;
+
+    let mut months: Vec<MonthlyChartEntry> = (1..=12)
+        .map(|m| MonthlyChartEntry { month: m, brand: 0, thl: 0, fehlalarm: 0, sonstiges: 0 })
+        .collect();
+
+    for row in rows {
+        if let Some(entry) = months.get_mut((row.month - 1) as usize) {
+            match row.category.as_deref() {
+                Some("brand")     => entry.brand     = row.count,
+                Some("thl")       => entry.thl       = row.count,
+                Some("fehlalarm") => entry.fehlalarm = row.count,
+                _                 => entry.sonstiges += row.count,
+            }
+        }
+    }
+
+    Ok(Json(ChartResponse { year, months }))
+}
+
 // ── Änderungshistorie ─────────────────────────────────────────────────────────
 
 pub async fn get_changes(
@@ -1220,6 +1283,7 @@ pub fn router(state: AppState) -> Router<AppState> {
     // Lese-Routen — benötigen einsatzberichte.read (oder höher, via Hierarchie in check_module)
     let read_routes = Router::new()
         .route("/stats",                        get(get_stats))
+        .route("/stats/chart",                  get(get_stats_chart))
         .route("/",                             get(list_incidents))
         .route("/:id",                          get(get_incident))
         .route("/:id/changes",                  get(get_changes))

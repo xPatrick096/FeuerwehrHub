@@ -172,6 +172,7 @@ export const api = {
 
   // Personal Stats
   getPersonalStats:    ()             => request('GET',    '/personal/stats'),
+  getAttendanceChart:  (year)         => request('GET',    `/personal/stats/attendance-chart${year ? `?year=${year}` : ''}`),
 
   // Anwesenheit
   getAttendance:       (id)           => request('GET',    `/personal/members/${id}/attendance`),
@@ -378,6 +379,7 @@ export const api = {
   deleteIncident:    (id)        => request('DELETE', `/einsatzberichte/${id}`),
   setIncidentStatus: (id, status)=> request('PUT',    `/einsatzberichte/${id}/status`, { status }),
   getIncidentStats:  (year)      => request('GET',    `/einsatzberichte/stats${year ? `?year=${year}` : ''}`),
+  getIncidentChart:  (year)      => request('GET',    `/einsatzberichte/stats/chart${year ? `?year=${year}` : ''}`),
   getIncidentChanges:  (id)       => request('GET',    `/einsatzberichte/${id}/changes`),
 
   // Phase B

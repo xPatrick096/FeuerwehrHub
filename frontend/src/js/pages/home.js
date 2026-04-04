@@ -3,6 +3,11 @@ import { toast } from '../toast.js';
 import { renderShell, setShellInfo, canAccess } from '../shell.js';
 import { esc } from '../utils.js';
 import { icon, renderIcons } from '../icons.js';
+import { Chart, BarController, BarElement, LineController, LineElement, PointElement, CategoryScale, LinearScale, Tooltip, Legend, Filler } from 'chart.js';
+
+Chart.register(BarController, BarElement, LineController, LineElement, PointElement, CategoryScale, LinearScale, Tooltip, Legend, Filler);
+
+const MONTH_LABELS = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
 
 export async function renderHome() {
   const [settings, user] = await Promise.all([api.getSettings(), api.me()]);
@@ -81,6 +86,20 @@ export async function renderHome() {
       </div>
     </div>
 
+    <div id="charts-section" style="display:none;margin-top:2rem">
+      <h3 style="margin:0 0 12px;font-size:15px;font-weight:600;color:var(--text)">Statistiken</h3>
+      <div class="widget-grid">
+        <div class="widget-card" id="chart-incidents-card">
+          <div class="widget-card__header"><h3>${icon('bar-chart-2', 15)} Einsätze pro Monat</h3></div>
+          <div class="widget-card__body" style="padding:12px"><canvas id="chart-incidents"></canvas></div>
+        </div>
+        <div class="widget-card" id="chart-attendance-card">
+          <div class="widget-card__header"><h3>${icon('users', 15)} Anwesenheit pro Monat</h3></div>
+          <div class="widget-card__body" style="padding:12px"><canvas id="chart-attendance"></canvas></div>
+        </div>
+      </div>
+    </div>
+
     ${isAdmin ? `
     <!-- Modal: Ankündigung erstellen/bearbeiten -->
     <div id="modal-announcement" class="modal" style="display:none">
@@ -131,6 +150,8 @@ export async function renderHome() {
   if (isAdmin || (modules.einsatzberichte === true && canAccess(user, 'einsatzberichte'))) {
     loadIncidentWidget();
   }
+
+  loadCharts(modules, user, isAdmin);
 
   if (isAdmin) {
     setupAnnouncementModal(user);
@@ -434,6 +455,102 @@ async function loadTermineWidget(modules = {}) {
   } catch (_) {
     widget.style.display = 'none';
     widget.style.flexDirection = '';
+  }
+}
+
+// ── Charts ───────────────────────────────────────────────────────────────────
+
+async function loadCharts(modules, user, isAdmin) {
+  const section = document.getElementById('charts-section');
+  if (!section) return;
+
+  const hasIncidents  = isAdmin || (modules.einsatzberichte === true && canAccess(user, 'einsatzberichte'));
+  const hasPersonal   = isAdmin || (modules.personal === true && canAccess(user, 'personal'));
+
+  if (!hasIncidents && !hasPersonal) return;
+  section.style.display = '';
+
+  const style = getComputedStyle(document.documentElement);
+  const colors = {
+    rot:     style.getPropertyValue('--rot').trim(),
+    gelb:    style.getPropertyValue('--gelb').trim(),
+    gruen:   style.getPropertyValue('--gruen').trim(),
+    blau:    style.getPropertyValue('--blau').trim(),
+    muted:   style.getPropertyValue('--text-muted').trim(),
+    border:  style.getPropertyValue('--border').trim(),
+  };
+
+  if (hasIncidents)  renderIncidentChart(colors);
+  if (hasPersonal)   renderAttendanceChart(colors);
+
+  if (!hasIncidents) document.getElementById('chart-incidents-card')?.remove();
+  if (!hasPersonal)  document.getElementById('chart-attendance-card')?.remove();
+}
+
+async function renderIncidentChart(c) {
+  const canvas = document.getElementById('chart-incidents');
+  if (!canvas) return;
+  try {
+    const data = await api.getIncidentChart();
+    new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: MONTH_LABELS,
+        datasets: [
+          { label: 'Brand',     data: data.months.map(m => m.brand),     backgroundColor: c.rot },
+          { label: 'THL',       data: data.months.map(m => m.thl),       backgroundColor: c.blau },
+          { label: 'Fehlalarm', data: data.months.map(m => m.fehlalarm), backgroundColor: c.gelb },
+          { label: 'Sonstige',  data: data.months.map(m => m.sonstiges), backgroundColor: c.muted },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 12, padding: 10, font: { size: 11 } } },
+        },
+        scales: {
+          x: { stacked: true, grid: { display: false } },
+          y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1, font: { size: 11 } }, grid: { color: c.border } },
+        },
+      },
+    });
+    canvas.parentElement.style.height = '260px';
+  } catch (_) {
+    canvas.parentElement.innerHTML = `<p class="text-muted text-sm">Keine Einsatzdaten verfügbar.</p>`;
+  }
+}
+
+async function renderAttendanceChart(c) {
+  const canvas = document.getElementById('chart-attendance');
+  if (!canvas) return;
+  try {
+    const data = await api.getAttendanceChart();
+    new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: MONTH_LABELS,
+        datasets: [
+          { label: 'Anwesend',    data: data.months.map(m => m.present), backgroundColor: c.gruen },
+          { label: 'Abwesend',    data: data.months.map(m => m.absent),  backgroundColor: c.rot },
+          { label: 'Entschuldigt',data: data.months.map(m => m.excused), backgroundColor: c.gelb },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 12, padding: 10, font: { size: 11 } } },
+        },
+        scales: {
+          x: { stacked: true, grid: { display: false } },
+          y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1, font: { size: 11 } }, grid: { color: c.border } },
+        },
+      },
+    });
+    canvas.parentElement.style.height = '260px';
+  } catch (_) {
+    canvas.parentElement.innerHTML = `<p class="text-muted text-sm">Keine Anwesenheitsdaten verfügbar.</p>`;
   }
 }
 
