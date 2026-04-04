@@ -97,6 +97,7 @@ pub struct VehicleStats {
     pub in_maintenance:  i64,
     pub inspections_overdue: i64,
     pub inspections_soon:    i64,
+    pub open_defects:    i64,
 }
 
 // ── Fahrzeuge ─────────────────────────────────────────────────────────────────
@@ -388,12 +389,17 @@ pub async fn get_vehicle_stats(
          WHERE next_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '60 days'"
     ).fetch_one(&state.db).await?;
 
+    let open_defects: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM vehicle_defects WHERE status IN ('offen', 'in_bearbeitung')"
+    ).fetch_one(&state.db).await?;
+
     Ok(Json(VehicleStats {
         total,
         active,
         in_maintenance,
         inspections_overdue,
         inspections_soon,
+        open_defects,
     }))
 }
 

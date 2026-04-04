@@ -124,7 +124,7 @@ function buildShell() {
   ];
 
   const fahrzeugeItems = [
-    { page: 'vehicles', label: 'Fahrzeugübersicht', icon: '🚒' },
+    { page: 'vehicles', label: 'Übersicht', icon: '🚒' },
   ];
 
   const einsaetzeItems = [
@@ -167,7 +167,7 @@ function buildShell() {
 
         ${showModule('lager.read', 'lager')           ? buildNavItem('lager',           'Lager',    lagerItems)    : ''}
         ${showModule('personal', 'personal')           ? buildNavItem('personal',        'Personal', personalItems) : ''}
-        ${showModule('fahrzeuge', 'fahrzeuge')         ? buildNavItem('fahrzeuge',       'Fahrzeuge',fahrzeugeItems): ''}
+        ${showModule('fahrzeuge', 'fahrzeuge')         ? buildNavItem('fahrzeuge',       'Technik & Geräte',fahrzeugeItems): ''}
         ${showModule('einsatzberichte.read', 'einsatzberichte') ? buildNavItem('einsatzberichte', 'Einsätze', einsaetzeItems) : ''}
         ${showModule('verein', 'verein')               ? buildNavItem('verein',          'Verein',   vereinItems)   : ''}
 

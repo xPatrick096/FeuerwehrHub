@@ -15,7 +15,7 @@ const MODULE_LABELS = {
   lager:                     'Lager (Schreiben)',
   'lager.approve':           'Lager (Genehmigen)',
   personal:                  'Personal',
-  fahrzeuge:                 'Fahrzeuge',
+  fahrzeuge:                 'Technik & Geräte',
   'einsatzberichte.read':    'Einsatzberichte (Nur lesen)',
   einsatzberichte:           'Einsatzberichte (Schreiben)',
   'einsatzberichte.approve': 'Einsatzberichte (Genehmigen)',
@@ -1051,7 +1051,7 @@ const MODULE_DEFS = [
   { key: 'personal',        iconName: 'users',           label: 'Personal',        desc: 'Mitgliederverwaltung, Qualifikationen, Ehrungen' },
   { key: 'einsatzberichte', iconName: 'truck',           label: 'Einsatzberichte', desc: 'Einsatzberichte erfassen und verwalten' },
   { key: 'verein',          iconName: 'building',        label: 'Verein',          desc: 'Vorstandsverwaltung, Schwarzes Brett, Dokumentenablage, Briefkopf' },
-  { key: 'fahrzeuge',       iconName: 'car',             label: 'Fahrzeuge',       desc: 'Stammdaten, Fristen &amp; Prüfungen, Einsatzstatus' },
+  { key: 'fahrzeuge',       iconName: 'wrench',          label: 'Technik &amp; Geräte', desc: 'Fahrzeuge, Geräte, Fristen, Prüfungen, Checklisten' },
   { key: 'jugendfeuerwehr', iconName: 'users',           label: 'Jugendfeuerwehr', desc: 'JF-Mitglieder, Termine, Wettbewerbe',                  soon: true },
 ];
 

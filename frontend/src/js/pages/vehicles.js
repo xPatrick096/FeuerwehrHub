@@ -33,7 +33,7 @@ export async function renderVehicles() {
 
   content.innerHTML = `
     <div class="page-header">
-      <div><h2>Fahrzeuge</h2><p>Fuhrparkverwaltung</p></div>
+      <div><h2>Technik & Geräte</h2><p>Fahrzeuge, Geräte, Prüfungen & Checklisten</p></div>
       ${isAdmin ? `<button class="btn btn--primary" id="btn-new-vehicle">+ Neues Fahrzeug</button>` : ''}
     </div>
     <div id="vehicle-list-wrap"></div>

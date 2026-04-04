@@ -42,7 +42,7 @@ export async function renderHome() {
     <div class="widget-grid" id="widget-grid">
       <div id="vehicle-widget" class="widget-card widget-card--fahrzeuge" style="display:none">
         <div class="widget-card__header">
-          <h3>${icon('truck', 15)} Fahrzeuge</h3>
+          <h3>${icon('wrench', 15)} Technik & Geräte</h3>
           <a href="#/vehicles">Alle anzeigen →</a>
         </div>
         <div class="widget-card__body" id="vehicle-widget-content">
@@ -266,7 +266,7 @@ function openAnnouncementModal(ann, user, isAdmin) {
   document.getElementById('ann-title').focus();
 }
 
-// ── Fahrzeuge-Widget ──────────────────────────────────────────────────────────
+// ── Technik & Geräte Widget ───────────────────────────────────────────────────
 
 async function loadVehicleWidget() {
   const widget  = document.getElementById('vehicle-widget');
@@ -287,12 +287,15 @@ async function loadVehicleWidget() {
 
     const overdueColor = s.inspections_overdue > 0 ? 'var(--rot)' : 'var(--gruen)';
     const soonColor    = s.inspections_soon    > 0 ? 'var(--gelb)' : 'var(--gruen)';
+    const defectColor  = s.open_defects        > 0 ? 'var(--rot)' : 'var(--gruen)';
 
     content.innerHTML = `
       <div class="stat-tiles">
-        ${tile(s.active,              'Einsatzbereit',      'var(--gruen)')}
-        ${tile(s.inspections_overdue, 'Fristen überfällig', overdueColor)}
-        ${tile(s.inspections_soon,    'Fristen bald fällig',soonColor)}
+        ${tile(s.total,               'Fahrzeuge',           'var(--text)')}
+        ${tile(s.active,              'Einsatzbereit',       'var(--gruen)')}
+        ${tile(s.inspections_overdue, 'Fristen überfällig',  overdueColor)}
+        ${tile(s.inspections_soon,    'Fristen demnächst',   soonColor)}
+        ${s.open_defects !== undefined ? tile(s.open_defects, 'Offene Störungen', defectColor) : ''}
       </div>`;
   } catch (_) {
     widget.style.display = 'none';
