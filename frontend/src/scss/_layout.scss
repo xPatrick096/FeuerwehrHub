@@ -9,214 +9,194 @@
   height: 100%;
 }
 
-// ── Header ────────────────────────────────────────────────────────────────────
-.header {
-  height: $header-height;
+// ── Top Navigation ────────────────────────────────────────────────────────────
+.topnav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: $topnav-height;
   background: $bg-card;
-  backdrop-filter: blur(12px);
   border-bottom: 1px solid $border;
-  color: $text;
   display: flex;
   align-items: center;
-  padding: 0 $space-lg;
-  gap: $space-md;
-  flex-shrink: 0;
+  gap: 0;
+  padding: 0 $space-md;
   z-index: 100;
+  box-shadow: $schatten-sm;
 
-  &__emblem {
-    width: 38px;
-    height: 38px;
-    background: $rot-hell;
-    border: 1px solid $rot-border;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    flex-shrink: 0;
-    overflow: hidden;
-
-    img {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      padding: 4px;
-    }
-  }
-
-  &__title {
-    h1 {
-      font-size: $font-size-lg;
-      font-weight: 700;
-      color: $text;
-      letter-spacing: -0.01em;
-    }
-    p {
-      font-size: $font-size-xs;
-      color: $text-muted;
-      margin-top: 1px;
-    }
-  }
-
-  &__right {
-    margin-left: auto;
+  &__brand {
     display: flex;
     align-items: center;
     gap: $space-sm;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px 12px 6px 0;
+    margin-right: $space-sm;
+    border-right: 1px solid $border;
+    white-space: nowrap;
+  }
+
+  &__flame { font-size: 18px; line-height: 1; }
+
+  &__name {
+    font-size: $font-size-md;
+    font-weight: 600;
+    color: $text;
+  }
+
+  &__links {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex: 1;
+    overflow-x: auto;
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
+  }
+
+  &__link {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: $radius-md;
+    font-size: $font-size-sm;
+    font-weight: 500;
+    color: $text-muted;
+    white-space: nowrap;
+    transition: background $transition-fast, color $transition-fast;
+    position: relative;
+
+    &:hover {
+      background: $bg-card-hover;
+      color: $text;
+    }
+
+    &.active {
+      color: var(--accent, #{$rot});
+      background: color-mix(in srgb, var(--accent, #{$rot}) 8%, transparent);
+    }
+
+    &--admin { color: $lila; }
+
+    &--has-dropdown {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
   }
 
   &__user {
     display: flex;
     align-items: center;
-    gap: $space-xs;
+    gap: 10px;
+    flex-shrink: 0;
+    margin-left: $space-sm;
+    padding-left: 12px;
+    border-left: 1px solid $border;
+  }
+
+  &__username {
     font-size: $font-size-sm;
     color: $text-muted;
-    padding: 0 $space-sm;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 500;
+  }
+
+  &__user-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: $gruen;
+    flex-shrink: 0;
   }
 
   &__logout {
-    background: transparent;
+    background: none;
     border: 1px solid $border;
-    color: $text-muted;
-    padding: 6px $space-md;
-    border-radius: $radius-md;
     cursor: pointer;
+    padding: 4px 10px;
+    border-radius: $radius-sm;
     font-size: $font-size-sm;
-    font-weight: 600;
-    transition: all $transition-fast;
+    color: $text-muted;
+    transition: background $transition-fast, color $transition-fast, border-color $transition-fast;
+    white-space: nowrap;
 
     &:hover {
-      border-color: $rot;
-      color: $rot;
       background: $rot-hell;
+      color: $rot;
+      border-color: $rot-border;
     }
   }
 }
 
-// ── Body Layout ───────────────────────────────────────────────────────────────
-.body-layout {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-}
+.nav-caret { font-size: 10px; opacity: 0.7; }
 
-// ── Sidebar ───────────────────────────────────────────────────────────────────
-.sidebar {
-  width: $sidebar-width;
-  background: $bg;
-  border-right: 1px solid $border;
-  flex-shrink: 0;
-  overflow-y: auto;
-  padding: $space-sm 0 0;
-  display: flex;
-  flex-direction: column;
+// ── Dropdowns ─────────────────────────────────────────────────────────────────
+.nav-dropdown {
+  position: relative;
 
-  &__nav {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-  }
-
-  &__copyright {
-    padding: $space-md $space-lg;
-    border-top: 1px solid $border;
-    font-size: $font-size-2xs;
-    color: $text-subtle;
-    text-align: center;
-    letter-spacing: 0.02em;
+  &__menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    background: $bg-card;
+    border: 1px solid $border;
+    border-radius: $radius-lg;
+    box-shadow: $schatten-md;
+    min-width: 180px;
+    padding: 4px;
+    z-index: 200;
+    border-top: 3px solid var(--accent, #{$rot});
   }
 
   &__item {
-    display: flex;
-    align-items: center;
-    gap: $space-sm;
-    padding: 8px $space-sm 8px $space-md;
-    margin: 1px $space-sm 1px 0;
-    border-radius: 0 $radius-md $radius-md 0;
-    color: $text-muted;
-    cursor: pointer;
-    border: none;
-    border-left: 2px solid transparent;
-    background: none;
-    width: calc(100% - #{$space-sm});
+    display: block;
+    width: 100%;
     text-align: left;
-    font-size: $font-size-md;
-    font-weight: 500;
-    transition: all $transition-fast;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: $radius-sm;
+    font-size: $font-size-sm;
+    color: $text;
+    transition: background $transition-fast, color $transition-fast;
 
     &:hover {
+      background: $bg-card-hover;
       color: $text;
-      background: $bg-card;
-      border-left-color: $rot-border;
     }
 
     &.active {
-      color: $rot;
-      background: $rot-hell;
-      border-left-color: $rot;
-      font-weight: 600;
-    }
-
-    &__icon {
-      width: 18px;
-      height: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      color: inherit;
-
-      .icon svg { width: 16px; height: 16px; }
-    }
-  }
-
-  &__divider {
-    height: 1px;
-    background: $border;
-    margin: $space-xs $space-md;
-  }
-
-  &__module {
-    display: flex;
-    align-items: center;
-    gap: $space-sm;
-    padding: 10px $space-md 4px;
-    color: $text-subtle;
-    font-size: $font-size-2xs;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    user-select: none;
-
-    &::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: $border;
+      background: color-mix(in srgb, var(--accent, #{$rot}) 10%, transparent);
+      color: var(--accent, #{$rot});
+      font-weight: 500;
     }
   }
 }
 
 // ── Main Content ──────────────────────────────────────────────────────────────
-// Wird jetzt von Shell.svelte als #page-content bereitgestellt.
-// Padding und Scroll kommen von hier, damit alle Seiten einheitlich aussehen.
+.page-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding-top: $topnav-height;
+  min-height: 100vh;
+  overflow-y: auto;
+}
+
 #page-content {
   padding: $space-lg;
   background: $bg;
-  min-height: 100%;
+  flex: 1;
 }
 
 // Auth-Seiten (Login, Setup) brauchen kein Padding — zentrieren sich selbst
 #page-content:has(> .auth-page) {
   padding: 0;
-}
-
-// Legacy — wird nicht mehr gerendert, bleibt als Fallback
-.main-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: $space-lg;
-  background: $bg;
 }
 
 .page {
