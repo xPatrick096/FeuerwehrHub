@@ -73,21 +73,23 @@ function ddIcon(icon, module) {
 }
 
 function buildNavItem(moduleKey, label, items) {
-  // Single item → direct link (no dropdown)
-  if (items.length === 1) {
-    const item = items[0];
-    return `<button class="topnav__item${isActive_(item.page) ? ' active' : ''}" data-page="${item.page}">${label}</button>`;
+  const primaryPage = items[0].page;
+  const isActive = isModuleActive(moduleKey);
+  const extraItems = items.slice(1);
+
+  // No extra items → plain direct link
+  if (!extraItems.length) {
+    return `<button class="topnav__item${isActive_(primaryPage) ? ' active' : ''}" data-page="${primaryPage}">${label}</button>`;
   }
 
-  // Multiple items → dropdown
+  // Has extra items → direct link + dropdown arrow for secondary pages
   const col = MODULE_COLORS[moduleKey] || { c: 'var(--rot)', hell: 'var(--rot-hell)' };
   const isOpen = openDropdown === moduleKey;
-  const isActive = isModuleActive(moduleKey);
 
   return `
     <div class="topnav__dropdown-wrap" data-dropdown="${moduleKey}">
-      <button class="topnav__item topnav__item--dropdown${isActive ? ' active' : ''}${isOpen ? ' open' : ''}">
-        ${label}
+      <button class="topnav__item topnav__item--has-dd${isActive ? ' active' : ''}" data-page="${primaryPage}">
+        ${label}<span class="topnav__arrow${isOpen ? ' open' : ''}" data-dd-toggle="${moduleKey}"></span>
       </button>
       <div class="topnav__dropdown${isOpen ? ' open' : ''}">
         <div class="topnav__dropdown-label" style="color:${col.c}">${label}</div>
@@ -193,19 +195,7 @@ function rerender(activePage) {
 }
 
 function bindEvents(app) {
-  // Brand + direkte Nav-Links (nicht in Dropdown)
-  app.querySelectorAll('[data-page]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (!btn.closest('.topnav__dropdown') && !btn.closest('.topnav__dropdown-wrap') || btn.classList.contains('topnav__item')) {
-        if (!btn.classList.contains('topnav__item--dropdown')) {
-          openDropdown = null;
-          navigate(`#/${btn.dataset.page}`);
-        }
-      }
-    });
-  });
-
-  // Brand-Button separat
+  // Brand-Button
   const brand = app.querySelector('.app-header__brand');
   if (brand) {
     brand.addEventListener('click', () => {
@@ -214,17 +204,24 @@ function bindEvents(app) {
     });
   }
 
-  // Dropdown-Trigger
-  app.querySelectorAll('.topnav__dropdown-wrap').forEach(wrap => {
-    const name = wrap.dataset.dropdown;
-    const trigger = wrap.querySelector('.topnav__item--dropdown');
-    if (trigger) {
-      trigger.addEventListener('click', (e) => {
-        e.stopPropagation();
-        openDropdown = openDropdown === name ? null : name;
-        rerender(currentPage);
-      });
-    }
+  // Direkte Nav-Links (ohne Dropdown)
+  app.querySelectorAll('.topnav__item[data-page]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      // Klick auf den Pfeil → Dropdown togglen, nicht navigieren
+      if (e.target.closest('.topnav__arrow')) return;
+      openDropdown = null;
+      navigate(`#/${btn.dataset.page}`);
+    });
+  });
+
+  // Dropdown-Arrow Toggles
+  app.querySelectorAll('.topnav__arrow[data-dd-toggle]').forEach(arrow => {
+    arrow.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const name = arrow.dataset.ddToggle;
+      openDropdown = openDropdown === name ? null : name;
+      rerender(currentPage);
+    });
   });
 
   // Dropdown-Items
