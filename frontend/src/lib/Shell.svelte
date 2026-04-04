@@ -64,6 +64,8 @@
   $: anyModuleEnabled = Object.values(modules).some(v => v);
   function showModule(minPerm, moduleKey) {
     if (!canAccess(user, minPerm)) return false;
+    // Admins sehen immer alle Module (auch wenn im Admin-Panel deaktiviert)
+    if (user?.role === 'admin' || user?.role === 'superuser') return true;
     return !anyModuleEnabled || !!modules[moduleKey];
   }
 </script>
