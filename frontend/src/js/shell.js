@@ -72,7 +72,14 @@ function ddIcon(icon, module) {
   return `<span class="topnav__dd-item__icon" style="--item-accent-hell:${col.hell}">${icon}</span>`;
 }
 
-function buildDropdown(moduleKey, label, items) {
+function buildNavItem(moduleKey, label, items) {
+  // Single item → direct link (no dropdown)
+  if (items.length === 1) {
+    const item = items[0];
+    return `<button class="topnav__item${isActive_(item.page) ? ' active' : ''}" data-page="${item.page}">${label}</button>`;
+  }
+
+  // Multiple items → dropdown
   const col = MODULE_COLORS[moduleKey] || { c: 'var(--rot)', hell: 'var(--rot-hell)' };
   const isOpen = openDropdown === moduleKey;
   const isActive = isModuleActive(moduleKey);
@@ -156,11 +163,11 @@ function buildShell() {
 
         <div class="topnav__sep"></div>
 
-        ${showModule('lager.read', 'lager')           ? buildDropdown('lager',           'Lager',    lagerItems)    : ''}
-        ${showModule('personal', 'personal')           ? buildDropdown('personal',        'Personal', personalItems) : ''}
-        ${showModule('fahrzeuge', 'fahrzeuge')         ? buildDropdown('fahrzeuge',       'Fahrzeuge',fahrzeugeItems): ''}
-        ${showModule('einsatzberichte.read', 'einsatzberichte') ? buildDropdown('einsatzberichte', 'Einsätze', einsaetzeItems) : ''}
-        ${showModule('verein', 'verein')               ? buildDropdown('verein',          'Verein',   vereinItems)   : ''}
+        ${showModule('lager.read', 'lager')           ? buildNavItem('lager',           'Lager',    lagerItems)    : ''}
+        ${showModule('personal', 'personal')           ? buildNavItem('personal',        'Personal', personalItems) : ''}
+        ${showModule('fahrzeuge', 'fahrzeuge')         ? buildNavItem('fahrzeuge',       'Fahrzeuge',fahrzeugeItems): ''}
+        ${showModule('einsatzberichte.read', 'einsatzberichte') ? buildNavItem('einsatzberichte', 'Einsätze', einsaetzeItems) : ''}
+        ${showModule('verein', 'verein')               ? buildNavItem('verein',          'Verein',   vereinItems)   : ''}
 
         <div class="topnav__spacer"></div>
 
