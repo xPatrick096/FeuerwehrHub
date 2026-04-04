@@ -113,12 +113,12 @@ export async function renderIncidents() {
 
 async function _load() {
   const wrap = document.getElementById('incident-table-wrap');
-  wrap.innerHTML = `<p style="color:var(--text-muted);font-size:13px">Lade...</p>`;
+  wrap.innerHTML = `<p class="text-muted text-sm">Lade...</p>`;
   try {
     const data = await api.getIncidents(_filters);
     _renderTable(data);
   } catch (e) {
-    wrap.innerHTML = `<p style="color:#ff8a80;font-size:13px">Fehler: ${esc(e.message)}</p>`;
+    wrap.innerHTML = `<p class="error-msg">Fehler: ${esc(e.message)}</p>`;
   }
 }
 
@@ -133,12 +133,12 @@ async function _loadStats() {
         <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${l}</div>
       </div>`;
     row.innerHTML =
-      tile(s.total,     'Gesamt',         '#e6edf3') +
-      tile(s.brand,     'Brand',          '#e63022') +
-      tile(s.thl,       'THL',            '#f0a500') +
-      tile(s.fehlalarm, 'Fehlalarm',      '#7d8590') +
-      tile(s.sonstiges, 'Sonstiges',      '#7d8590') +
-      tile(s.entwurf,   'Entwürfe offen', s.entwurf > 0 ? '#f0a500' : '#3fb950');
+      tile(s.total,     'Gesamt',         'var(--text)') +
+      tile(s.brand,     'Brand',          'var(--rot)') +
+      tile(s.thl,       'THL',            'var(--gelb)') +
+      tile(s.fehlalarm, 'Fehlalarm',      'var(--text-muted)') +
+      tile(s.sonstiges, 'Sonstiges',      'var(--text-muted)') +
+      tile(s.entwurf,   'Entwürfe offen', s.entwurf > 0 ? 'var(--gelb)' : 'var(--gruen)');
   } catch (_) {}
 }
 
@@ -168,7 +168,7 @@ function _renderTable({ items, total, page, per_page }) {
         <tbody>
           ${items.map(r => `
             <tr>
-              <td style="font-size:12px;color:var(--text-muted)">${esc(r.incident_number || '—')}</td>
+              <td class="text-muted text-xs">${esc(r.incident_number || '—')}</td>
               <td>${_fmtDate(r.incident_date)}</td>
               <td>${esc(r.incident_type_label)}</td>
               <td>${esc(r.location)}</td>
@@ -194,7 +194,7 @@ function _renderTable({ items, total, page, per_page }) {
     ${totalPages > 1 ? `
       <div style="display:flex;justify-content:center;gap:8px;margin-top:16px;align-items:center">
         <button class="btn btn--outline btn--sm" id="pg-prev" ${page <= 1 ? 'disabled' : ''}>← Zurück</button>
-        <span style="font-size:13px;color:var(--text-muted)">Seite ${page} / ${totalPages} (${total})</span>
+        <span class="text-muted text-sm">Seite ${page} / ${totalPages} (${total})</span>
         <button class="btn btn--outline btn--sm" id="pg-next" ${page >= totalPages ? 'disabled' : ''}>Weiter →</button>
       </div>` : ''}
   `;
@@ -263,7 +263,7 @@ async function _openModal(id, viewOnly) {
 
     footer.innerHTML = `
       ${canEdit    ? `<button class="btn btn--primary" id="btn-modal-edit">Bearbeiten</button>` : ''}
-      ${canRelease ? `<button class="btn btn--primary" id="btn-release" style="background:#2ea043">Freigeben</button>` : ''}
+      ${canRelease ? `<button class="btn btn--primary" id="btn-release" style="background:var(--gruen)">Freigeben</button>` : ''}
       ${canArchive ? `<button class="btn btn--outline" id="btn-archive">Archivieren</button>` : ''}
       <button class="btn btn--outline" id="btn-modal-close">Schließen</button>
     `;

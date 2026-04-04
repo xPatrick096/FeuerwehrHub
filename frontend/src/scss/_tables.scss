@@ -11,7 +11,7 @@ table {
 
 th {
   background: $bg-card-hover;
-  padding: 10px 12px;
+  padding: 10px 16px;
   text-align: left;
   font-size: $font-size-xs;
   font-weight: 700;
@@ -23,10 +23,11 @@ th {
 }
 
 td {
-  padding: 10px 12px;
+  padding: 10px 16px;
   border-bottom: 1px solid $border;
   vertical-align: middle;
   color: $text;
+  font-size: $font-size-sm;
 
   &:last-child { white-space: nowrap; }
 }

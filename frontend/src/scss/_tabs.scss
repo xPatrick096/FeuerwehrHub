@@ -5,6 +5,8 @@
   gap: 2px;
   margin-bottom: $space-lg;
   border-bottom: 1px solid $border;
+  padding-bottom: 0;
+  flex-wrap: wrap;
 }
 
 .tab-btn {
@@ -18,9 +20,18 @@
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
   transition: all $transition-fast;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
 
   &:hover { color: $text; }
-  &--active { color: $rot; border-bottom-color: $rot; }
+
+  &--active {
+    color: var(--accent, #{$rot});
+    border-bottom-color: var(--accent, #{$rot});
+  }
 }
 
 .tab-panel { display: block; }

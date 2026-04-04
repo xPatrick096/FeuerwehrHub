@@ -111,7 +111,7 @@ async function refreshPosts(isAdmin) {
       <div class="card" style="margin-bottom:12px">
         <div class="card__header">
           <span>
-            ${p.pinned ? `<span style="color:#d29922;margin-right:6px">${icon('pin', 13)}</span>` : ''}
+            ${p.pinned ? `<span style="color:var(--gelb-dunkel);margin-right:6px">${icon('pin', 13)}</span>` : ''}
             ${esc(p.title)}
             ${p.visibility === 'vorstand' ? `<span class="badge badge--superuser" style="margin-left:8px">Nur Vorstand</span>` : ''}
           </span>
@@ -937,7 +937,7 @@ async function printJahresversammlungsliste() {
 
   const STATUS_LABELS = { aktiv: 'Aktiv', passiv: 'Passiv', ehren: 'Ehrenmitglied', jugend: 'Jugend' };
   const BEITRAG_LABELS = { bezahlt: '✓ Bezahlt', offen: '⚠ Offen', befreit: '– Befreit' };
-  const BEITRAG_COLORS = { bezahlt: '#2d6a4f', offen: '#7d4e00', befreit: '#444' };
+  const BEITRAG_COLORS = { bezahlt: 'var(--gruen-dunkel)', offen: 'var(--gelb-dunkel)', befreit: 'var(--text-subtle)' };
 
   const mitglieder = _mitgliederCache
     .filter(m => !m.archiviert)
@@ -1010,15 +1010,15 @@ async function loadEhrungen() {
       </div>
       <div class="stats-row">
         <div class="stat-card">
-          <div class="stat-card__number" style="color:#d29922">${jubilare.length}</div>
+          <div class="stat-card__number" style="color:var(--gelb-dunkel)">${jubilare.length}</div>
           <div class="stat-card__label">Anstehende Jubiläen</div>
         </div>
         <div class="stat-card">
-          <div class="stat-card__number" style="color:${ablaufend.filter(q => q.tage_verbleibend <= 30).length > 0 ? '#e63022' : '#d29922'}">${ablaufend.length}</div>
+          <div class="stat-card__number" style="color:${ablaufend.filter(q => q.tage_verbleibend <= 30).length > 0 ? 'var(--rot)' : 'var(--gelb-dunkel)'}">${ablaufend.length}</div>
           <div class="stat-card__label">Ablaufende Qualifikationen</div>
         </div>
         <div class="stat-card">
-          <div class="stat-card__number" style="color:${geburtstage.length > 0 ? '#3fb950' : '#7d8590'}">${geburtstage.length}</div>
+          <div class="stat-card__number" style="color:${geburtstage.length > 0 ? 'var(--gruen)' : 'var(--text-muted)'}">${geburtstage.length}</div>
           <div class="stat-card__label">Geburtstage (60 Tage)</div>
         </div>
       </div>
@@ -1433,7 +1433,7 @@ async function openInventarDetail(item, isAdmin) {
         </div>
 
         ${aktive.length ? `
-        <div class="card" style="margin-bottom:16px;border-color:#e63022">
+        <div class="card" style="margin-bottom:16px;border-color:var(--rot)">
           <div class="card__body">
             <strong>Aktuell ausgeliehen an:</strong> ${esc(aktive[0].ausgeliehen_an)}<br>
             <span class="text-muted text-sm">Seit ${aktive[0].ausgabe_datum}${aktive[0].rueckgabe_soll ? ` · Soll zurück: ${aktive[0].rueckgabe_soll}` : ''}</span>
@@ -2086,7 +2086,7 @@ function renderVeranstaltungenList(isAdmin) {
       ${isAdmin ? `<button class="btn btn--primary btn--sm" id="btn-new-event">+ Neu</button>` : ''}
     </div>
 
-    <h4 style="margin:0 0 .5rem;color:var(--text-muted, #7d8590)">Bevorstehend</h4>
+    <h4 style="margin:0 0 .5rem;color:var(--text-muted)">Bevorstehend</h4>
     ${upcoming.length === 0 ? `<p class="empty-state">Keine bevorstehenden Veranstaltungen</p>` : `
     <div class="table-wrapper">
       <table class="data-table">
@@ -2100,7 +2100,7 @@ function renderVeranstaltungenList(isAdmin) {
       </table>
     </div>`}
 
-    <h4 style="margin:1.5rem 0 .5rem;color:var(--text-muted, #7d8590)">Vergangen</h4>
+    <h4 style="margin:1.5rem 0 .5rem;color:var(--text-muted)">Vergangen</h4>
     ${past.length === 0 ? `<p class="empty-state">Keine vergangenen Veranstaltungen</p>` : `
     <div class="table-wrapper">
       <table class="data-table">
@@ -2767,15 +2767,15 @@ async function refreshBuchungen(isAdmin, filter = {}) {
       <div class="stats-row" style="margin-bottom:1.5rem">
         <div class="stat-card">
           <div class="stat-card__label">Einnahmen</div>
-          <div class="stat-card__value" style="color:var(--gruen, #3fb950)">${fmtEuro(summary.einnahmen)}</div>
+          <div class="stat-card__value" style="color:var(--gruen)">${fmtEuro(summary.einnahmen)}</div>
         </div>
         <div class="stat-card">
           <div class="stat-card__label">Ausgaben</div>
-          <div class="stat-card__value" style="color:#ff8a80">${fmtEuro(summary.ausgaben)}</div>
+          <div class="stat-card__value" style="color:var(--error)">${fmtEuro(summary.ausgaben)}</div>
         </div>
         <div class="stat-card">
           <div class="stat-card__label">Saldo</div>
-          <div class="stat-card__value" style="color:${summary.saldo >= 0 ? 'var(--gruen, #3fb950)' : '#ff8a80'}">${fmtEuro(summary.saldo)}</div>
+          <div class="stat-card__value" style="color:${summary.saldo >= 0 ? 'var(--gruen)' : '#ff8a80'}">${fmtEuro(summary.saldo)}</div>
         </div>
       </div>
 
@@ -2791,12 +2791,12 @@ async function refreshBuchungen(isAdmin, filter = {}) {
               <td>${new Date(b.datum).toLocaleDateString('de-DE')}</td>
               <td>
                 ${esc(b.bezeichnung)}
-                ${b.mitglied_name ? `<br><small style="color:#7d8590">${esc(b.mitglied_name)}</small>` : ''}
-                ${b.notiz ? `<br><small style="color:#7d8590">${esc(b.notiz)}</small>` : ''}
+                ${b.mitglied_name ? `<br><small style="color:var(--text-muted)">${esc(b.mitglied_name)}</small>` : ''}
+                ${b.notiz ? `<br><small style="color:var(--text-muted)">${esc(b.notiz)}</small>` : ''}
               </td>
               <td>${b.kategorie_name ? esc(b.kategorie_name) : '—'}</td>
               <td><span class="badge ${b.typ === 'einnahme' ? 'badge--green' : 'badge--red'}">${b.typ === 'einnahme' ? 'Einnahme' : 'Ausgabe'}</span></td>
-              <td style="font-weight:600;color:${b.typ === 'einnahme' ? '#3fb950' : '#ff8a80'}">${fmtEuro(b.betrag)}</td>
+              <td style="font-weight:600;color:${b.typ === 'einnahme' ? 'var(--gruen)' : 'var(--error)'}">${fmtEuro(b.betrag)}</td>
               <td>${b.beleg_nr ? esc(b.beleg_nr) : '—'}</td>
               <td style="white-space:nowrap">
                 ${isAdmin ? `
@@ -2955,10 +2955,10 @@ async function refreshBeitraege(isAdmin, filter = {}) {
       </div>
 
       <div class="stats-row" style="margin-bottom:1.5rem">
-        <div class="stat-card"><div class="stat-card__label">Offen</div><div class="stat-card__value" style="color:#ffb74d">${offen}</div></div>
-        <div class="stat-card"><div class="stat-card__label">Bezahlt</div><div class="stat-card__value" style="color:#3fb950">${bezahlt}</div></div>
-        <div class="stat-card"><div class="stat-card__label">Befreit</div><div class="stat-card__value" style="color:#7d8590">${befreit}</div></div>
-        <div class="stat-card"><div class="stat-card__label">Eingang</div><div class="stat-card__value" style="color:#3fb950">${fmtEuro(eingang)} / ${fmtEuro(summe)}</div></div>
+        <div class="stat-card"><div class="stat-card__label">Offen</div><div class="stat-card__value" style="color:var(--gelb)">${offen}</div></div>
+        <div class="stat-card"><div class="stat-card__label">Bezahlt</div><div class="stat-card__value" style="color:var(--gruen)">${bezahlt}</div></div>
+        <div class="stat-card"><div class="stat-card__label">Befreit</div><div class="stat-card__value" style="color:var(--text-muted)">${befreit}</div></div>
+        <div class="stat-card"><div class="stat-card__label">Eingang</div><div class="stat-card__value" style="color:var(--gruen)">${fmtEuro(eingang)} / ${fmtEuro(summe)}</div></div>
       </div>
 
       ${_beitraegeCache.length === 0 ? '<p class="empty-state">Keine Beiträge gefunden</p>' : `
@@ -3107,7 +3107,7 @@ function openGenerierModal(isAdmin) {
         <button class="modal__close" id="close-gen">&times;</button>
       </div>
       <div class="modal__body">
-        <p style="color:#7d8590;font-size:13px;margin:0 0 1rem">
+        <p style="color:var(--text-muted);font-size:13px;margin:0 0 1rem">
           Erstellt Beitragseinträge für alle aktiven Mitglieder die noch keinen Eintrag für das gewählte Jahr haben.
         </p>
         <div class="form-grid">
@@ -3251,7 +3251,7 @@ async function loadSchreibenEditor() {
       <div>
         <h3 style="margin:0 0 1rem">Vorschau</h3>
         <div id="schreiben-preview" class="schreiben-preview">
-          <p style="color:#7d8590;font-size:13px">Felder ausfüllen und auf Vorschau klicken</p>
+          <p style="color:var(--text-muted);font-size:13px">Felder ausfüllen und auf Vorschau klicken</p>
         </div>
       </div>
     </div>
@@ -3329,7 +3329,7 @@ async function loadSchreibenEditor() {
 async function renderJahresbericht(jahr) {
   const el = document.getElementById('jb-content');
   if (!el) return;
-  el.innerHTML = `<p style="color:#7d8590">Lade Daten...</p>`;
+  el.innerHTML = `<p style="color:var(--text-muted)">Lade Daten...</p>`;
   try {
     const [summary, buchungen, beitraege, mitglieder, events, einsatzStats] = await Promise.all([
       api.getFinanzSummary({ jahr }),
@@ -3352,24 +3352,24 @@ async function renderJahresbericht(jahr) {
         </div>
 
         <h2 style="margin:0 0 .25rem">Jahresbericht ${jahr}</h2>
-        <p style="color:#7d8590;font-size:13px;margin:0 0 2rem">Erstellt am ${new Date().toLocaleDateString('de-DE')}</p>
+        <p style="color:var(--text-muted);font-size:13px;margin:0 0 2rem">Erstellt am ${new Date().toLocaleDateString('de-DE')}</p>
 
-        <h3 style="margin:0 0 .75rem;border-bottom:1px solid var(--border,#21273d);padding-bottom:.5rem">Mitglieder</h3>
+        <h3 style="margin:0 0 .75rem;border-bottom:1px solid var(--border);padding-bottom:.5rem">Mitglieder</h3>
         <div class="stats-row" style="margin-bottom:2rem">
           <div class="stat-card"><div class="stat-card__label">Aktive Mitglieder</div><div class="stat-card__value">${aktiveMitglieder.length}</div></div>
           <div class="stat-card"><div class="stat-card__label">Gesamt</div><div class="stat-card__value">${(mitglieder||[]).filter(m=>!m.archiviert).length}</div></div>
         </div>
 
         ${einsatzStats ? `
-        <h3 style="margin:0 0 .75rem;border-bottom:1px solid var(--border,#21273d);padding-bottom:.5rem">Einsätze ${jahr}</h3>
+        <h3 style="margin:0 0 .75rem;border-bottom:1px solid var(--border);padding-bottom:.5rem">Einsätze ${jahr}</h3>
         <div class="stats-row" style="margin-bottom:2rem">
           <div class="stat-card"><div class="stat-card__label">Gesamt</div><div class="stat-card__value">${einsatzStats.total ?? 0}</div></div>
-          <div class="stat-card"><div class="stat-card__label">Brand</div><div class="stat-card__value" style="color:#e63022">${einsatzStats.brand ?? 0}</div></div>
+          <div class="stat-card"><div class="stat-card__label">Brand</div><div class="stat-card__value" style="color:var(--rot)">${einsatzStats.brand ?? 0}</div></div>
           <div class="stat-card"><div class="stat-card__label">THL</div><div class="stat-card__value">${einsatzStats.thl ?? 0}</div></div>
           <div class="stat-card"><div class="stat-card__label">Sonstige</div><div class="stat-card__value">${einsatzStats.sonstige ?? 0}</div></div>
         </div>` : ''}
 
-        <h3 style="margin:0 0 .75rem;border-bottom:1px solid var(--border,#21273d);padding-bottom:.5rem">Veranstaltungen ${jahr}</h3>
+        <h3 style="margin:0 0 .75rem;border-bottom:1px solid var(--border);padding-bottom:.5rem">Veranstaltungen ${jahr}</h3>
         <div class="stats-row" style="margin-bottom:2rem">
           <div class="stat-card"><div class="stat-card__label">Gesamt</div><div class="stat-card__value">${eventsJahr.length}</div></div>
           ${Object.entries({ uebung:'Übungen', versammlung:'Versammlungen', fest:'Feste', arbeitsdienst:'Arbeitsdienste' }).map(([k,v]) => {
@@ -3378,15 +3378,15 @@ async function renderJahresbericht(jahr) {
           }).join('')}
         </div>
 
-        <h3 style="margin:0 0 .75rem;border-bottom:1px solid var(--border,#21273d);padding-bottom:.5rem">Finanzen ${jahr}</h3>
+        <h3 style="margin:0 0 .75rem;border-bottom:1px solid var(--border);padding-bottom:.5rem">Finanzen ${jahr}</h3>
         <div class="stats-row" style="margin-bottom:1rem">
-          <div class="stat-card"><div class="stat-card__label">Einnahmen</div><div class="stat-card__value" style="color:#3fb950">${fmtEuro(summary.einnahmen)}</div></div>
-          <div class="stat-card"><div class="stat-card__label">Ausgaben</div><div class="stat-card__value" style="color:#ff8a80">${fmtEuro(summary.ausgaben)}</div></div>
-          <div class="stat-card"><div class="stat-card__label">Saldo</div><div class="stat-card__value" style="color:${summary.saldo >= 0 ? '#3fb950' : '#ff8a80'}">${fmtEuro(summary.saldo)}</div></div>
+          <div class="stat-card"><div class="stat-card__label">Einnahmen</div><div class="stat-card__value" style="color:var(--gruen)">${fmtEuro(summary.einnahmen)}</div></div>
+          <div class="stat-card"><div class="stat-card__label">Ausgaben</div><div class="stat-card__value" style="color:var(--error)">${fmtEuro(summary.ausgaben)}</div></div>
+          <div class="stat-card"><div class="stat-card__label">Saldo</div><div class="stat-card__value" style="color:${summary.saldo >= 0 ? 'var(--gruen)' : 'var(--error)'}">${fmtEuro(summary.saldo)}</div></div>
         </div>
 
         ${beitraege.length > 0 ? `
-        <p style="color:#7d8590;font-size:13px;margin:.5rem 0 2rem">Mitgliedsbeiträge: ${beitragBezahlt} bezahlt, ${beitragOffen} ausstehend</p>` : ''}
+        <p style="color:var(--text-muted);font-size:13px;margin:.5rem 0 2rem">Mitgliedsbeiträge: ${beitragBezahlt} bezahlt, ${beitragOffen} ausstehend</p>` : ''}
 
         ${buchungen.length > 0 ? `
         <h4 style="margin:0 0 .5rem">Buchungsübersicht</h4>
@@ -3400,7 +3400,7 @@ async function renderJahresbericht(jahr) {
                 <td>${esc(b.bezeichnung)}</td>
                 <td>${b.kategorie_name ? esc(b.kategorie_name) : '—'}</td>
                 <td>${b.typ === 'einnahme' ? 'Einnahme' : 'Ausgabe'}</td>
-                <td style="color:${b.typ==='einnahme'?'#3fb950':'#ff8a80'}">${fmtEuro(b.betrag)}</td>
+                <td style="color:${b.typ==='einnahme'?'var(--gruen)':'var(--error)'}">${fmtEuro(b.betrag)}</td>
               </tr>`).join('')}
             </tbody>
           </table>

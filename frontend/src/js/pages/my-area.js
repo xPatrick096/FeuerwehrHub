@@ -26,12 +26,12 @@ export async function renderMyArea() {
       </div>
     </div>
 
-    <div class="tab-bar" style="display:flex;gap:4px;margin-bottom:24px;border-bottom:1px solid var(--border);padding-bottom:0">
-      <button class="tab-btn active" data-tab="profile"        style="padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text-muted);cursor:pointer;font-size:13px;font-weight:600;margin-bottom:-1px">${icon('user', 14)} Mein Profil</button>
-      <button class="tab-btn"        data-tab="qualifications" style="padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text-muted);cursor:pointer;font-size:13px;font-weight:600;margin-bottom:-1px">${icon('graduation-cap', 14)} Qualifikationen</button>
-      <button class="tab-btn"        data-tab="honors"         style="padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text-muted);cursor:pointer;font-size:13px;font-weight:600;margin-bottom:-1px">${icon('award', 14)} Ehrungen</button>
-      <button class="tab-btn"        data-tab="equipment"      style="padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text-muted);cursor:pointer;font-size:13px;font-weight:600;margin-bottom:-1px">${icon('wrench', 14)} Ausrüstung</button>
-      <button class="tab-btn"        data-tab="appointments"   style="padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text-muted);cursor:pointer;font-size:13px;font-weight:600;margin-bottom:-1px">${icon('calendar', 14)} Termine</button>
+    <div class="tab-bar">
+      <button class="tab-btn tab-btn--active" data-tab="profile">${icon('user', 14)} Mein Profil</button>
+      <button class="tab-btn" data-tab="qualifications">${icon('graduation-cap', 14)} Qualifikationen</button>
+      <button class="tab-btn" data-tab="honors">${icon('award', 14)} Ehrungen</button>
+      <button class="tab-btn" data-tab="equipment">${icon('wrench', 14)} Ausrüstung</button>
+      <button class="tab-btn" data-tab="appointments">${icon('calendar', 14)} Termine</button>
     </div>
 
     <div id="tab-profile"></div>
@@ -44,22 +44,12 @@ export async function renderMyArea() {
   // Tab-Logik
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.tab-btn').forEach(b => {
-        b.style.color = '#7d8590';
-        b.style.borderBottomColor = 'transparent';
-      });
-      btn.style.color = '#e6edf3';
-      btn.style.borderBottomColor = '#e63022';
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('tab-btn--active'));
+      btn.classList.add('tab-btn--active');
       document.querySelectorAll('[id^="tab-"]').forEach(t => t.style.display = 'none');
       document.getElementById(`tab-${btn.dataset.tab}`).style.display = 'block';
     });
   });
-  // Ersten Tab aktiv stylen
-  const firstTab = document.querySelector('.tab-btn.active');
-  if (firstTab) {
-    firstTab.style.color = '#e6edf3';
-    firstTab.style.borderBottomColor = '#e63022';
-  }
 
   loadProfileTab(user);
   loadQualificationsTab();
@@ -73,13 +63,13 @@ export async function renderMyArea() {
 
 async function loadProfileTab(user) {
   const wrap = document.getElementById('tab-profile');
-  wrap.innerHTML = '<p style="color:var(--text-muted);font-size:13px">Lade...</p>';
+  wrap.innerHTML = '<p class="text-muted text-sm">Lade...</p>';
 
   try {
     const profile = await api.getMyProfile();
 
     const updatedByNotice = (profile?.updated_by_name && profile?.updated_by_id !== user?.id)
-      ? `<div style="background:#1c2335;border:1px solid #f0a500;border-radius:8px;padding:10px 14px;font-size:12px;color:#f0a500;margin-bottom:12px">
+      ? `<div class="alert-warning">
            Zuletzt aktualisiert von ${esc(profile.updated_by_name)}
          </div>`
       : '';
@@ -100,7 +90,7 @@ async function loadProfileTab(user) {
               <input type="text" value="${esc(user?.display_name || '')}" disabled style="opacity:0.5" />
             </div>
           </div>
-          <p style="font-size:12px;color:var(--text-muted);margin-top:8px">Benutzername und Anzeigename können unter <a href="#/settings" style="color:#e63022">Einstellungen</a> geändert werden.</p>
+          <p class="text-muted text-xs" style="margin-top:8px">Benutzername und Anzeigename können unter <a href="#/settings" style="color:var(--rot)">Einstellungen</a> geändert werden.</p>
         </div>
       </div>
 
@@ -130,7 +120,7 @@ async function loadProfileTab(user) {
       <div class="card" style="max-width:560px;margin-top:16px">
         <div class="card__header">Notfallkontakte</div>
         <div class="card__body">
-          <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">
+          <p class="text-muted text-sm" style="margin-bottom:16px">
             Werden im Einsatzfall benötigt — werden nur von Führungskräften eingesehen.
           </p>
           <div id="emergency-contacts-list"></div>
@@ -162,7 +152,7 @@ async function loadProfileTab(user) {
     });
 
   } catch (e) {
-    wrap.innerHTML = `<p style="color:#ff8a80">${esc(e.message)}</p>`;
+    wrap.innerHTML = `<p class="error-msg">${esc(e.message)}</p>`;
   }
 }
 
@@ -180,12 +170,9 @@ async function renderEmergencyContacts() {
 
     listEl.innerHTML = contacts.map(c => `
       <div class="ec-row" data-id="${c.id}" style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-bottom:8px;align-items:center">
-        <input type="text" class="ec-name" value="${esc(c.name)}" placeholder="Name" maxlength="100"
-          style="background:var(--bg-card-hover);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:6px;font-size:13px" />
-        <input type="tel" class="ec-phone" value="${esc(c.phone)}" placeholder="Telefon" maxlength="30"
-          style="background:var(--bg-card-hover);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:6px;font-size:13px" />
-        <input type="text" class="ec-rel" value="${esc(c.relationship || '')}" placeholder="Beziehung (optional)" maxlength="100"
-          style="background:var(--bg-card-hover);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:6px;font-size:13px" />
+        <input type="text" class="ec-name field" value="${esc(c.name)}" placeholder="Name" maxlength="100" />
+        <input type="tel" class="ec-phone field" value="${esc(c.phone)}" placeholder="Telefon" maxlength="30" />
+        <input type="text" class="ec-rel field" value="${esc(c.relationship || '')}" placeholder="Beziehung (optional)" maxlength="100" />
         <div class="btn-group" style="flex-shrink:0">
           <button class="btn btn--primary btn--sm ec-save" data-id="${c.id}">Speichern</button>
           <button class="btn btn--danger btn--sm ec-delete" data-id="${c.id}">Löschen</button>
@@ -195,7 +182,7 @@ async function renderEmergencyContacts() {
 
     bindEmergencyContactActions();
   } catch (e) {
-    listEl.innerHTML = `<p style="color:#ff8a80">${esc(e.message)}</p>`;
+    listEl.innerHTML = `<p class="error-msg">${esc(e.message)}</p>`;
   }
 }
 
@@ -210,12 +197,9 @@ function addEmergencyContactRow(existingId) {
   row.dataset.id = tmpId;
   row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-bottom:8px;align-items:center';
   row.innerHTML = `
-    <input type="text" class="ec-name" value="" placeholder="Name" maxlength="100"
-      style="background:var(--bg-card-hover);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:6px;font-size:13px" />
-    <input type="tel" class="ec-phone" value="" placeholder="Telefon" maxlength="30"
-      style="background:var(--bg-card-hover);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:6px;font-size:13px" />
-    <input type="text" class="ec-rel" value="" placeholder="Beziehung (optional)" maxlength="100"
-      style="background:var(--bg-card-hover);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:6px;font-size:13px" />
+    <input type="text" class="ec-name field" value="" placeholder="Name" maxlength="100" />
+    <input type="tel" class="ec-phone field" value="" placeholder="Telefon" maxlength="30" />
+    <input type="text" class="ec-rel field" value="" placeholder="Beziehung (optional)" maxlength="100" />
     <div class="btn-group" style="flex-shrink:0">
       <button class="btn btn--primary btn--sm ec-save" data-id="${tmpId}">Speichern</button>
       <button class="btn btn--danger btn--sm ec-delete" data-id="${tmpId}">Löschen</button>
@@ -287,7 +271,7 @@ function bindEmergencyContactActions() {
 
 async function loadQualificationsTab() {
   const wrap = document.getElementById('tab-qualifications');
-  wrap.innerHTML = '<p style="color:var(--text-muted);font-size:13px">Lade...</p>';
+  wrap.innerHTML = '<p class="text-muted text-sm">Lade...</p>';
 
   try {
     const [qualifications, settings] = await Promise.all([
@@ -302,7 +286,7 @@ async function loadQualificationsTab() {
       wrap.innerHTML = `
         <div class="card">
           <div class="card__body">
-            <p style="color:var(--text-muted);font-size:13px">Noch keine Qualifikationen hinterlegt. Der Wehrleiter kann diese im Personal-Modul eintragen.</p>
+            <p class="text-muted text-sm">Noch keine Qualifikationen hinterlegt. Der Wehrleiter kann diese im Personal-Modul eintragen.</p>
           </div>
         </div>`;
       return;
@@ -312,14 +296,14 @@ async function loadQualificationsTab() {
       const { statusDot, label, daysLeft } = expiryStatus(q.expires_at, warnDays, today);
       const expiryText = q.expires_at
         ? `${statusDot} ${formatDate(q.expires_at)}${daysLeft !== null ? ` (${daysLeft < 0 ? 'abgelaufen' : `noch ${daysLeft} Tage`})` : ''}`
-        : '<span style="color:var(--text-muted)">–</span>';
+        : '<span class="text-muted">–</span>';
 
       return `
         <tr>
           <td><strong>${esc(q.name)}</strong></td>
-          <td>${q.acquired_at ? formatDate(q.acquired_at) : '<span style="color:var(--text-muted)">–</span>'}</td>
+          <td>${q.acquired_at ? formatDate(q.acquired_at) : '<span class="text-muted">–</span>'}</td>
           <td>${expiryText}</td>
-          <td>${q.notes ? esc(q.notes) : '<span style="color:var(--text-muted)">–</span>'}</td>
+          <td>${q.notes ? esc(q.notes) : '<span class="text-muted">–</span>'}</td>
         </tr>`;
     }).join('');
 
@@ -343,21 +327,21 @@ async function loadQualificationsTab() {
         </div>
       </div>
       <p style="font-size:12px;color:var(--text-muted);margin-top:12px">
-        <span class="status-dot" style="background:#3fb950;width:8px;height:8px;border-radius:50%;display:inline-block"></span> Gültig &nbsp;|&nbsp;
-        <span class="status-dot" style="background:#f0a500;width:8px;height:8px;border-radius:50%;display:inline-block"></span> Läuft in ${warnDays} Tagen ab &nbsp;|&nbsp;
-        <span class="status-dot" style="background:#e63022;width:8px;height:8px;border-radius:50%;display:inline-block"></span> Abgelaufen oder kritisch
+        <span class="status-dot status-dot--success"></span> Gültig &nbsp;|&nbsp;
+        <span class="status-dot status-dot--warning"></span> Läuft in ${warnDays} Tagen ab &nbsp;|&nbsp;
+        <span class="status-dot status-dot--danger"></span> Abgelaufen oder kritisch
       </p>
     `;
 
     // Tabellenzeilen stylen
     wrap.querySelectorAll('tbody tr').forEach((tr, i) => {
-      tr.style.borderBottom = '1px solid var(--border)';
+      
       tr.style.background = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)';
     });
     renderIcons(wrap);
 
   } catch (e) {
-    wrap.innerHTML = `<p style="color:#ff8a80">${esc(e.message)}</p>`;
+    wrap.innerHTML = `<p class="error-msg">${esc(e.message)}</p>`;
   }
 }
 
@@ -365,7 +349,7 @@ async function loadQualificationsTab() {
 
 async function loadHonorsTab() {
   const wrap = document.getElementById('tab-honors');
-  wrap.innerHTML = '<p style="color:var(--text-muted);font-size:13px">Lade...</p>';
+  wrap.innerHTML = '<p class="text-muted text-sm">Lade...</p>';
 
   try {
     const honors = await api.getMyHonors();
@@ -374,7 +358,7 @@ async function loadHonorsTab() {
       wrap.innerHTML = `
         <div class="card">
           <div class="card__body">
-            <p style="color:var(--text-muted);font-size:13px">Noch keine Ehrungen hinterlegt. Ehrungen werden vom Wehrleiter im Personal-Modul eingetragen.</p>
+            <p class="text-muted text-sm">Noch keine Ehrungen hinterlegt. Ehrungen werden vom Wehrleiter im Personal-Modul eingetragen.</p>
           </div>
         </div>`;
       renderIcons(wrap);
@@ -384,14 +368,14 @@ async function loadHonorsTab() {
     const rows = honors.map(h => {
       const isActive = h.status === 'aktiv';
       const statusBadge = isActive
-        ? `<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;background:#14532d;color:#4ade80">Aktiv</span>`
-        : `<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;background:#1f2937;color:#9ca3af">Zurückgezogen</span>`;
+        ? `<span class="badge-success">Aktiv</span>`
+        : `<span class="badge-muted">Zurückgezogen</span>`;
       return `
         <tr style="border-bottom:1px solid var(--border)">
           <td style="padding:10px 16px"><strong>${esc(h.name)}</strong></td>
-          <td style="padding:10px 16px;color:var(--text-muted)">${h.awarded_at ? formatDate(h.awarded_at) : '–'}</td>
+          <td>${h.awarded_at ? formatDate(h.awarded_at) : '–'}</td>
           <td style="padding:10px 16px">${statusBadge}</td>
-          <td style="padding:10px 16px;color:var(--text-muted)">${h.notes ? esc(h.notes) : '–'}</td>
+          <td>${h.notes ? esc(h.notes) : '–'}</td>
         </tr>`;
     }).join('');
 
@@ -417,7 +401,7 @@ async function loadHonorsTab() {
     renderIcons(wrap);
 
   } catch (e) {
-    wrap.innerHTML = `<p style="color:#ff8a80">${esc(e.message)}</p>`;
+    wrap.innerHTML = `<p class="error-msg">${esc(e.message)}</p>`;
   }
 }
 
@@ -425,7 +409,7 @@ async function loadHonorsTab() {
 
 async function loadEquipmentTab() {
   const wrap = document.getElementById('tab-equipment');
-  wrap.innerHTML = '<p style="color:var(--text-muted);font-size:13px">Lade...</p>';
+  wrap.innerHTML = '<p class="text-muted text-sm">Lade...</p>';
 
   try {
     const equipment = await api.getMyEquipment();
@@ -434,7 +418,7 @@ async function loadEquipmentTab() {
       wrap.innerHTML = `
         <div class="card">
           <div class="card__body">
-            <p style="color:var(--text-muted);font-size:13px">Noch keine Ausrüstung / Ausweise hinterlegt. Diese werden vom Gerätewart oder Wehrleiter eingetragen.</p>
+            <p class="text-muted text-sm">Noch keine Ausrüstung / Ausweise hinterlegt. Diese werden vom Gerätewart oder Wehrleiter eingetragen.</p>
           </div>
         </div>`;
       return;
@@ -444,8 +428,8 @@ async function loadEquipmentTab() {
       <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:16px">
         <div style="font-size:15px;font-weight:700;margin-bottom:8px">${EQUIPMENT_LABELS[e.type] || esc(e.type)}</div>
         ${e.identifier ? `<div style="font-size:13px;color:var(--text);margin-bottom:4px">Nr./Bezeichnung: <strong>${esc(e.identifier)}</strong></div>` : ''}
-        ${e.issued_at  ? `<div style="font-size:12px;color:var(--text-muted)">Ausgestellt: ${formatDate(e.issued_at)}</div>` : ''}
-        ${e.expires_at ? `<div style="font-size:12px;color:var(--text-muted)">Gültig bis: ${formatDate(e.expires_at)}</div>` : ''}
+        ${e.issued_at  ? `<div class="text-muted text-xs">Ausgestellt: ${formatDate(e.issued_at)}</div>` : ''}
+        ${e.expires_at ? `<div class="text-muted text-xs">Gültig bis: ${formatDate(e.expires_at)}</div>` : ''}
         ${e.notes      ? `<div style="font-size:12px;color:var(--text-muted);margin-top:6px">${esc(e.notes)}</div>` : ''}
       </div>
     `).join('');
@@ -458,7 +442,7 @@ async function loadEquipmentTab() {
     `;
 
   } catch (e) {
-    wrap.innerHTML = `<p style="color:#ff8a80">${esc(e.message)}</p>`;
+    wrap.innerHTML = `<p class="error-msg">${esc(e.message)}</p>`;
   }
 }
 
@@ -466,7 +450,7 @@ async function loadEquipmentTab() {
 
 async function loadAppointmentsTab() {
   const wrap = document.getElementById('tab-appointments');
-  wrap.innerHTML = '<p style="color:var(--text-muted);font-size:13px">Lade...</p>';
+  wrap.innerHTML = '<p class="text-muted text-sm">Lade...</p>';
 
   try {
     const termine = await api.getMyTermine();
@@ -506,7 +490,7 @@ async function loadAppointmentsTab() {
                 ${t.end_at ? ` – ${new Date(t.end_at).toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'})} Uhr` : ''}
               </div>
               ${t.location ? `<div style="color:var(--text-muted);font-size:12px;margin-top:2px">${icon('map-pin',11)} ${esc(t.location)}</div>` : ''}
-              ${t.description ? `<div style="color:#9ca3af;font-size:12px;margin-top:4px">${esc(t.description)}</div>` : ''}
+              ${t.description ? `<div class="text-muted" style="font-size:12px;margin-top:4px">${esc(t.description)}</div>` : ''}
             </div>
           </div>
         </div>`;
@@ -520,7 +504,7 @@ async function loadAppointmentsTab() {
         </div>` : ''}
       ${past.length ? `
         <div class="card">
-          <div class="card__header" style="color:var(--text-muted)">Vergangene Termine (${past.length})</div>
+          <div class="card__header text-muted">Vergangene Termine (${past.length})</div>
           <div class="card__body" style="opacity:0.6">${renderCards(past)}</div>
         </div>` : ''}
     `;
@@ -528,22 +512,22 @@ async function loadAppointmentsTab() {
     renderIcons(wrap);
 
   } catch (e) {
-    wrap.innerHTML = `<p style="color:#ff8a80">${esc(e.message)}</p>`;
+    wrap.innerHTML = `<p class="error-msg">${esc(e.message)}</p>`;
   }
 }
 
 // ── Hilfsfunktionen ───────────────────────────────────────────────────────────
 
 function expiryStatus(expiresAt, warnDays, today) {
-  const dot = (color) => `<span class="status-dot" style="background:${color};width:8px;height:8px;border-radius:50%;display:inline-block"></span>`;
+  const dot = (mod) => `<span class="status-dot status-dot--${mod}"></span>`;
   if (!expiresAt) return { statusDot: '', label: 'ok', daysLeft: null };
   const exp = new Date(expiresAt);
   exp.setHours(0, 0, 0, 0);
   const daysLeft = Math.floor((exp - today) / (1000 * 60 * 60 * 24));
-  if (daysLeft < 0)         return { statusDot: dot('#e63022'), label: 'abgelaufen', daysLeft };
-  if (daysLeft <= 30)       return { statusDot: dot('#e63022'), label: 'kritisch', daysLeft };
-  if (daysLeft <= warnDays) return { statusDot: dot('#f0a500'), label: 'warnung', daysLeft };
-  return { statusDot: dot('#3fb950'), label: 'ok', daysLeft };
+  if (daysLeft < 0)         return { statusDot: dot('danger'), label: 'abgelaufen', daysLeft };
+  if (daysLeft <= 30)       return { statusDot: dot('danger'), label: 'kritisch', daysLeft };
+  if (daysLeft <= warnDays) return { statusDot: dot('warning'), label: 'warnung', daysLeft };
+  return { statusDot: dot('success'), label: 'ok', daysLeft };
 }
 
 function formatDate(dateStr) {

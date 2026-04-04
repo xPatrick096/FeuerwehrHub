@@ -49,7 +49,7 @@ export async function renderEditIncident() {
     return;
   }
 
-  const statusColor = STATUS_COLORS[report.status] || '#7d8590';
+  const statusColor = STATUS_COLORS[report.status] || 'var(--text-muted)';
   const statusLabel = STATUS_LABELS[report.status] || report.status;
 
   content.innerHTML = `
@@ -92,7 +92,7 @@ export async function renderEditIncident() {
       <div class="card__body">
         <h4 style="margin:0 0 12px;font-size:14px">Änderungshistorie</h4>
         <div id="changes-list">
-          <p style="color:var(--text-muted);font-size:13px">Lade...</p>
+          <p class="text-muted text-sm">Lade...</p>
         </div>
       </div>
     </div>
@@ -144,7 +144,7 @@ async function _loadChanges() {
   try {
     const changes = await api.getIncidentChanges(_incidentId);
     if (!changes.length) {
-      list.innerHTML = `<p style="color:var(--text-muted);font-size:13px">Noch keine Änderungen protokolliert.</p>`;
+      list.innerHTML = `<p class="text-muted text-sm">Noch keine Änderungen protokolliert.</p>`;
       return;
     }
     list.innerHTML = changes.map(c => `
@@ -161,7 +161,7 @@ async function _loadChanges() {
       </div>
     `).join('');
   } catch (_) {
-    list.innerHTML = `<p style="color:var(--text-muted);font-size:13px">Änderungshistorie nicht verfügbar.</p>`;
+    list.innerHTML = `<p class="text-muted text-sm">Änderungshistorie nicht verfügbar.</p>`;
   }
 }
 

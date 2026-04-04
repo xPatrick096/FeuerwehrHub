@@ -1,4 +1,5 @@
 @use 'variables' as *;
+@use 'mixins' as *;
 
 // ── Icons (Lucide) ────────────────────────────────────────────────────────────
 .icon {
@@ -29,10 +30,18 @@
   }
 }
 
-// ── Utility-Klassen ───────────────────────────────────────────────────────────
-.text-muted { color: $text-muted; }
-.text-sm    { font-size: $font-size-sm; }
-.text-xs    { font-size: $font-size-xs; }
+// ── Text-Utilities ────────────────────────────────────────────────────────────
+.text-muted   { color: $text-muted; }
+.text-subtle  { color: $text-subtle; }
+.text-sm      { font-size: $font-size-sm; }
+.text-xs      { font-size: $font-size-xs; }
+.text-success { color: $gruen; }
+.text-warning { color: $gelb; }
+.text-danger  { color: $rot; }
+.text-error   { color: $error; }
+.text-info    { color: $info; }
+.text-pin     { color: $gelb-dunkel; }
+.text-link    { color: $rot; }
 
 .hint {
   font-size: $font-size-sm;
@@ -40,9 +49,173 @@
   margin-bottom: $space-md;
 }
 
+.required { color: $rot; }
+
+// ── Status-Badges ─────────────────────────────────────────────────────────────
+.badge-success {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: $radius-pill;
+  font-size: $font-size-xs;
+  font-weight: 600;
+  background: $gruen-hell;
+  color: $gruen;
+}
+
+.badge-muted {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: $radius-pill;
+  font-size: $font-size-xs;
+  font-weight: 600;
+  background: $bg-card-hover;
+  color: $text-muted;
+}
+
+// ── Alert-Boxen ───────────────────────────────────────────────────────────────
+.alert-warning {
+  background: $orange-hell;
+  border: 1px solid $gelb;
+  border-radius: $radius-md;
+  padding: 10px 14px;
+  font-size: $font-size-sm;
+  color: $gelb;
+  margin-bottom: $space-md;
+}
+
+.alert-success {
+  background: $gruen-hell;
+  border: 1px solid $gruen;
+  border-radius: $radius-md;
+  padding: 10px 14px;
+  font-size: $font-size-sm;
+  color: $gruen;
+  margin-bottom: $space-md;
+}
+
+.alert-danger {
+  background: $rot-hell;
+  border: 1px solid $rot;
+  border-radius: $radius-md;
+  padding: 10px 14px;
+  font-size: $font-size-sm;
+  color: $error;
+  margin-bottom: $space-md;
+}
+
+// ── Error-Message ─────────────────────────────────────────────────────────────
+.error-msg {
+  color: $error;
+  font-size: $font-size-sm;
+}
+
+// ── Status-Dot ────────────────────────────────────────────────────────────────
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+
+  &--success { background: $gruen; }
+  &--warning { background: $gelb; }
+  &--danger  { background: $rot; }
+}
+
 .empty-state {
   text-align: center;
   padding: $space-2xl $space-lg;
   color: $text-muted;
   font-style: italic;
+}
+
+// ── Standalone Form-Field ─────────────────────────────────────────────────────
+// Für Inputs/Selects/Textareas außerhalb von .form-group
+.field {
+  @include field-base;
+  font-size: $font-size-sm;
+
+  &--sm { padding: 4px 8px; font-size: $font-size-xs; }
+  &--inline { display: inline-flex; width: auto; }
+}
+
+textarea.field { resize: vertical; }
+select.field   { cursor: pointer; }
+
+// ── Inline Panel ──────────────────────────────────────────────────────────────
+// Popup-artige Karten für Formulare, Modals in Overlays etc.
+.inline-panel {
+  background: $bg-card;
+  border: 1px solid $border;
+  border-radius: $radius-lg;
+  padding: $space-lg;
+  width: 100%;
+}
+
+// ── Stat Box ──────────────────────────────────────────────────────────────────
+.stat-box {
+  background: $bg-card;
+  border: 1px solid $border;
+  border-radius: $radius-md;
+  padding: $space-md $space-lg;
+  text-align: center;
+  min-width: 80px;
+
+  &__value {
+    font-size: $font-size-xl;
+    font-weight: 800;
+    line-height: 1.2;
+    color: $text;
+  }
+
+  &__label {
+    font-size: $font-size-xs;
+    color: $text-muted;
+    margin-top: 2px;
+  }
+}
+
+// ── Inline Tag ────────────────────────────────────────────────────────────────
+.inline-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: $radius-pill;
+  font-size: $font-size-2xs;
+  font-weight: 600;
+  background: $bg-card-hover;
+  color: $text-muted;
+  white-space: nowrap;
+}
+
+// ── Add-Form (ausklappbares Formular) ─────────────────────────────────────────
+.add-form {
+  display: none;
+  padding: $space-md;
+  background: $bg-card-hover;
+  border-bottom: 1px solid $border;
+  border-radius: $radius-md;
+  margin-bottom: $space-md;
+
+  &.open { display: block; }
+}
+
+// ── Terminal / Code-Block ─────────────────────────────────────────────────────
+.terminal {
+  background: #0d1117;
+  border: 1px solid #21273d;
+  border-radius: $radius-md;
+  padding: $space-md;
+  font-family: monospace;
+  font-size: $font-size-sm;
+  line-height: 1.6;
+  color: #7d8590;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-y: auto;
+}
+
+// ── Separator ─────────────────────────────────────────────────────────────────
+.separator {
+  border: none;
+  border-top: 1px solid $border;
+  margin: $space-lg 0;
 }

@@ -25,12 +25,16 @@
   --gruen:         #16a34a;
   --gruen-dunkel:  #15803d;
   --gruen-hell:    rgba(22, 163, 74, 0.12);
+  --gelb:          #d97706;
+  --gelb-dunkel:   #b45309;
   --orange:        #d97706;
   --orange-hell:   rgba(217, 119, 6, 0.12);
   --blau:          #2563eb;
   --blau-hell:     rgba(37, 99, 235, 0.12);
   --lila:          #7c3aed;
   --lila-hell:     rgba(124, 58, 237, 0.12);
+  --error:         #ef4444;
+  --info:          #3b82f6;
 
   // Modul-Akzente (für Dropdown-Icons)
   --lager-c:       #d97706;
@@ -70,6 +74,14 @@
   --blau-hell:     rgba(37, 99, 235, 0.15);
   --lila-hell:     rgba(124, 58, 237, 0.15);
 
+  --gruen:         #3fb950;
+  --gruen-dunkel:  #2ea043;
+  --gelb:          #f0a500;
+  --gelb-dunkel:   #d29922;
+  --blau:          #58a6ff;
+  --error:         #ff8a80;
+  --info:          #58a6ff;
+
   --lager-hell:    rgba(217, 119, 6, 0.15);
   --personal-hell: rgba(22, 163, 74, 0.15);
   --fahrzeug-hell: rgba(37, 99, 235, 0.15);
@@ -105,12 +117,16 @@ $rot-subtle:    var(--rot-subtle);
 $gruen:         var(--gruen);
 $gruen-dunkel:  var(--gruen-dunkel);
 $gruen-hell:    var(--gruen-hell);
+$gelb:          var(--gelb);
+$gelb-dunkel:   var(--gelb-dunkel);
 $orange:        var(--orange);
 $orange-hell:   var(--orange-hell);
 $blau:          var(--blau);
 $blau-hell:     var(--blau-hell);
 $lila:          var(--lila);
 $lila-hell:     var(--lila-hell);
+$error:         var(--error);
+$info:          var(--info);
 
 // ── Statische Variablen (nicht thembar) ───────────────────────────────────────
 $font-family:   'Inter', -apple-system, BlinkMacSystemFont, sans-serif;

@@ -78,7 +78,7 @@ export async function renderSettings() {
             <p style="font-size:12px;color:var(--text-muted);margin-bottom:6px">
               Oder manuell eingeben:
             </p>
-            <div id="totp-uri" style="word-break:break-all;font-size:11px;background:#0d1117;color:var(--text-muted);border:1px solid #21273d;padding:10px;border-radius:4px;margin-bottom:16px"></div>
+            <div id="totp-uri" class="terminal" style="font-size:11px;margin-bottom:16px"></div>
             <div class="form-group" style="max-width:200px">
               <label>Code bestätigen</label>
               <input type="text" id="totp-code" maxlength="6" inputmode="numeric"
@@ -94,7 +94,7 @@ export async function renderSettings() {
             <button class="btn btn--danger" id="btn-disable-totp">2FA deaktivieren</button>
           </div>
           <div id="totp-disable-confirm" style="display:none;margin-top:16px">
-            <p style="font-size:13px;color:#ff8a80;margin-bottom:12px">
+            <p class="error-msg" style="margin-bottom:12px">
               Gib deinen aktuellen Authenticator-Code ein, um 2FA zu deaktivieren:
             </p>
             <div class="form-group" style="max-width:200px">

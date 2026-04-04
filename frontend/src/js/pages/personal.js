@@ -52,7 +52,7 @@ async function loadMemberList() {
   const detailWrap = document.getElementById('personal-detail-wrap');
   listWrap.style.display   = 'block';
   detailWrap.style.display = 'none';
-  listWrap.innerHTML = '<p style="color:var(--text-muted);font-size:13px">Lade...</p>';
+  listWrap.innerHTML = '<p class="text-muted text-sm">Lade...</p>';
 
   try {
     const members = await api.getPersonalMembers();
@@ -61,9 +61,9 @@ async function loadMemberList() {
       <tr style="cursor:pointer" data-id="${m.id}" class="member-row">
         <td style="padding:10px 16px"><strong>${esc(m.display_name || m.username)}</strong>
           ${m.display_name ? `<span style="color:var(--text-muted);font-size:11px;margin-left:6px">${esc(m.username)}</span>` : ''}</td>
-        <td style="padding:10px 16px;color:var(--text-muted)">${esc(m.personnel_number || '–')}</td>
-        <td style="padding:10px 16px;color:var(--text-muted)">${m.entry_date ? formatDate(m.entry_date) : '–'}</td>
-        <td style="padding:10px 16px;color:var(--text-muted)">${m.exit_date ? `<span style="color:#ff8a80">${formatDate(m.exit_date)}</span>` : '<span style="color:#3fb950">Aktiv</span>'}</td>
+        <td>${esc(m.personnel_number || '–')}</td>
+        <td>${m.entry_date ? formatDate(m.entry_date) : '–'}</td>
+        <td>${m.exit_date ? `<span class="text-error">${formatDate(m.exit_date)}</span>` : '<span style="color:var(--gruen)">Aktiv</span>'}</td>
       </tr>
     `).join('');
 
@@ -72,16 +72,16 @@ async function loadMemberList() {
         <div class="card__header" style="display:flex;justify-content:space-between;align-items:center">
           <span>Alle Mitglieder (${members.length})</span>
           <input type="text" id="personal-search" placeholder="Suchen..." maxlength="100"
-            style="background:var(--bg-card-hover);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:13px;width:200px" />
+            class="field" style="width:200px" />
         </div>
         <div class="card__body" style="padding:0">
           <table style="width:100%;border-collapse:collapse;font-size:13px">
             <thead>
-              <tr style="background:var(--bg-card-hover)">
-                <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Name</th>
-                <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Pers.-Nr.</th>
-                <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Eintrittsdatum</th>
-                <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Status</th>
+              <tr>
+                <th>Name</th>
+                <th>Pers.-Nr.</th>
+                <th>Eintrittsdatum</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody id="personal-tbody">${rows}</tbody>
@@ -104,15 +104,15 @@ async function loadMemberList() {
     });
 
   } catch (e) {
-    listWrap.innerHTML = `<p style="color:#ff8a80">${esc(e.message)}</p>`;
+    listWrap.innerHTML = `<p class="error-msg">${esc(e.message)}</p>`;
   }
 }
 
 function styleRows() {
   document.querySelectorAll('.member-row').forEach((tr, i) => {
-    tr.style.borderBottom = '1px solid var(--border)';
+    
     tr.style.background = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)';
-    tr.addEventListener('mouseenter', () => tr.style.background = 'rgba(230,48,34,0.06)');
+    tr.addEventListener('mouseenter', () => tr.style.background = 'var(--rot-subtle)');
     tr.addEventListener('mouseleave', () => tr.style.background = document.querySelectorAll('.member-row')[Array.from(document.querySelectorAll('.member-row')).indexOf(tr) % 2 === 0 ? 0 : 1]?.style.background || 'transparent');
   });
 }
@@ -124,7 +124,7 @@ async function openMember(userId, members) {
   const detailWrap = document.getElementById('personal-detail-wrap');
   listWrap.style.display   = 'none';
   detailWrap.style.display = 'block';
-  detailWrap.innerHTML     = '<p style="color:var(--text-muted);font-size:13px">Lade...</p>';
+  detailWrap.innerHTML     = '<p class="text-muted text-sm">Lade...</p>';
 
   const member = members.find(m => m.id === userId);
 
@@ -144,16 +144,16 @@ async function openMember(userId, members) {
         <button class="btn btn--outline btn--sm" id="btn-back-personal">← Zurück</button>
         <div>
           <h3 style="margin:0;font-size:18px">${esc(member?.display_name || member?.username || '')}</h3>
-          <span style="color:var(--text-muted);font-size:13px">${esc(member?.username || '')}</span>
+          <span class="text-muted text-sm">${esc(member?.username || '')}</span>
         </div>
       </div>
 
-      <div class="tab-bar" style="display:flex;gap:4px;margin-bottom:24px;border-bottom:1px solid var(--border);padding-bottom:0">
-        <button class="ptab-btn active" data-tab="pstamm"      style="${tabStyle(true)}">${icon('clipboard-list', 14)} Stammdaten</button>
-        <button class="ptab-btn"        data-tab="pquali"       style="${tabStyle(false)}">${icon('graduation-cap', 14)} Qualifikationen</button>
-        <button class="ptab-btn"        data-tab="pequip"       style="${tabStyle(false)}">${icon('wrench', 14)} Ausrüstung</button>
-        <button class="ptab-btn"        data-tab="phonors"      style="${tabStyle(false)}">${icon('award', 14)} Ehrungen</button>
-        <button class="ptab-btn"        data-tab="panwesenheit" style="${tabStyle(false)}">${icon('calendar', 14)} Anwesenheit</button>
+      <div class="tab-bar">
+        <button class="tab-btn tab-btn--active" data-tab="pstamm">${icon('clipboard-list', 14)} Stammdaten</button>
+        <button class="tab-btn" data-tab="pquali">${icon('graduation-cap', 14)} Qualifikationen</button>
+        <button class="tab-btn" data-tab="pequip">${icon('wrench', 14)} Ausrüstung</button>
+        <button class="tab-btn" data-tab="phonors">${icon('award', 14)} Ehrungen</button>
+        <button class="tab-btn" data-tab="panwesenheit">${icon('calendar', 14)} Anwesenheit</button>
       </div>
 
       <div id="ptab-pstamm"></div>
@@ -165,10 +165,10 @@ async function openMember(userId, members) {
 
     document.getElementById('btn-back-personal').addEventListener('click', loadMemberList);
 
-    document.querySelectorAll('.ptab-btn').forEach(btn => {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.ptab-btn').forEach(b => b.style.cssText = tabStyle(false));
-        btn.style.cssText = tabStyle(true);
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('tab-btn--active'));
+        btn.classList.add('tab-btn--active');
         document.querySelectorAll('[id^="ptab-"]').forEach(t => t.style.display = 'none');
         document.getElementById(`ptab-${btn.dataset.tab}`).style.display = 'block';
       });
@@ -182,12 +182,8 @@ async function openMember(userId, members) {
     renderIcons(document.getElementById('personal-detail-wrap'));
 
   } catch (e) {
-    detailWrap.innerHTML = `<p style="color:#ff8a80">${esc(e.message)}</p>`;
+    detailWrap.innerHTML = `<p class="error-msg">${esc(e.message)}</p>`;
   }
-}
-
-function tabStyle(active) {
-  return `padding:8px 16px;background:none;border:none;border-bottom:2px solid ${active ? '#e63022' : 'transparent'};color:${active ? '#e6edf3' : '#7d8590'};cursor:pointer;font-size:13px;font-weight:600;margin-bottom:-1px`;
 }
 
 // ── Tab: Stammdaten ───────────────────────────────────────────────────────────
@@ -230,11 +226,11 @@ function renderStammdaten(userId, details) {
     <div class="card" style="max-width:560px;margin-top:16px">
       <div class="card__header" style="display:flex;justify-content:space-between;align-items:center">
         <span>Kontaktdaten</span>
-        <span style="font-size:11px;color:var(--text-muted)">Vom Mitglied pflegbar — hier überschreibbar</span>
+        <span class="text-muted text-xs">Vom Mitglied pflegbar — hier überschreibbar</span>
       </div>
       <div class="card__body">
         ${details?.updated_by_name
-          ? `<div style="background:#1c2335;border:1px solid #f0a500;border-radius:8px;padding:10px 14px;font-size:12px;color:#f0a500;margin-bottom:12px">
+          ? `<div class="alert-warning">
                Zuletzt bearbeitet von ${esc(details.updated_by_name)}
              </div>`
           : ''}
@@ -262,7 +258,7 @@ function renderStammdaten(userId, details) {
       <div class="card__header">Notfallkontakte</div>
       <div class="card__body">
         <div id="member-emergency-contacts-list">
-          <p style="color:var(--text-muted);font-size:13px">Lade...</p>
+          <p class="text-muted text-sm">Lade...</p>
         </div>
       </div>
     </div>
@@ -304,15 +300,15 @@ async function loadMemberEmergencyContacts(userId) {
     const contacts = await api.getMemberEmergencyContacts(userId);
 
     if (!contacts.length) {
-      listEl.innerHTML = '<p style="color:var(--text-muted);font-size:13px">Noch keine Notfallkontakte hinterlegt.</p>';
+      listEl.innerHTML = '<p class="text-muted text-sm">Noch keine Notfallkontakte hinterlegt.</p>';
       return;
     }
 
     const rows = contacts.map(c => `
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:6px;font-size:13px;padding:8px 0;border-bottom:1px solid var(--border)">
         <div><strong>${esc(c.name)}</strong></div>
-        <div style="color:var(--text-muted)">${esc(c.phone)}</div>
-        <div style="color:var(--text-muted)">${c.relationship ? esc(c.relationship) : '–'}</div>
+        <div class="text-muted">${esc(c.phone)}</div>
+        <div class="text-muted">${c.relationship ? esc(c.relationship) : '–'}</div>
       </div>
     `).join('');
 
@@ -325,7 +321,7 @@ async function loadMemberEmergencyContacts(userId) {
       ${rows}
     `;
   } catch (e) {
-    listEl.innerHTML = `<p style="color:#ff8a80">${esc(e.message)}</p>`;
+    listEl.innerHTML = `<p class="error-msg">${esc(e.message)}</p>`;
   }
 }
 
@@ -342,12 +338,12 @@ function renderQualifikationen(userId, qualifications, warnDays) {
         <button class="btn btn--primary btn--sm" id="btn-add-quali">+ Hinzufügen</button>
       </div>
       <div id="quali-list">
-        ${qualifications.length ? renderQualiTable(qualifications, warnDays, today) : '<div style="padding:16px"><p style="color:var(--text-muted);font-size:13px">Noch keine Qualifikationen eingetragen.</p></div>'}
+        ${qualifications.length ? renderQualiTable(qualifications, warnDays, today) : '<div style="padding:16px"><p class="text-muted text-sm">Noch keine Qualifikationen eingetragen.</p></div>'}
       </div>
     </div>
 
     <div id="quali-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;align-items:center;justify-content:center">
-      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:24px;width:100%;max-width:440px">
+      <div class="inline-panel" style="max-width:440px">
         <h3 id="quali-modal-title" style="margin:0 0 16px;font-size:16px">Qualifikation</h3>
         <div class="form-grid">
           <div class="form-group form-group--full">
@@ -413,7 +409,7 @@ function renderQualifikationen(userId, qualifications, warnDays) {
       const updated = await api.getPersonalQualifications(userId);
       document.getElementById('quali-list').innerHTML = updated.length
         ? renderQualiTable(updated, warnDays, today)
-        : '<div style="padding:16px"><p style="color:var(--text-muted);font-size:13px">Noch keine Qualifikationen eingetragen.</p></div>';
+        : '<div style="padding:16px"><p class="text-muted text-sm">Noch keine Qualifikationen eingetragen.</p></div>';
       bindQualiActions(userId, warnDays, today, openModal);
     } catch (e) { toast(e.message, 'error'); }
   });
@@ -431,7 +427,7 @@ function renderQualiTable(qualifications, warnDays, today) {
       <tr data-qid="${q.id}" data-name="${esc(q.name)}"
           data-acquired="${q.acquired_at || ''}" data-expires="${q.expires_at || ''}" data-notes="${esc(q.notes || '')}">
         <td style="padding:10px 16px"><strong>${esc(q.name)}</strong></td>
-        <td style="padding:10px 16px;color:var(--text-muted)">${q.acquired_at ? formatDate(q.acquired_at) : '–'}</td>
+        <td>${q.acquired_at ? formatDate(q.acquired_at) : '–'}</td>
         <td style="padding:10px 16px">${expiryText}</td>
         <td style="padding:10px 16px">
           <div class="btn-group">
@@ -444,11 +440,11 @@ function renderQualiTable(qualifications, warnDays, today) {
 
   return `
     <table style="width:100%;border-collapse:collapse;font-size:13px">
-      <thead><tr style="background:var(--bg-card-hover)">
-        <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Qualifikation</th>
-        <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Erworben</th>
-        <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Gültig bis</th>
-        <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left"></th>
+      <thead><tr>
+        <th>Qualifikation</th>
+        <th>Erworben</th>
+        <th>Gültig bis</th>
+        <th></th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
@@ -473,7 +469,7 @@ function bindQualiActions(userId, warnDays, today, openModal) {
         const updated = await api.getPersonalQualifications(userId);
         document.getElementById('quali-list').innerHTML = updated.length
           ? renderQualiTable(updated, warnDays, today)
-          : '<div style="padding:16px"><p style="color:var(--text-muted);font-size:13px">Noch keine Qualifikationen eingetragen.</p></div>';
+          : '<div style="padding:16px"><p class="text-muted text-sm">Noch keine Qualifikationen eingetragen.</p></div>';
         bindQualiActions(userId, warnDays, today, openModal);
       } catch (e) { toast(e.message, 'error'); }
     });
@@ -492,17 +488,17 @@ function renderAusruestung(userId, equipment) {
         <button class="btn btn--primary btn--sm" id="btn-add-equip">+ Hinzufügen</button>
       </div>
       <div id="equip-list">
-        ${equipment.length ? renderEquipTable(equipment) : '<div style="padding:16px"><p style="color:var(--text-muted);font-size:13px">Noch keine Ausrüstung eingetragen.</p></div>'}
+        ${equipment.length ? renderEquipTable(equipment) : '<div style="padding:16px"><p class="text-muted text-sm">Noch keine Ausrüstung eingetragen.</p></div>'}
       </div>
     </div>
 
     <div id="equip-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;align-items:center;justify-content:center">
-      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:24px;width:100%;max-width:440px">
+      <div class="inline-panel" style="max-width:440px">
         <h3 id="equip-modal-title" style="margin:0 0 16px;font-size:16px">Ausrüstung</h3>
         <div class="form-grid">
           <div class="form-group form-group--full">
             <label>Typ</label>
-            <select id="e-type" style="background:var(--bg-card-hover);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:6px;width:100%;font-size:13px">
+            <select id="e-type" class="field" style="width:100%">
               ${EQUIPMENT_TYPES}
             </select>
           </div>
@@ -568,7 +564,7 @@ function renderAusruestung(userId, equipment) {
       const updated = await api.getPersonalEquipment(userId);
       document.getElementById('equip-list').innerHTML = updated.length
         ? renderEquipTable(updated)
-        : '<div style="padding:16px"><p style="color:var(--text-muted);font-size:13px">Noch keine Ausrüstung eingetragen.</p></div>';
+        : '<div style="padding:16px"><p class="text-muted text-sm">Noch keine Ausrüstung eingetragen.</p></div>';
       bindEquipActions(userId, openModal);
     } catch (e) { toast(e.message, 'error'); }
   });
@@ -582,9 +578,9 @@ function renderEquipTable(equipment) {
         data-identifier="${esc(e.identifier || '')}" data-issued="${e.issued_at || ''}"
         data-expires="${e.expires_at || ''}" data-notes="${esc(e.notes || '')}">
       <td style="padding:10px 16px">${EQUIPMENT_LABELS[e.type] || esc(e.type)}</td>
-      <td style="padding:10px 16px;color:var(--text-muted)">${esc(e.identifier || '–')}</td>
-      <td style="padding:10px 16px;color:var(--text-muted)">${e.issued_at ? formatDate(e.issued_at) : '–'}</td>
-      <td style="padding:10px 16px;color:var(--text-muted)">${e.expires_at ? formatDate(e.expires_at) : '–'}</td>
+      <td>${esc(e.identifier || '–')}</td>
+      <td>${e.issued_at ? formatDate(e.issued_at) : '–'}</td>
+      <td>${e.expires_at ? formatDate(e.expires_at) : '–'}</td>
       <td style="padding:10px 16px">
         <div class="btn-group">
           <button class="btn btn--outline btn--sm" data-action="edit-equip">Bearbeiten</button>
@@ -595,12 +591,12 @@ function renderEquipTable(equipment) {
 
   return `
     <table style="width:100%;border-collapse:collapse;font-size:13px">
-      <thead><tr style="background:var(--bg-card-hover)">
-        <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Typ</th>
-        <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Nr./Bezeichnung</th>
-        <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Ausgestellt</th>
-        <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Gültig bis</th>
-        <th style="padding:10px 16px;border-bottom:1px solid var(--border)"></th>
+      <thead><tr>
+        <th>Typ</th>
+        <th>Nr./Bezeichnung</th>
+        <th>Ausgestellt</th>
+        <th>Gültig bis</th>
+        <th></th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
@@ -623,7 +619,7 @@ function bindEquipActions(userId, openModal) {
         const updated = await api.getPersonalEquipment(userId);
         document.getElementById('equip-list').innerHTML = updated.length
           ? renderEquipTable(updated)
-          : '<div style="padding:16px"><p style="color:var(--text-muted);font-size:13px">Noch keine Ausrüstung eingetragen.</p></div>';
+          : '<div style="padding:16px"><p class="text-muted text-sm">Noch keine Ausrüstung eingetragen.</p></div>';
         bindEquipActions(userId, openModal);
       } catch (e) { toast(e.message, 'error'); }
     });
@@ -642,12 +638,12 @@ function renderEhrungen(userId, honors) {
         <button class="btn btn--primary btn--sm" id="btn-add-honor">+ Hinzufügen</button>
       </div>
       <div id="honor-list">
-        ${honors.length ? renderHonorTable(honors) : '<div style="padding:16px"><p style="color:var(--text-muted);font-size:13px">Noch keine Ehrungen eingetragen.</p></div>'}
+        ${honors.length ? renderHonorTable(honors) : '<div style="padding:16px"><p class="text-muted text-sm">Noch keine Ehrungen eingetragen.</p></div>'}
       </div>
     </div>
 
     <div id="honor-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;align-items:center;justify-content:center">
-      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:24px;width:100%;max-width:440px">
+      <div class="inline-panel" style="max-width:440px">
         <h3 id="honor-modal-title" style="margin:0 0 16px;font-size:16px">Ehrung</h3>
         <div class="form-grid">
           <div class="form-group form-group--full">
@@ -715,7 +711,7 @@ function renderEhrungen(userId, honors) {
       const updated = await api.getPersonalHonors(userId);
       document.getElementById('honor-list').innerHTML = updated.length
         ? renderHonorTable(updated)
-        : '<div style="padding:16px"><p style="color:var(--text-muted);font-size:13px">Noch keine Ehrungen eingetragen.</p></div>';
+        : '<div style="padding:16px"><p class="text-muted text-sm">Noch keine Ehrungen eingetragen.</p></div>';
       bindHonorActions(userId, openModal);
     } catch (e) { toast(e.message, 'error'); }
   });
@@ -727,15 +723,15 @@ function renderHonorTable(honors) {
   const rows = honors.map(h => {
     const isActive = h.status === 'aktiv';
     const statusBadge = isActive
-      ? `<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;background:#14532d;color:#4ade80">Aktiv</span>`
-      : `<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;background:#1f2937;color:#9ca3af">Zurückgezogen</span>`;
+      ? `<span class="badge-success">Aktiv</span>`
+      : `<span class="badge-muted">Zurückgezogen</span>`;
     return `
     <tr data-hid="${h.id}" data-name="${esc(h.name)}"
         data-awarded="${h.awarded_at || ''}" data-status="${h.status || 'aktiv'}" data-notes="${esc(h.notes || '')}">
       <td style="padding:10px 16px"><strong>${esc(h.name)}</strong></td>
-      <td style="padding:10px 16px;color:var(--text-muted)">${h.awarded_at ? formatDate(h.awarded_at) : '–'}</td>
+      <td>${h.awarded_at ? formatDate(h.awarded_at) : '–'}</td>
       <td style="padding:10px 16px">${statusBadge}</td>
-      <td style="padding:10px 16px;color:var(--text-muted)">${esc(h.notes || '–')}</td>
+      <td>${esc(h.notes || '–')}</td>
       <td style="padding:10px 16px">
         <div class="btn-group">
           <button class="btn btn--outline btn--sm" data-action="edit-honor">Bearbeiten</button>
@@ -747,12 +743,12 @@ function renderHonorTable(honors) {
 
   return `
     <table style="width:100%;border-collapse:collapse;font-size:13px">
-      <thead><tr style="background:var(--bg-card-hover)">
-        <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Ehrung</th>
-        <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Verliehen am</th>
-        <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Status</th>
-        <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Hinweis</th>
-        <th style="padding:10px 16px;border-bottom:1px solid var(--border)"></th>
+      <thead><tr>
+        <th>Ehrung</th>
+        <th>Verliehen am</th>
+        <th>Status</th>
+        <th>Hinweis</th>
+        <th></th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
@@ -774,7 +770,7 @@ function bindHonorActions(userId, openModal) {
         const updated = await api.getPersonalHonors(userId);
         document.getElementById('honor-list').innerHTML = updated.length
           ? renderHonorTable(updated)
-          : '<div style="padding:16px"><p style="color:var(--text-muted);font-size:13px">Noch keine Ehrungen eingetragen.</p></div>';
+          : '<div style="padding:16px"><p class="text-muted text-sm">Noch keine Ehrungen eingetragen.</p></div>';
         bindHonorActions(userId, openModal);
       } catch (e) { toast(e.message, 'error'); }
     });
@@ -784,14 +780,14 @@ function bindHonorActions(userId, openModal) {
 // ── Hilfsfunktionen ───────────────────────────────────────────────────────────
 
 function expiryStatus(expiresAt, warnDays, today) {
-  const dot = (color) => `<span class="status-dot" style="background:${color};width:8px;height:8px;border-radius:50%;display:inline-block"></span>`;
+  const dot = (mod) => `<span class="status-dot status-dot--${mod}"></span>`;
   if (!expiresAt) return { statusDot: '', daysLeft: null };
   const exp = new Date(expiresAt); exp.setHours(0,0,0,0);
   const daysLeft = Math.floor((exp - today) / (1000 * 60 * 60 * 24));
-  if (daysLeft < 0)         return { statusDot: dot('#e63022'), daysLeft };
-  if (daysLeft <= 30)       return { statusDot: dot('#e63022'), daysLeft };
-  if (daysLeft <= warnDays) return { statusDot: dot('#f0a500'), daysLeft };
-  return { statusDot: dot('#3fb950'), daysLeft };
+  if (daysLeft < 0)         return { statusDot: dot('danger'), daysLeft };
+  if (daysLeft <= 30)       return { statusDot: dot('danger'), daysLeft };
+  if (daysLeft <= warnDays) return { statusDot: dot('warning'), daysLeft };
+  return { statusDot: dot('success'), daysLeft };
 }
 
 function formatDate(d) {
@@ -803,9 +799,9 @@ function formatDate(d) {
 // ── Tab: Anwesenheit ──────────────────────────────────────────────────────────
 
 const ATTENDANCE_LABELS = {
-  present: { label: 'Anwesend',     color: '#3fb950' },
-  absent:  { label: 'Abwesend',     color: '#ff8a80' },
-  excused: { label: 'Entschuldigt', color: '#d29922' },
+  present: { label: 'Anwesend',     color: 'var(--gruen)' },
+  absent:  { label: 'Abwesend',     color: 'var(--error)' },
+  excused: { label: 'Entschuldigt', color: 'var(--gelb-dunkel)' },
 };
 
 function renderAnwesenheit(userId, attendance, member) {
@@ -818,20 +814,20 @@ function renderAnwesenheit(userId, attendance, member) {
     if (!entries.length) return '<p style="color:var(--text-muted);font-size:13px;padding:16px">Noch keine Einträge vorhanden.</p>';
     return `
       <table style="width:100%;border-collapse:collapse;font-size:13px">
-        <thead><tr style="background:var(--bg-card-hover)">
-          <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Datum</th>
-          <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Status</th>
-          <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Notiz</th>
-          <th style="padding:10px 16px;border-bottom:1px solid var(--border)"></th>
+        <thead><tr>
+          <th>Datum</th>
+          <th>Status</th>
+          <th>Notiz</th>
+          <th></th>
         </tr></thead>
         <tbody>
           ${entries.map(e => {
-            const s = ATTENDANCE_LABELS[e.status] || { label: e.status, color: '#7d8590' };
+            const s = ATTENDANCE_LABELS[e.status] || { label: e.status, color: 'var(--text-muted)' };
             return `
               <tr data-aid="${e.id}" style="border-bottom:1px solid var(--border)">
                 <td style="padding:10px 16px">${formatDate(e.service_date)}</td>
                 <td style="padding:10px 16px;color:${s.color};font-weight:600">${s.label}</td>
-                <td style="padding:10px 16px;color:var(--text-muted)">${esc(e.notes || '–')}</td>
+                <td>${esc(e.notes || '–')}</td>
                 <td style="padding:10px 16px">
                   <div class="btn-group">
                     <button class="btn btn--danger btn--sm" data-action="delete-attendance" data-aid="${e.id}">Löschen</button>
@@ -859,23 +855,23 @@ function renderAnwesenheit(userId, attendance, member) {
       <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px">
         <div style="background:var(--bg-card-hover);border:1px solid var(--border);border-radius:8px;padding:12px 20px;text-align:center;min-width:80px">
           <div style="font-size:22px;font-weight:700">${s.total}</div>
-          <div style="font-size:11px;color:var(--text-muted)">Gesamt</div>
+          <div class="text-muted text-xs">Gesamt</div>
         </div>
         <div style="background:var(--bg-card-hover);border:1px solid var(--border);border-radius:8px;padding:12px 20px;text-align:center;min-width:80px">
-          <div style="font-size:22px;font-weight:700;color:#3fb950">${s.present}</div>
-          <div style="font-size:11px;color:var(--text-muted)">Anwesend</div>
+          <div style="font-size:22px;font-weight:700;color:var(--gruen)">${s.present}</div>
+          <div class="text-muted text-xs">Anwesend</div>
         </div>
         <div style="background:var(--bg-card-hover);border:1px solid var(--border);border-radius:8px;padding:12px 20px;text-align:center;min-width:80px">
-          <div style="font-size:22px;font-weight:700;color:#ff8a80">${s.absent}</div>
-          <div style="font-size:11px;color:var(--text-muted)">Abwesend</div>
+          <div style="font-size:22px;font-weight:700;color:var(--error)">${s.absent}</div>
+          <div class="text-muted text-xs">Abwesend</div>
         </div>
         <div style="background:var(--bg-card-hover);border:1px solid var(--border);border-radius:8px;padding:12px 20px;text-align:center;min-width:80px">
-          <div style="font-size:22px;font-weight:700;color:#d29922">${s.excused}</div>
-          <div style="font-size:11px;color:var(--text-muted)">Entschuldigt</div>
+          <div style="font-size:22px;font-weight:700;color:var(--gelb-dunkel)">${s.excused}</div>
+          <div class="text-muted text-xs">Entschuldigt</div>
         </div>
         <div style="background:var(--bg-card-hover);border:1px solid var(--border);border-radius:8px;padding:12px 20px;text-align:center;min-width:80px">
-          <div style="font-size:22px;font-weight:700;color:#58a6ff">${s.pct}%</div>
-          <div style="font-size:11px;color:var(--text-muted)">Quote</div>
+          <div style="font-size:22px;font-weight:700;color:var(--info)">${s.pct}%</div>
+          <div class="text-muted text-xs">Quote</div>
         </div>
       </div>`;
   };
@@ -983,11 +979,11 @@ function formatDateTime(dt) {
 }
 
 const VEREIN_EVENT_COLORS = {
-  'Übung': '#f0a500',
-  'Versammlung': '#58a6ff',
-  'Fest': '#3fb950',
-  'Arbeitsdienst': '#e3b341',
-  'Sonstiges': '#6b7280',
+  'Übung': 'var(--gelb)',
+  'Versammlung': 'var(--info)',
+  'Fest': 'var(--gruen)',
+  'Arbeitsdienst': 'var(--gelb)',
+  'Sonstiges': 'var(--text-muted)',
 };
 
 let _vereinTermineCache = [];
@@ -1001,19 +997,19 @@ function normalizeVereinEvent(e) {
     start_at: e.datum + 'T' + (e.uhrzeit ? e.uhrzeit + ':00' : '00:00:00'),
     end_at: null,
     typ_name: e.typ,
-    typ_color: VEREIN_EVENT_COLORS[e.typ] || '#6b7280',
+    typ_color: VEREIN_EVENT_COLORS[e.typ] || 'var(--text-muted)',
     assignment_count: 0,
   };
 }
 
 function typBadge(name, color) {
-  if (!name) return '<span style="color:#4c5462;font-size:12px">–</span>';
+  if (!name) return '<span class="text-subtle" style="font-size:12px">–</span>';
   return `<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;background:${color}22;color:${color}">${esc(name)}</span>`;
 }
 
 async function loadTermineView(modules = {}) {
   const wrap = document.getElementById('personal-termine-wrap');
-  wrap.innerHTML = '<p style="color:var(--text-muted);font-size:13px">Lade...</p>';
+  wrap.innerHTML = '<p class="text-muted text-sm">Lade...</p>';
 
   try {
     const fetches = [api.getTermine(), api.getTerminTypen(), api.getPersonalMembers()];
@@ -1034,7 +1030,7 @@ async function loadTermineView(modules = {}) {
           </div>
         </div>
         <div id="termine-list">
-          ${all.length ? renderTerminTable(all) : '<div style="padding:16px"><p style="color:var(--text-muted);font-size:13px">Noch keine Termine eingetragen.</p></div>'}
+          ${all.length ? renderTerminTable(all) : '<div style="padding:16px"><p class="text-muted text-sm">Noch keine Termine eingetragen.</p></div>'}
         </div>
       </div>
 
@@ -1046,7 +1042,7 @@ async function loadTermineView(modules = {}) {
     bindTermineActions(typen, members);
 
   } catch (e) {
-    wrap.innerHTML = `<p style="color:#ff8a80">${esc(e.message)}</p>`;
+    wrap.innerHTML = `<p class="error-msg">${esc(e.message)}</p>`;
   }
 }
 
@@ -1060,13 +1056,13 @@ function renderTerminTable(termine) {
           <strong>${esc(t.title)}</strong>
           ${t.location ? `<div style="color:var(--text-muted);font-size:11px;margin-top:2px">${esc(t.location)}</div>` : ''}
         </td>
-        <td style="padding:10px 16px">${typBadge(t.typ_name, t.typ_color || '#6b7280')}</td>
+        <td style="padding:10px 16px">${typBadge(t.typ_name, t.typ_color || 'var(--text-muted)')}</td>
         <td style="padding:10px 16px;color:var(--text-muted);white-space:nowrap">${formatDateTime(t.start_at)}</td>
         <td style="padding:10px 16px;color:var(--text-muted);white-space:nowrap">${t.end_at ? formatDateTime(t.end_at) : '–'}</td>
         <td style="padding:10px 16px;color:var(--text-muted);font-size:12px">
           ${t._source === 'verein'
             ? `<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:600;background:var(--bg-card-hover);color:var(--text-muted)">Verein</span>`
-            : t.assignment_count > 0 ? `${t.assignment_count} Mitgl.` : '<span style="color:#4c5462">Alle</span>'}
+            : t.assignment_count > 0 ? `${t.assignment_count} Mitgl.` : '<span style="color:var(--text-subtle)">Alle</span>'}
         </td>
         <td style="padding:10px 16px">
           ${t._source !== 'verein' ? `
@@ -1081,13 +1077,13 @@ function renderTerminTable(termine) {
 
   return `
     <table style="width:100%;border-collapse:collapse;font-size:13px">
-      <thead><tr style="background:var(--bg-card-hover)">
-        <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Termin</th>
-        <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Typ</th>
-        <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Beginn</th>
-        <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Ende</th>
-        <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Zugewiesen</th>
-        <th style="padding:10px 16px;border-bottom:1px solid var(--border)"></th>
+      <thead><tr>
+        <th>Termin</th>
+        <th>Typ</th>
+        <th>Beginn</th>
+        <th>Ende</th>
+        <th>Zugewiesen</th>
+        <th></th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
@@ -1100,7 +1096,7 @@ function renderTerminModal(typen) {
 
   return `
     <div id="termin-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;align-items:center;justify-content:center">
-      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:24px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto">
+      <div class="inline-panel" style="max-width:520px;max-height:90vh;overflow-y:auto">
         <h3 id="termin-modal-title" style="margin:0 0 16px;font-size:16px">Termin</h3>
         <div class="form-grid">
           <div class="form-group form-group--full">
@@ -1128,7 +1124,7 @@ function renderTerminModal(typen) {
           </div>
           <div class="form-group form-group--full">
             <label>Beschreibung</label>
-            <textarea id="t-description" maxlength="500" rows="3" style="background:var(--bg-card-hover);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:6px;font-size:13px;width:100%;resize:vertical"></textarea>
+            <textarea id="t-description" maxlength="500" rows="3" class="field" style="width:100%;resize:vertical"></textarea>
           </div>
         </div>
         <div class="btn-group" style="margin-top:16px">
@@ -1142,18 +1138,18 @@ function renderTerminModal(typen) {
 function renderAssignModal(members) {
   const memberOptions = members.map(m => `
     <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;font-size:13px">
-      <input type="checkbox" value="${m.id}" style="accent-color:#e63022" />
+      <input type="checkbox" value="${m.id}" style="accent-color:var(--rot)" />
       ${esc(m.display_name || m.username)}
-      ${m.display_name ? `<span style="color:var(--text-muted);font-size:11px">(${esc(m.username)})</span>` : ''}
+      ${m.display_name ? `<span class="text-muted text-xs">(${esc(m.username)})</span>` : ''}
     </label>`).join('');
 
   return `
     <div id="assign-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:300;align-items:center;justify-content:center">
-      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:24px;width:100%;max-width:440px;max-height:80vh;display:flex;flex-direction:column">
+      <div class="inline-panel" style="max-width:440px;max-height:80vh;display:flex;flex-direction:column">
         <h3 style="margin:0 0 8px;font-size:16px">Zuweisung</h3>
         <p style="color:var(--text-muted);font-size:12px;margin:0 0 12px">Keine Auswahl = allgemeiner Termin (für alle sichtbar)</p>
         <input type="text" id="assign-search" placeholder="Mitglied suchen..." maxlength="100"
-          style="background:var(--bg-card-hover);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:13px;margin-bottom:10px" />
+          class="field" style="margin-bottom:10px" />
         <div id="assign-member-list" style="overflow-y:auto;flex:1;padding-right:4px">${memberOptions}</div>
         <div class="btn-group" style="margin-top:16px">
           <button class="btn btn--primary" id="btn-save-assign">Speichern</button>
@@ -1310,7 +1306,7 @@ async function refreshTermine() {
     .sort((a, b) => new Date(a.start_at) - new Date(b.start_at));
   document.getElementById('termine-list').innerHTML = all.length
     ? renderTerminTable(all)
-    : '<div style="padding:16px"><p style="color:var(--text-muted);font-size:13px">Noch keine Termine eingetragen.</p></div>';
+    : '<div style="padding:16px"><p class="text-muted text-sm">Noch keine Termine eingetragen.</p></div>';
   renderIcons(document.getElementById('termine-list'));
   // Bind actions neu (openModal und openAssignModal aus loadTermineView nicht zugänglich — nutze gespeicherte Referenz)
   document.querySelectorAll('[data-action="edit-termin"]').forEach(btn => {
@@ -1372,7 +1368,7 @@ function toDatetimeLocal(isoString) {
 
 async function loadTerminTypenView() {
   const wrap = document.getElementById('personal-typen-wrap');
-  wrap.innerHTML = '<p style="color:var(--text-muted);font-size:13px">Lade...</p>';
+  wrap.innerHTML = '<p class="text-muted text-sm">Lade...</p>';
 
   try {
     const typen = await api.getTerminTypen();
@@ -1389,7 +1385,7 @@ async function loadTerminTypenView() {
       </div>
 
       <div id="typ-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;align-items:center;justify-content:center">
-        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:24px;width:100%;max-width:380px">
+        <div class="inline-panel" style="max-width:380px">
           <h3 style="margin:0 0 16px;font-size:16px">Neuer Termintyp</h3>
           <div class="form-grid">
             <div class="form-group">
@@ -1414,7 +1410,7 @@ async function loadTerminTypenView() {
     const typModal = document.getElementById('typ-modal');
     document.getElementById('btn-add-typ').addEventListener('click', () => {
       document.getElementById('typ-name').value = '';
-      document.getElementById('typ-color').value = '#6b7280';
+      document.getElementById('typ-color').value = 'var(--text-muted)';
       typModal.style.display = 'flex';
     });
     document.getElementById('btn-cancel-typ').addEventListener('click', () => { typModal.style.display = 'none'; });
@@ -1435,17 +1431,17 @@ async function loadTerminTypenView() {
     bindTypenDeleteActions();
 
   } catch (e) {
-    wrap.innerHTML = `<p style="color:#ff8a80">${esc(e.message)}</p>`;
+    wrap.innerHTML = `<p class="error-msg">${esc(e.message)}</p>`;
   }
 }
 
 function renderTypenList(typen) {
-  if (!typen.length) return '<div style="padding:16px"><p style="color:var(--text-muted);font-size:13px">Keine Typen gefunden.</p></div>';
+  if (!typen.length) return '<div style="padding:16px"><p class="text-muted text-sm">Keine Typen gefunden.</p></div>';
   const rows = typen.map(t => `
     <tr data-typid="${t.id}">
       <td style="padding:10px 16px">
         ${typBadge(t.name, t.color)}
-        ${t.is_default ? '<span style="color:#4c5462;font-size:11px;margin-left:6px">Standard</span>' : ''}
+        ${t.is_default ? '<span class="text-subtle" style="font-size:11px;margin-left:6px">Standard</span>' : ''}
       </td>
       <td style="padding:10px 16px">
         ${!t.is_default
@@ -1456,9 +1452,9 @@ function renderTypenList(typen) {
 
   return `
     <table style="width:100%;border-collapse:collapse;font-size:13px">
-      <thead><tr style="background:var(--bg-card-hover)">
-        <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Typ</th>
-        <th style="padding:10px 16px;border-bottom:1px solid var(--border)"></th>
+      <thead><tr>
+        <th>Typ</th>
+        <th></th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;

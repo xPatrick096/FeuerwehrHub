@@ -16,9 +16,9 @@ export const STATUS_LABELS = {
 };
 
 export const STATUS_COLORS = {
-  entwurf:     '#f0a500',
-  freigegeben: '#3fb950',
-  archiviert:  '#7d8590',
+  entwurf:     'var(--gelb)',
+  freigegeben: 'var(--gruen)',
+  archiviert:  'var(--text-muted)',
 };
 
 export const RESOURCES = [
@@ -80,11 +80,9 @@ export function buildTabsHTML(tabContainerStyle = '', opts = {}) {
   ];
   const visibleTabs = allTabs.filter(t => t.show !== false);
   return `
-    <div class="incident-tabs" style="display:flex;gap:2px;background:var(--bg-card-hover);border-bottom:1px solid var(--border);overflow-x:auto;${tabContainerStyle}">
+    <div class="tab-bar" style="overflow-x:auto;${tabContainerStyle}">
       ${visibleTabs.map(t => `
-        <button class="incident-tab" data-tab="${t.idx}"
-          style="padding:10px 16px;background:none;border:none;border-bottom:2px solid transparent;
-                 color:var(--text-muted);cursor:pointer;font-size:13px;white-space:nowrap;font-weight:400">
+        <button class="tab-btn incident-tab" data-tab="${t.idx}">
           ${t.label}
         </button>`).join('')}
     </div>
@@ -102,7 +100,7 @@ function buildPanelsHTML() {
           <input type="text" id="ir-number" placeholder="wird automatisch vergeben" />
         </div>
         <div class="form-group">
-          <label>Datum <span style="color:#e63022">*</span></label>
+          <label>Datum <span class="required">*</span></label>
           <input type="date" id="ir-date" />
         </div>
         <div class="form-group">
@@ -122,11 +120,11 @@ function buildPanelsHTML() {
           <input type="time" id="ir-end-time" />
         </div>
         <div class="form-group" style="grid-column:1/-1">
-          <label>Einsatzart <span style="color:#e63022">*</span></label>
+          <label>Einsatzart <span class="required">*</span></label>
           <select id="ir-type"></select>
         </div>
         <div class="form-group" style="grid-column:1/-1">
-          <label>Einsatzort <span style="color:#e63022">*</span></label>
+          <label>Einsatzort <span class="required">*</span></label>
           <input type="text" id="ir-location" placeholder="Ortsname / Gemeinde" />
         </div>
         <div class="form-group">
@@ -295,21 +293,21 @@ function buildPanelsHTML() {
     <!-- Tab 6: Fahrzeuge (Phase B) -->
     <div class="incident-tab-panel" data-panel="6" style="display:none;padding:20px 0">
       <div id="incident-vehicles-wrap">
-        <p style="color:var(--text-muted);font-size:13px">Lade...</p>
+        <p class="text-muted text-sm">Lade...</p>
       </div>
     </div>
 
     <!-- Tab 7: Personal (Phase B) -->
     <div class="incident-tab-panel" data-panel="7" style="display:none;padding:20px 0">
       <div id="incident-personnel-wrap">
-        <p style="color:var(--text-muted);font-size:13px">Lade...</p>
+        <p class="text-muted text-sm">Lade...</p>
       </div>
     </div>
 
     <!-- Tab 8: Anhänge (Phase C) -->
     <div class="incident-tab-panel" data-panel="8" style="display:none;padding:20px 0">
       <div id="incident-attachments-wrap">
-        <p style="color:var(--text-muted);font-size:13px">Lade...</p>
+        <p class="text-muted text-sm">Lade...</p>
       </div>
     </div>
   `;
@@ -327,9 +325,7 @@ export function setupTabs(scope = document) {
 export function switchTab(idx, scope = document) {
   scope.querySelectorAll('.incident-tab').forEach(btn => {
     const active = +btn.dataset.tab === idx;
-    btn.style.color             = active ? '#e6edf3' : '#7d8590';
-    btn.style.borderBottomColor = active ? '#e63022' : 'transparent';
-    btn.style.fontWeight        = active ? '600' : '400';
+    btn.classList.toggle('tab-btn--active', active);
   });
   scope.querySelectorAll('.incident-tab-panel').forEach(panel => {
     panel.style.display = +panel.dataset.panel === idx ? 'block' : 'none';
@@ -392,7 +388,7 @@ export function buildResourcesGrid(containerId, resources, readonly = false) {
     return `
       <div class="form-group">
         <label style="font-size:12px">${esc(r.label)}
-          <span style="color:var(--text-muted)">(${r.unit})</span></label>
+          <span class="text-muted">(${r.unit})</span></label>
         <input type="${r.unit === 'hh:mm' ? 'text' : 'number'}"
           id="res-${r.key}" data-resource="${r.key}"
           min="0" value="${esc(String(val))}" placeholder="0"

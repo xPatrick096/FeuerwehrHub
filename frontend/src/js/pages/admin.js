@@ -43,11 +43,11 @@ export async function renderAdmin() {
       </div>
     </div>
 
-    <div id="update-banner" style="display:none;background:#1a2a1a;border:1px solid #3fb950;border-radius:8px;padding:10px 16px;margin-bottom:16px;font-size:13px;color:#3fb950;align-items:center;gap:10px">
+    <div id="update-banner" class="alert-success" style="display:none;align-items:center;gap:10px">
       <span>${icon('arrow-up-circle', 16)}</span>
       <span id="update-banner-text"></span>
-      <a id="update-banner-link" href="#" target="_blank" style="color:#3fb950;font-weight:600;text-decoration:underline">Releases ansehen</a>
-      <button id="update-banner-btn" onclick="triggerUpdate()" style="margin-left:auto;background:#3fb950;color:#0d1117;border:none;border-radius:6px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer">Update installieren</button>
+      <a id="update-banner-link" href="#" target="_blank" class="text-success" style="font-weight:600;text-decoration:underline">Releases ansehen</a>
+      <button id="update-banner-btn" onclick="triggerUpdate()" class="btn btn--primary" style="margin-left:auto;background:var(--gruen);font-size:12px;padding:5px 14px">Update installieren</button>
     </div>
 
     <div id="update-modal" class="modal-overlay">
@@ -57,12 +57,12 @@ export async function renderAdmin() {
         </div>
         <div class="modal__body">
           <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
-            <div id="update-spinner" style="width:18px;height:18px;border:2px solid var(--border);border-top-color:#3fb950;border-radius:50%;animation:spin 0.8s linear infinite;flex-shrink:0"></div>
+            <div id="update-spinner" style="width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--gruen);border-radius:50%;animation:spin 0.8s linear infinite;flex-shrink:0"></div>
             <span id="update-status-text" style="font-weight:600;color:var(--text)">Initialisiere...</span>
             <span id="update-timer" style="margin-left:auto;font-size:12px;color:var(--text-muted);font-variant-numeric:tabular-nums"></span>
           </div>
-          <pre id="update-log" style="background:#0d1117;border:1px solid #21273d;border-radius:8px;padding:12px;font-size:12px;line-height:1.6;color:#7d8590;max-height:320px;overflow-y:auto;white-space:pre-wrap;word-break:break-word;font-family:monospace">Warte auf ersten Log-Eintrag...</pre>
-          <div id="update-countdown" style="display:none;margin-top:16px;padding:12px;background:#1a2a1a;border:1px solid #3fb950;border-radius:8px;color:#3fb950;font-size:13px;text-align:center"></div>
+          <pre id="update-log" class="terminal" style="max-height:320px">Warte auf ersten Log-Eintrag...</pre>
+          <div id="update-countdown" class="alert-success" style="display:none;margin-top:16px;text-align:center"></div>
         </div>
       </div>
     </div>
@@ -120,16 +120,16 @@ export async function renderAdmin() {
           <div id="einsatzarten-add-form" style="display:none;padding:16px;background:var(--bg-card);border-bottom:1px solid var(--border)">
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end">
               <div class="form-group" style="margin:0">
-                <label style="font-size:12px">Schlüssel <span style="color:#e63022">*</span>
+                <label style="font-size:12px">Schlüssel <span class="required">*</span>
                   <span style="color:var(--text-muted);font-weight:400">(unveränderlich)</span></label>
                 <input type="text" id="ea-key" placeholder="z.B. TH2_BOOT" style="text-transform:uppercase" />
               </div>
               <div class="form-group" style="margin:0">
-                <label style="font-size:12px">Bezeichnung <span style="color:#e63022">*</span></label>
+                <label style="font-size:12px">Bezeichnung <span class="required">*</span></label>
                 <input type="text" id="ea-label" placeholder="z.B. TH2 – Boot in Not" />
               </div>
               <div class="form-group" style="margin:0">
-                <label style="font-size:12px">Kategorie <span style="color:#e63022">*</span></label>
+                <label style="font-size:12px">Kategorie <span class="required">*</span></label>
                 <select id="ea-category">
                   <option value="brand">Brand</option>
                   <option value="thl">THL</option>
@@ -159,7 +159,7 @@ export async function renderAdmin() {
       <div class="card">
         <div class="card__header">Design</div>
         <div class="card__body">
-          <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">
+          <p class="text-muted text-sm" style="margin-bottom:16px">
             Wähle das Erscheinungsbild der Oberfläche. Die Einstellung wird lokal im Browser gespeichert.
           </p>
           <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -199,7 +199,7 @@ export async function renderAdmin() {
       <div class="card" style="margin-top:0">
         <div class="card__header">Wappen / Logo</div>
         <div class="card__body">
-          <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">
+          <p class="text-muted text-sm" style="margin-bottom:16px">
             Lade das Wappen oder Logo deiner Feuerwehr hoch. Es erscheint auf der Anmeldeseite und in der Navigation.
             Empfohlen: PNG mit transparentem Hintergrund, max. 500 KB.
           </p>
@@ -218,7 +218,7 @@ export async function renderAdmin() {
       <div class="card" style="margin-top:0">
         <div class="card__header">Unterschrift</div>
         <div class="card__body">
-          <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">
+          <p class="text-muted text-sm" style="margin-bottom:16px">
             Lade eine Unterschrift hoch. Sie wird automatisch in generierte PDFs eingesetzt
             (generisches PDF, kein Template). Empfohlen: PNG mit transparentem Hintergrund, max. 500 KB.
           </p>
@@ -237,7 +237,7 @@ export async function renderAdmin() {
       <div class="card" style="margin-top:0">
         <div class="card__header">Beschaffungsauftrag PDF-Vorlage</div>
         <div class="card__body">
-          <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">
+          <p class="text-muted text-sm" style="margin-bottom:16px">
             Lade das offizielle Formular deiner Feuerwehr / Stadt hoch.
             Dieses PDF wird als Vorlage für alle Beschaffungsaufträge verwendet und mit den Bestelldaten befüllt.
           </p>
@@ -272,7 +272,7 @@ export async function renderAdmin() {
           <button class="btn btn--outline btn--sm" id="btn-refresh-container-log">Aktualisieren</button>
         </div>
         <div class="card__body" id="container-log-wrap">
-          <pre id="container-log-content" style="font-family:monospace;font-size:12px;line-height:1.5;max-height:600px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;background:#0d1117;padding:12px;border-radius:6px;color:#c9d1d9">Lade...</pre>
+          <pre id="container-log-content" class="terminal" style="max-height:600px">Lade...</pre>
         </div>
       </div>
     </div>
@@ -377,7 +377,7 @@ export async function renderAdmin() {
           <button class="modal__close" id="btn-close-functions">✕</button>
         </div>
         <div class="modal__body">
-          <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">
+          <p class="text-muted text-sm" style="margin-bottom:16px">
             Zusatzfunktionen erweitern die Modulberechtigungen des Benutzers additiv.
           </p>
           <div id="functions-checks" style="display:flex;flex-direction:column;gap:10px"></div>
@@ -397,7 +397,7 @@ export async function renderAdmin() {
           <button class="modal__close" id="btn-close-reset-pw">✕</button>
         </div>
         <div class="modal__body">
-          <p id="reset-pw-username" style="font-size:13px;color:#666;margin-bottom:12px"></p>
+          <p id="reset-pw-username" style="font-size:13px;color:var(--text-muted);margin-bottom:12px"></p>
           <div class="form-group">
             <label>Neues Passwort (mind. 8 Zeichen)</label>
             <input type="password" id="reset-pw-value" autocomplete="new-password" />
@@ -463,10 +463,10 @@ export async function renderAdmin() {
     const deleteBtn = document.getElementById('btn-delete-pdf');
     if (!statusEl) return;
     if (hasPdf) {
-      statusEl.innerHTML = `<span style="color:#3fb950">${icon('check-circle', 14)} PDF-Vorlage ist hinterlegt</span>`;
+      statusEl.innerHTML = `<span class="text-success">${icon('check-circle', 14)} PDF-Vorlage ist hinterlegt</span>`;
       if (deleteBtn) deleteBtn.style.display = '';
     } else {
-      statusEl.innerHTML = `<span style="color:#ff8a80">${icon('alert-triangle', 14)} Noch keine PDF-Vorlage hochgeladen</span>`;
+      statusEl.innerHTML = `<span class="text-error">${icon('alert-triangle', 14)} Noch keine PDF-Vorlage hochgeladen</span>`;
       if (deleteBtn) deleteBtn.style.display = 'none';
     }
     renderIcons(statusEl);
@@ -507,9 +507,9 @@ export async function renderAdmin() {
     if (saved) {
       el.innerHTML = `
         <img src="${saved}" style="width:56px;height:56px;object-fit:contain;border:1px solid var(--border);border-radius:12px;padding:4px;background:var(--bg-card);">
-        <span style="font-size:12px;color:#3fb950;font-weight:600;">✓ Eigenes Wappen aktiv</span>`;
+        <span class="text-success" style="font-size:12px;font-weight:600">✓ Eigenes Wappen aktiv</span>`;
     } else {
-      el.innerHTML = `<span style="font-size:12px;color:var(--text-muted)">${icon('flame', 14)} Standard-Logo (Flamme) aktiv</span>`;
+      el.innerHTML = `<span class="text-muted text-xs">${icon('flame', 14)} Standard-Logo (Flamme) aktiv</span>`;
     }
     renderIcons(el);
   };
@@ -544,9 +544,9 @@ export async function renderAdmin() {
     if (saved) {
       el.innerHTML = `
         <img src="${saved}" style="height:44px;max-width:220px;object-fit:contain;border:1px solid var(--border);border-radius:8px;padding:4px;background:#fff;">
-        <span style="font-size:12px;color:#3fb950;font-weight:600;">✓ Unterschrift gespeichert</span>`;
+        <span class="text-success" style="font-size:12px;font-weight:600">✓ Unterschrift gespeichert</span>`;
     } else {
-      el.innerHTML = `<span style="font-size:12px;color:var(--text-muted)">Keine Unterschrift hinterlegt</span>`;
+      el.innerHTML = `<span class="text-muted text-xs">Keine Unterschrift hinterlegt</span>`;
     }
   };
   updateSigPreview();
@@ -751,7 +751,7 @@ async function openFunctionsModal(userId, username) {
   const modal    = document.getElementById('modal-functions');
   const checksEl = document.getElementById('functions-checks');
   document.getElementById('modal-functions-username').textContent = username;
-  checksEl.innerHTML = '<p style="color:var(--text-muted);font-size:13px">Lade...</p>';
+  checksEl.innerHTML = '<p class="text-muted text-sm">Lade...</p>';
   modal.style.display = 'flex';
 
   const [allRoles, userFunctions] = await Promise.all([
@@ -763,7 +763,7 @@ async function openFunctionsModal(userId, username) {
   const assignedIds = userFunctions.map(f => f.role_id);
 
   if (!funktionen.length) {
-    checksEl.innerHTML = '<p style="color:var(--text-muted);font-size:13px">Keine Zusatzfunktionen angelegt.</p>';
+    checksEl.innerHTML = '<p class="text-muted text-sm">Keine Zusatzfunktionen angelegt.</p>';
   } else {
     checksEl.innerHTML = funktionen.map(f => `
       <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:8px;border:1px solid var(--border);border-radius:8px">
@@ -811,7 +811,7 @@ async function loadRoles(me) {
     const roles = await api.getRoles().catch(() => []);
 
     if (!roles.length) {
-      wrap.innerHTML = '<p style="color:#666;font-size:13px">Noch keine Rollen angelegt.</p>';
+      wrap.innerHTML = '<p style="color:var(--text-muted);font-size:13px">Noch keine Rollen angelegt.</p>';
     } else {
       wrap.innerHTML = `
         <table class="table">
@@ -829,12 +829,12 @@ async function loadRoles(me) {
                 <td><strong>${esc(r.name)}</strong></td>
                 <td>
                   <span style="font-size:11px;padding:2px 8px;border-radius:10px;
-                    background:${r.type === 'funktion' ? 'rgba(240,165,0,0.15)' : 'rgba(63,185,80,0.15)'};
-                    color:${r.type === 'funktion' ? '#f0a500' : '#3fb950'}">
+                    background:${r.type === 'funktion' ? 'var(--orange-hell)' : 'var(--gruen-hell)'};
+                    color:${r.type === 'funktion' ? 'var(--gelb)' : 'var(--gruen)'}">
                     ${r.type === 'funktion' ? 'Zusatzfunktion' : 'Dienstgrad'}
                   </span>
                 </td>
-                <td>${r.permissions.length ? r.permissions.map(p => MODULE_LABELS[p] || p).join(', ') : '<span style="color:#aaa">keine</span>'}</td>
+                <td>${r.permissions.length ? r.permissions.map(p => MODULE_LABELS[p] || p).join(', ') : '<span style="color:var(--text-subtle)">keine</span>'}</td>
                 <td>
                   <div class="btn-group">
                     <button class="btn btn--outline btn--sm" data-action="edit-role"
@@ -935,7 +935,7 @@ async function loadUsers(me, roles = []) {
     const users = await api.getUsers();
 
     if (!users.length) {
-      wrap.innerHTML = '<p style="color:#666;font-size:13px">Keine Benutzer gefunden.</p>';
+      wrap.innerHTML = '<p style="color:var(--text-muted);font-size:13px">Keine Benutzer gefunden.</p>';
       return;
     }
 
@@ -966,7 +966,7 @@ async function loadUsers(me, roles = []) {
             const isLocked = u.locked_until && new Date(u.locked_until) > new Date();
 
             const roleDropdown = isPrivileged
-              ? `<span style="font-size:11px;color:#888">alle (Systemrolle)</span>`
+              ? `<span style="font-size:11px;color:var(--text-muted)">alle (Systemrolle)</span>`
               : `<select class="user-role-select" data-user-id="${u.id}" style="font-size:13px">
                    <option value="">— kein Dienstgrad —</option>
                    ${dienstgrade.map(r =>
@@ -978,7 +978,7 @@ async function loadUsers(me, roles = []) {
               <tr>
                 <td>
                   ${esc(u.username)}
-                  ${isSelf ? ' <span style="font-size:11px;color:#888">(ich)</span>' : ''}
+                  ${isSelf ? ' <span style="font-size:11px;color:var(--text-muted)">(ich)</span>' : ''}
                 </td>
                 <td>
                   <span class="badge badge--${u.role}">${ROLE_LABELS[u.role] || u.role}</span>
@@ -990,13 +990,13 @@ async function loadUsers(me, roles = []) {
                          data-id="${u.id}" data-username="${esc(u.username)}">
                          Funktionen
                        </button>`
-                    : '<span style="font-size:11px;color:#888">alle</span>'}
+                    : '<span style="font-size:11px;color:var(--text-muted)">alle</span>'}
                 </td>
                 <td style="text-align:center">${u.totp_enabled ? `${icon('lock', 14)}` : '—'}</td>
                 <td style="text-align:center">
                   ${isLocked ? `<span class="badge badge--danger" title="Gesperrt bis ${new Date(u.locked_until).toLocaleString('de-DE')}">Gesperrt</span>` : '—'}
                 </td>
-                <td style="font-size:12px;color:#666">
+                <td style="font-size:12px;color:var(--text-muted)">
                   ${new Date(u.created_at).toLocaleDateString('de-DE')}
                 </td>
                 <td>
@@ -1064,21 +1064,21 @@ async function loadModules() {
     const modules = settings?.modules || {};
 
     wrap.innerHTML = `
-      <p style="font-size:13px;color:#666;margin-bottom:20px">
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px">
         Aktiviere oder deaktiviere Module für diese Feuerwehr.
         Deaktivierte Module sind für alle Benutzer ausgeblendet.
       </p>
       <div style="display:flex;flex-direction:column;gap:0">
         ${MODULE_DEFS.map(m => `
           <div style="display:flex;align-items:center;justify-content:space-between;
-                      padding:14px 0;border-bottom:1px solid #f0f0f0">
+                      padding:14px 0;border-bottom:1px solid var(--border)">
             <div style="display:flex;align-items:center;gap:12px">
               <span>${icon(m.iconName, 22)}</span>
               <div>
                 <div style="font-weight:600;font-size:14px">${m.label}
-                  ${m.soon ? '<span style="font-size:11px;color:#999;margin-left:6px;font-weight:400">Demnächst</span>' : ''}
+                  ${m.soon ? '<span style="font-size:11px;color:var(--text-subtle);margin-left:6px;font-weight:400">Demnächst</span>' : ''}
                 </div>
-                <div style="font-size:12px;color:#888;margin-top:2px">${m.desc}</div>
+                <div style="font-size:12px;color:var(--text-muted);margin-top:2px">${m.desc}</div>
               </div>
             </div>
             <label class="toggle-switch" style="flex-shrink:0">
@@ -1121,7 +1121,7 @@ async function loadAuditLog() {
     const entries = await api.getAuditLog();
 
     if (!entries.length) {
-      wrap.innerHTML = '<p style="color:#666;font-size:13px">Noch keine Einträge.</p>';
+      wrap.innerHTML = '<p style="color:var(--text-muted);font-size:13px">Noch keine Einträge.</p>';
       return;
     }
 
@@ -1150,12 +1150,12 @@ async function loadAuditLog() {
         <tbody>
           ${entries.map(e => `
             <tr>
-              <td style="font-size:12px;color:#666;white-space:nowrap">
+              <td style="font-size:12px;color:var(--text-muted);white-space:nowrap">
                 ${new Date(e.created_at).toLocaleString('de-DE')}
               </td>
               <td>${esc(e.username)}</td>
               <td style="white-space:nowrap">${ACTION_LABELS[e.action] || esc(e.action)}</td>
-              <td style="font-size:12px;color:#666">${esc(e.details || '')}</td>
+              <td style="font-size:12px;color:var(--text-muted)">${esc(e.details || '')}</td>
             </tr>
           `).join('')}
         </tbody>
@@ -1191,7 +1191,7 @@ async function loadContainerLog() {
 // ── Einsatzarten ─────────────────────────────────────────────────────────────
 
 const CAT_LABELS_EA = { brand: 'Brand', thl: 'THL', gefahrgut: 'Gefahrgut', fehlalarm: 'Fehlalarm', sonstiges: 'Sonstiges' };
-const CAT_COLORS_EA = { brand: '#e63022', thl: '#f0a500', gefahrgut: '#8957e5', fehlalarm: '#7d8590', sonstiges: '#3fb950' };
+const CAT_COLORS_EA = { brand: 'var(--rot)', thl: 'var(--gelb)', gefahrgut: 'var(--lila)', fehlalarm: 'var(--text-muted)', sonstiges: 'var(--gruen)' };
 
 async function loadEinsatzarten() {
   const list = document.getElementById('einsatzarten-list');
@@ -1202,7 +1202,7 @@ async function loadEinsatzarten() {
   try {
     types = await api.getIncidentTypes();
   } catch (e) {
-    list.innerHTML = `<p style="color:#ff8a80;font-size:13px;padding:16px">Fehler: ${esc(e.message)}</p>`;
+    list.innerHTML = `<p class="error-msg" style="padding:16px">Fehler: ${esc(e.message)}</p>`;
     return;
   }
 
@@ -1213,7 +1213,7 @@ async function loadEinsatzarten() {
 
   list.innerHTML = Object.entries(grouped).map(([cat, items]) => {
     if (!items.length) return '';
-    const color = CAT_COLORS_EA[cat] || '#7d8590';
+    const color = CAT_COLORS_EA[cat] || 'var(--text-muted)';
     return `
       <div style="border-bottom:1px solid var(--border)">
         <div style="padding:10px 16px;background:var(--bg-card-hover);font-size:11px;font-weight:700;
@@ -1240,7 +1240,7 @@ async function loadEinsatzarten() {
                 Bearbeiten
               </button>
               <button class="btn btn--outline btn--sm" data-action="ea-toggle" data-id="${t.id}"
-                style="color:${t.active ? '#f0a500' : '#3fb950'}">
+                style="color:${t.active ? 'var(--gelb)' : 'var(--gruen)'}">
                 ${t.active ? 'Deakt.' : 'Aktiv.'}
               </button>
               <button class="btn btn--danger btn--sm" data-action="ea-delete" data-id="${t.id}"
@@ -1398,7 +1398,7 @@ window.triggerUpdate = async function() {
   logPre.textContent = '';
   countdown.style.display = 'none';
   statusText.textContent  = 'Starte Update...';
-  statusText.style.color  = '#e6edf3';
+  statusText.style.color  = 'var(--text)';
   spinner.style.display   = 'block';
 
   // Laufzeit-Timer starten
@@ -1416,7 +1416,7 @@ window.triggerUpdate = async function() {
     await api.request('POST', '/admin/update');
   } catch (e) {
     statusText.textContent = `Fehler: ${e.message}`;
-    statusText.style.color = '#ff8a80';
+    statusText.style.color = 'var(--error)';
     spinner.style.display  = 'none';
     clearInterval(_updateTimerInterval);
     return;
@@ -1440,7 +1440,7 @@ window.triggerUpdate = async function() {
         clearInterval(_updateTimerInterval);
         spinner.style.display  = 'none';
         statusText.textContent = 'Update abgeschlossen — System startet neu...';
-        statusText.style.color = '#3fb950';
+        statusText.style.color = 'var(--gruen)';
         _startRestartCountdown(countdown);
       }
 
@@ -1449,7 +1449,7 @@ window.triggerUpdate = async function() {
         clearInterval(_updateTimerInterval);
         spinner.style.display  = 'none';
         statusText.textContent = 'Update fehlgeschlagen.';
-        statusText.style.color = '#ff8a80';
+        statusText.style.color = 'var(--error)';
       }
     } catch (_) {
       // Backend antwortet nicht mehr → Neustart läuft
@@ -1458,7 +1458,7 @@ window.triggerUpdate = async function() {
       clearInterval(_updateTimerInterval);
       spinner.style.display  = 'none';
       statusText.textContent = 'Backend neugestartet — Weiterleitung...';
-      statusText.style.color = '#3fb950';
+      statusText.style.color = 'var(--gruen)';
       _startRestartCountdown(countdown);
     }
   }, 1500);

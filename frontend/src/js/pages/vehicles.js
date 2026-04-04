@@ -18,9 +18,9 @@ const STATUS_LABELS = {
 };
 
 const STATUS_COLORS = {
-  aktiv:         '#3fb950',
-  ausser_dienst: '#e63022',
-  wartung:       '#f0a500',
+  aktiv:         'var(--gruen)',
+  ausser_dienst: 'var(--rot)',
+  wartung:       'var(--gelb)',
 };
 
 export async function renderVehicles() {
@@ -49,7 +49,7 @@ export async function renderVehicles() {
         </div>
         <div class="modal__body" style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px">
           <div class="form-group" style="grid-column:1/-1">
-            <label>Name <span style="color:#e63022">*</span></label>
+            <label>Name <span class="required">*</span></label>
             <input type="text" id="v-name" placeholder="z.B. HLF 20" maxlength="200" />
           </div>
           <div class="form-group">
@@ -161,7 +161,7 @@ export async function renderVehicles() {
         </div>
         <div class="modal__body" style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px">
           <div class="form-group" style="grid-column:1/-1">
-            <label>Bezeichnung <span style="color:#e63022">*</span></label>
+            <label>Bezeichnung <span class="required">*</span></label>
             <input type="text" id="eq-name" maxlength="200" placeholder="z.B. Hydraulisches Rettungsgerät" />
           </div>
           <div class="form-group">
@@ -218,7 +218,7 @@ export async function renderVehicles() {
         </div>
         <div class="modal__body">
           <div class="form-group">
-            <label>Name <span style="color:#e63022">*</span></label>
+            <label>Name <span class="required">*</span></label>
             <input type="text" id="tpl-name" maxlength="200" placeholder="z.B. Tagesdienstcheck" />
           </div>
           <div class="form-group">
@@ -276,7 +276,7 @@ export async function renderVehicles() {
         </div>
         <div class="modal__body">
           <div class="form-group">
-            <label>Datum <span style="color:#e63022">*</span></label>
+            <label>Datum <span class="required">*</span></label>
             <input type="date" id="trip-date" />
           </div>
           <div class="form-group">
@@ -324,7 +324,7 @@ export async function renderVehicles() {
         </div>
         <div class="modal__body">
           <div class="form-group">
-            <label>Datum <span style="color:#e63022">*</span></label>
+            <label>Datum <span class="required">*</span></label>
             <input type="date" id="fueling-date" />
           </div>
           <div class="form-group">
@@ -371,7 +371,7 @@ export async function renderVehicles() {
         </div>
         <div class="modal__body">
           <div class="form-group">
-            <label>Titel <span style="color:#e63022">*</span></label>
+            <label>Titel <span class="required">*</span></label>
             <input type="text" id="defect-title" maxlength="200" placeholder="Kurze Beschreibung des Defekts" />
           </div>
           <div class="form-group">
@@ -458,7 +458,7 @@ export async function renderVehicles() {
         </div>
         <div class="modal__body">
           <div class="form-group">
-            <label>Bezeichnung <span style="color:#e63022">*</span></label>
+            <label>Bezeichnung <span class="required">*</span></label>
             <input type="text" id="insp-name" placeholder="z.B. Hauptuntersuchung (HU)" maxlength="200" />
           </div>
           <div class="form-group">
@@ -501,7 +501,7 @@ async function loadVehicleList(isAdmin) {
   const detailWrap = document.getElementById('vehicle-detail-wrap');
   listWrap.style.display   = 'block';
   detailWrap.style.display = 'none';
-  listWrap.innerHTML = '<p style="color:var(--text-muted);font-size:13px">Lade...</p>';
+  listWrap.innerHTML = '<p class="text-muted text-sm">Lade...</p>';
 
   try {
     const vehicles = await api.getVehicles();
@@ -521,7 +521,7 @@ async function loadVehicleList(isAdmin) {
     }
 
     const rows = vehicles.map(v => {
-      const statusColor = STATUS_COLORS[v.status] || '#7d8590';
+      const statusColor = STATUS_COLORS[v.status] || 'var(--text-muted)';
       const statusLabel = STATUS_LABELS[v.status] || v.status;
       const strength = `${v.strength_leadership}/${v.strength_sub}/${v.strength_crew}`;
       return `
@@ -530,10 +530,10 @@ async function loadVehicleList(isAdmin) {
             <strong>${esc(v.name)}</strong>
             ${v.short_name ? `<span style="color:var(--text-muted);font-size:11px;margin-left:6px">${esc(v.short_name)}</span>` : ''}
           </td>
-          <td style="padding:10px 16px;color:var(--text-muted)">${esc(TYPE_LABELS[v.vehicle_type] || v.vehicle_type)}</td>
-          <td style="padding:10px 16px;color:var(--text-muted)">${esc(v.base_type || '–')}</td>
-          <td style="padding:10px 16px;color:var(--text-muted)">${esc(v.license_plate || '–')}</td>
-          <td style="padding:10px 16px;color:var(--text-muted)">${strength}</td>
+          <td>${esc(TYPE_LABELS[v.vehicle_type] || v.vehicle_type)}</td>
+          <td>${esc(v.base_type || '–')}</td>
+          <td>${esc(v.license_plate || '–')}</td>
+          <td>${strength}</td>
           <td style="padding:10px 16px">
             <span style="color:${statusColor};font-size:12px;font-weight:600">${statusLabel}</span>
           </td>
@@ -545,18 +545,18 @@ async function loadVehicleList(isAdmin) {
         <div class="card__header" style="display:flex;justify-content:space-between;align-items:center">
           <span>Alle Fahrzeuge (${vehicles.length})</span>
           <input type="text" id="vehicle-search" placeholder="Suchen..." maxlength="100"
-            style="background:var(--bg-card-hover);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:13px;width:200px" />
+            class="field" style="width:200px" />
         </div>
         <div class="card__body" style="padding:0">
           <table style="width:100%;border-collapse:collapse;font-size:13px">
             <thead>
-              <tr style="background:var(--bg-card-hover)">
-                <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Fahrzeug</th>
-                <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Typ</th>
-                <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Grund-Typ</th>
-                <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Kennzeichen</th>
-                <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Stärke (F/U/M)</th>
-                <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Status</th>
+              <tr>
+                <th>Fahrzeug</th>
+                <th>Typ</th>
+                <th>Grund-Typ</th>
+                <th>Kennzeichen</th>
+                <th>Stärke (F/U/M)</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody id="vehicle-tbody">${rows}</tbody>
@@ -578,15 +578,15 @@ async function loadVehicleList(isAdmin) {
     });
 
   } catch (e) {
-    listWrap.innerHTML = `<p style="color:#ff8a80">${esc(e.message)}</p>`;
+    listWrap.innerHTML = `<p class="error-msg">${esc(e.message)}</p>`;
   }
 }
 
 function styleVehicleRows() {
   document.querySelectorAll('.vehicle-row').forEach((tr, i) => {
-    tr.style.borderBottom = '1px solid var(--border)';
+    
     tr.style.background = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)';
-    tr.addEventListener('mouseenter', () => tr.style.background = 'rgba(230,48,34,0.06)');
+    tr.addEventListener('mouseenter', () => tr.style.background = 'var(--rot-subtle)');
     tr.addEventListener('mouseleave', () => tr.style.background = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)');
   });
 }
@@ -598,11 +598,11 @@ async function openVehicleDetail(id, vehicles, isAdmin) {
   const detailWrap = document.getElementById('vehicle-detail-wrap');
   listWrap.style.display   = 'none';
   detailWrap.style.display = 'block';
-  detailWrap.innerHTML     = '<p style="color:var(--text-muted);font-size:13px">Lade...</p>';
+  detailWrap.innerHTML     = '<p class="text-muted text-sm">Lade...</p>';
 
   try {
     const v = await api.getVehicle(id);
-    const statusColor = STATUS_COLORS[v.status] || '#7d8590';
+    const statusColor = STATUS_COLORS[v.status] || 'var(--text-muted)';
     const statusLabel = STATUS_LABELS[v.status] || v.status;
 
     detailWrap.innerHTML = `
@@ -618,12 +618,12 @@ async function openVehicleDetail(id, vehicles, isAdmin) {
       </div>
 
       <!-- Tabs -->
-      <div style="display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid var(--border);padding-bottom:0;flex-wrap:wrap">
-        <button class="v-tab active" data-tab="uebersicht"  style="padding:8px 16px;background:none;border:none;color:var(--text);font-size:13px;font-weight:600;cursor:pointer;border-bottom:2px solid #e63022;margin-bottom:-1px;font-family:inherit">Übersicht</button>
-        <button class="v-tab"        data-tab="fahrtenbuch" style="padding:8px 16px;background:none;border:none;color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;font-family:inherit">Fahrtenbuch</button>
-        <button class="v-tab"        data-tab="stoerungen"  style="padding:8px 16px;background:none;border:none;color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;font-family:inherit">Störungen</button>
-        <button class="v-tab"        data-tab="geraete"     style="padding:8px 16px;background:none;border:none;color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;font-family:inherit">Geräte</button>
-        <button class="v-tab"        data-tab="checklisten" style="padding:8px 16px;background:none;border:none;color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;font-family:inherit">Checklisten</button>
+      <div class="tab-bar">
+        <button class="tab-btn tab-btn--active" data-tab="uebersicht">Übersicht</button>
+        <button class="tab-btn" data-tab="fahrtenbuch">Fahrtenbuch</button>
+        <button class="tab-btn" data-tab="stoerungen">Störungen</button>
+        <button class="tab-btn" data-tab="geraete">Geräte</button>
+        <button class="tab-btn" data-tab="checklisten">Checklisten</button>
       </div>
 
       <div id="tab-uebersicht">
@@ -717,18 +717,10 @@ async function openVehicleDetail(id, vehicles, isAdmin) {
     `;
 
     // Tab-Logik
-    document.querySelectorAll('.v-tab').forEach(btn => {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.v-tab').forEach(b => {
-          b.style.color = '#7d8590';
-          b.style.borderBottomColor = 'transparent';
-          b.style.fontWeight = '500';
-          b.classList.remove('active');
-        });
-        btn.style.color = '#e6edf3';
-        btn.style.borderBottomColor = '#e63022';
-        btn.style.fontWeight = '600';
-        btn.classList.add('active');
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('tab-btn--active'));
+        btn.classList.add('tab-btn--active');
         document.querySelectorAll('[id^="tab-"]').forEach(p => p.style.display = 'none');
         document.getElementById('tab-' + btn.dataset.tab).style.display = 'block';
       });
@@ -782,7 +774,7 @@ async function openVehicleDetail(id, vehicles, isAdmin) {
     }
 
   } catch (e) {
-    detailWrap.innerHTML = `<p style="color:#ff8a80">${esc(e.message)}</p>`;
+    detailWrap.innerHTML = `<p class="error-msg">${esc(e.message)}</p>`;
   }
 }
 
@@ -798,28 +790,28 @@ function field(label, value) {
 // ── Fristen-Tabelle ────────────────────────────────────────────────────────────
 
 function ampelDot(nextDate) {
-  if (!nextDate) return '<span style="color:var(--text-muted)">•</span>';
+  if (!nextDate) return '<span class="text-muted">•</span>';
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const nd = new Date(nextDate);
   const diffDays = Math.round((nd - today) / 86400000);
-  if (diffDays < 0)  return '<span style="color:#e63022" title="Überfällig">●</span>';
-  if (diffDays <= 14) return '<span style="color:#e63022" title="Sehr bald fällig">●</span>';
-  if (diffDays <= 60) return '<span style="color:#f0a500" title="Bald fällig">●</span>';
-  return '<span style="color:#3fb950" title="OK">●</span>';
+  if (diffDays < 0)  return '<span class="required" title="Überfällig">●</span>';
+  if (diffDays <= 14) return '<span class="required" title="Sehr bald fällig">●</span>';
+  if (diffDays <= 60) return '<span class="text-warning" title="Bald fällig">●</span>';
+  return '<span class="text-success" title="OK">●</span>';
 }
 
 function renderInspectionsTable(inspections, isAdmin) {
   if (!inspections.length) {
-    return `<div class="card__body" style="color:var(--text-muted);font-size:13px">Keine Fristen eingetragen.</div>`;
+    return `<div class="card__body text-muted text-sm">Keine Fristen eingetragen.</div>`;
   }
   const rows = inspections.map(insp => `
     <tr class="insp-row" data-id="${insp.id}">
       <td style="padding:10px 16px">${ampelDot(insp.next_date)}</td>
       <td style="padding:10px 16px;color:var(--text)">${esc(insp.name)}</td>
-      <td style="padding:10px 16px;color:var(--text-muted)">${insp.last_date ? formatDate(insp.last_date) : '–'}</td>
-      <td style="padding:10px 16px;color:var(--text-muted)">${insp.next_date ? formatDate(insp.next_date) : '–'}</td>
-      <td style="padding:10px 16px;color:var(--text-muted)">${insp.interval_months ? insp.interval_months + ' Monate' : '–'}</td>
+      <td>${insp.last_date ? formatDate(insp.last_date) : '–'}</td>
+      <td>${insp.next_date ? formatDate(insp.next_date) : '–'}</td>
+      <td>${insp.interval_months ? insp.interval_months + ' Monate' : '–'}</td>
       <td style="padding:10px 16px;color:var(--text-muted);font-size:12px">${esc(insp.notes || '')}</td>
       ${isAdmin ? `
       <td style="padding:10px 16px">
@@ -833,14 +825,14 @@ function renderInspectionsTable(inspections, isAdmin) {
   return `
     <table style="width:100%;border-collapse:collapse;font-size:13px">
       <thead>
-        <tr style="background:var(--bg-card-hover)">
+        <tr>
           <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);width:28px"></th>
-          <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Bezeichnung</th>
-          <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Letztes Datum</th>
-          <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Nächstes Datum</th>
-          <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Intervall</th>
-          <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Notiz</th>
-          <th style="padding:10px 16px;border-bottom:1px solid var(--border)"></th>
+          <th>Bezeichnung</th>
+          <th>Letztes Datum</th>
+          <th>Nächstes Datum</th>
+          <th>Intervall</th>
+          <th>Notiz</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
@@ -1076,7 +1068,7 @@ async function loadTrips(vehicleId, isAdmin) {
       </tr>`;
     }).join('');
     wrap.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:13px">
-      <thead><tr style="background:var(--bg-card-hover)">
+      <thead><tr>
         <th style="padding:9px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Datum</th>
         <th style="padding:9px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Fahrer</th>
         <th style="padding:9px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Anlass</th>
@@ -1110,7 +1102,7 @@ async function loadTrips(vehicleId, isAdmin) {
         });
       });
     }
-  } catch (e) { wrap.innerHTML = `<p style="color:#ff8a80;padding:16px">${esc(e.message)}</p>`; }
+  } catch (e) { wrap.innerHTML = `<p class="error-msg" style="padding:16px">${esc(e.message)}</p>`; }
 }
 
 async function loadFuelings(vehicleId, isAdmin) {
@@ -1136,7 +1128,7 @@ async function loadFuelings(vehicleId, isAdmin) {
           </div></td>` : '<td></td>'}
       </tr>`).join('');
     wrap.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:13px">
-      <thead><tr style="background:var(--bg-card-hover)">
+      <thead><tr>
         <th style="padding:9px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Datum</th>
         <th style="padding:9px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">km-Stand</th>
         <th style="padding:9px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Liter</th>
@@ -1162,7 +1154,7 @@ async function loadFuelings(vehicleId, isAdmin) {
         });
       });
     }
-  } catch (e) { wrap.innerHTML = `<p style="color:#ff8a80;padding:16px">${esc(e.message)}</p>`; }
+  } catch (e) { wrap.innerHTML = `<p class="error-msg" style="padding:16px">${esc(e.message)}</p>`; }
 }
 
 // ── Trip-Modal ─────────────────────────────────────────────────────────────────
@@ -1266,15 +1258,15 @@ function openFuelingModal(f, vehicleId, isAdmin) {
 
 // ── Störungsmeldungen ──────────────────────────────────────────────────────────
 
-const PRIORITY_COLORS = { niedrig: '#7d8590', mittel: '#f0a500', hoch: '#e63022', kritisch: '#e63022' };
+const PRIORITY_COLORS = { niedrig: 'var(--text-muted)', mittel: 'var(--gelb)', hoch: 'var(--rot)', kritisch: 'var(--rot)' };
 const PRIORITY_LABELS = { niedrig: 'Niedrig', mittel: 'Mittel', hoch: 'Hoch', kritisch: '⚠ Kritisch' };
 const DEFECT_STATUS_LABELS = {
   offen: 'Offen', in_bearbeitung: 'In Bearbeitung',
   behoben: 'Behoben', nicht_reproduzierbar: 'Nicht reproduzierbar',
 };
 const DEFECT_STATUS_COLORS = {
-  offen: '#e63022', in_bearbeitung: '#f0a500',
-  behoben: '#3fb950', nicht_reproduzierbar: '#7d8590',
+  offen: 'var(--rot)', in_bearbeitung: 'var(--gelb)',
+  behoben: 'var(--gruen)', nicht_reproduzierbar: 'var(--text-muted)',
 };
 
 async function loadDefects(vehicleId, isAdmin) {
@@ -1287,9 +1279,9 @@ async function loadDefects(vehicleId, isAdmin) {
       return;
     }
     wrap.innerHTML = defects.map(d => {
-      const sc = DEFECT_STATUS_COLORS[d.status] || '#7d8590';
+      const sc = DEFECT_STATUS_COLORS[d.status] || 'var(--text-muted)';
       const sl = DEFECT_STATUS_LABELS[d.status] || d.status;
-      const pc = PRIORITY_COLORS[d.priority]    || '#7d8590';
+      const pc = PRIORITY_COLORS[d.priority]    || 'var(--text-muted)';
       const pl = PRIORITY_LABELS[d.priority]    || d.priority;
       return `
         <div class="defect-card" data-id="${d.id}" style="border-bottom:1px solid var(--border);padding:14px 16px">
@@ -1301,11 +1293,11 @@ async function loadDefects(vehicleId, isAdmin) {
                 <span style="font-size:11px;color:${sc};background:${sc}22;padding:2px 8px;border-radius:20px;font-weight:600">${sl}</span>
               </div>
               ${d.description ? `<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">${esc(d.description)}</div>` : ''}
-              <div style="font-size:11px;color:#4c5462">
+              <div class="text-subtle" style="font-size:11px">
                 Gemeldet von ${esc(d.reported_by_name || 'Unbekannt')} · ${formatDateTime(d.reported_at)}
                 ${d.resolved_at ? ` · Behoben: ${formatDateTime(d.resolved_at)}` : ''}
               </div>
-              ${d.resolution_note ? `<div style="font-size:12px;color:#3fb950;margin-top:4px">Lösung: ${esc(d.resolution_note)}</div>` : ''}
+              ${d.resolution_note ? `<div class="text-success" style="font-size:12px;margin-top:4px">Lösung: ${esc(d.resolution_note)}</div>` : ''}
             </div>
             ${isAdmin ? `
             <div style="display:flex;gap:6px;flex-shrink:0">
@@ -1335,7 +1327,7 @@ async function loadDefects(vehicleId, isAdmin) {
       btn.addEventListener('click', () => openCommentsModal(vehicleId, btn.dataset.id, isAdmin));
     });
 
-  } catch (e) { wrap.innerHTML = `<p style="color:#ff8a80;padding:16px">${esc(e.message)}</p>`; }
+  } catch (e) { wrap.innerHTML = `<p class="error-msg" style="padding:16px">${esc(e.message)}</p>`; }
 }
 
 function setupDefectModal(vehicleId, isAdmin) {
@@ -1408,7 +1400,7 @@ function openStatusModal(vehicleId, defectId, currentStatus, currentNote, isAdmi
 
 async function openCommentsModal(vehicleId, defectId, isAdmin) {
   document.getElementById('modal-comments').style.display = 'flex';
-  document.getElementById('comments-list').innerHTML = '<p style="color:var(--text-muted);font-size:13px">Lade...</p>';
+  document.getElementById('comments-list').innerHTML = '<p class="text-muted text-sm">Lade...</p>';
 
   const reload = async () => {
     const comments = await api.getDefectComments(vehicleId, defectId);
@@ -1416,10 +1408,10 @@ async function openCommentsModal(vehicleId, defectId, isAdmin) {
     list.innerHTML = comments.length
       ? comments.map(c => `
           <div style="padding:10px 0;border-bottom:1px solid var(--border)">
-            <div style="font-size:11px;color:#4c5462;margin-bottom:3px">${esc(c.author_name || 'Unbekannt')} · ${formatDateTime(c.created_at)}</div>
+            <div class="text-subtle" style="font-size:11px;margin-bottom:3px">${esc(c.author_name || 'Unbekannt')} · ${formatDateTime(c.created_at)}</div>
             <div style="font-size:13px;color:var(--text)">${esc(c.body)}</div>
           </div>`).join('')
-      : `<p style="color:var(--text-muted);font-size:13px">Noch keine Kommentare.</p>`;
+      : `<p class="text-muted text-sm">Noch keine Kommentare.</p>`;
   };
 
   await reload();
@@ -1444,7 +1436,7 @@ async function openCommentsModal(vehicleId, defectId, isAdmin) {
 // ── Geräte / Beladungsliste ────────────────────────────────────────────────────
 
 const EQ_STATUS_LABELS = { ok: 'In Ordnung', defekt: 'Defekt', ausgebaut: 'Ausgebaut' };
-const EQ_STATUS_COLORS = { ok: '#3fb950', defekt: '#e63022', ausgebaut: '#7d8590' };
+const EQ_STATUS_COLORS = { ok: 'var(--gruen)', defekt: 'var(--rot)', ausgebaut: 'var(--text-muted)' };
 
 async function loadEquipment(vehicleId, isAdmin) {
   const wrap = document.getElementById('equipment-wrap');
@@ -1456,7 +1448,7 @@ async function loadEquipment(vehicleId, isAdmin) {
       return;
     }
     const rows = items.map(e => {
-      const sc = EQ_STATUS_COLORS[e.status] || '#7d8590';
+      const sc = EQ_STATUS_COLORS[e.status] || 'var(--text-muted)';
       const sl = EQ_STATUS_LABELS[e.status] || e.status;
       return `<tr class="eq-row">
         <td style="padding:9px 16px;color:var(--text);font-weight:500">${esc(e.name)}</td>
@@ -1473,7 +1465,7 @@ async function loadEquipment(vehicleId, isAdmin) {
       </tr>`;
     }).join('');
     wrap.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:13px">
-      <thead><tr style="background:var(--bg-card-hover)">
+      <thead><tr>
         <th style="padding:9px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Bezeichnung</th>
         <th style="padding:9px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Seriennummer</th>
         <th style="padding:9px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);text-align:left">Hersteller</th>
@@ -1500,7 +1492,7 @@ async function loadEquipment(vehicleId, isAdmin) {
         });
       });
     }
-  } catch (e) { wrap.innerHTML = `<p style="color:#ff8a80;padding:16px">${esc(e.message)}</p>`; }
+  } catch (e) { wrap.innerHTML = `<p class="error-msg" style="padding:16px">${esc(e.message)}</p>`; }
 }
 
 let editEquipmentId = null;
@@ -1599,7 +1591,7 @@ async function loadTemplates(vehicleId, isAdmin) {
         });
       });
     }
-  } catch (e) { wrap.innerHTML = `<p style="color:#ff8a80;padding:16px">${esc(e.message)}</p>`; }
+  } catch (e) { wrap.innerHTML = `<p class="error-msg" style="padding:16px">${esc(e.message)}</p>`; }
 }
 
 async function loadChecklists(vehicleId, isAdmin) {
@@ -1618,8 +1610,8 @@ async function loadChecklists(vehicleId, isAdmin) {
           <div style="font-size:13px;font-weight:600;color:var(--text)">${esc(c.template_name || '–')}</div>
           <div style="font-size:11px;color:var(--text-muted);margin-top:2px">
             ${formatDateTime(c.filled_at)} · ${esc(c.filled_name || 'Unbekannt')}
-            · <span style="color:#3fb950">${c.ok_count} OK</span>
-            ${mangel ? `· <span style="color:#e63022">${c.mangel_count} Mängel</span>` : ''}
+            · <span style="color:var(--gruen)">${c.ok_count} OK</span>
+            ${mangel ? `· <span class="required">${c.mangel_count} Mängel</span>` : ''}
           </div>
         </div>
         <div style="display:flex;gap:6px">
@@ -1641,7 +1633,7 @@ async function loadChecklists(vehicleId, isAdmin) {
         });
       });
     }
-  } catch (e) { wrap.innerHTML = `<p style="color:#ff8a80;padding:16px">${esc(e.message)}</p>`; }
+  } catch (e) { wrap.innerHTML = `<p class="error-msg" style="padding:16px">${esc(e.message)}</p>`; }
 }
 
 function setupTemplateModal(vehicleId, isAdmin) {
@@ -1668,7 +1660,7 @@ function setupTemplateModal(vehicleId, isAdmin) {
       <input type="text" class="tpl-item-input" maxlength="200"
         placeholder="Prüfpunkt ${idx + 1}"
         style="flex:1;background:var(--bg-card-hover);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:13px" />
-      <button type="button" style="background:none;border:none;color:#e63022;cursor:pointer;font-size:16px;padding:4px">✕</button>`;
+      <button type="button" style="background:none;border:none;color:var(--rot);cursor:pointer;font-size:16px;padding:4px">✕</button>`;
     div.querySelector('button').addEventListener('click', () => div.remove());
     wrap.appendChild(div);
     div.querySelector('input').focus();
@@ -1717,10 +1709,10 @@ function openFillModal(template, vehicleId, isAdmin) {
     <div style="padding:10px 0;border-bottom:1px solid var(--border)">
       <div style="font-size:13px;color:var(--text);margin-bottom:6px">${esc(item.label)}</div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px;color:#3fb950">
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px;color:var(--gruen)">
           <input type="radio" name="item-${i}" value="ok" checked /> OK
         </label>
-        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px;color:#e63022">
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px;color:var(--rot)">
           <input type="radio" name="item-${i}" value="mangel" /> Mangel
         </label>
         <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px;color:var(--text-muted)">
@@ -1779,7 +1771,7 @@ async function openChecklistDetail(vehicleId, checklistId, isAdmin) {
   document.getElementById('modal-fill-title').textContent = `${detail.template_name || 'Checkliste'} — Ergebnis`;
   const wrap = document.getElementById('fill-items-wrap');
   wrap.innerHTML = detail.entries.map(e => {
-    const color = e.result === 'ok' ? '#3fb950' : e.result === 'mangel' ? '#e63022' : '#7d8590';
+    const color = e.result === 'ok' ? 'var(--gruen)' : e.result === 'mangel' ? 'var(--rot)' : 'var(--text-muted)';
     const label = e.result === 'ok' ? '✓ OK' : e.result === 'mangel' ? '✗ Mangel' : '– Nicht geprüft';
     return `<div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:13px">
       <span style="color:var(--text)">${esc(e.item_label)}</span>
@@ -1795,7 +1787,7 @@ async function openChecklistDetail(vehicleId, checklistId, isAdmin) {
   const submitBtn = document.getElementById('btn-submit-fill');
   if (mangels.length && isAdmin) {
     submitBtn.textContent = `${mangels.length} Mängel als Störungen melden`;
-    submitBtn.style.background = '#e63022';
+    submitBtn.style.background = 'var(--rot)';
     submitBtn.onclick = async () => {
       try {
         const res = await api.defectsFromChecklist(vehicleId, {
@@ -1825,7 +1817,7 @@ async function openChecklistDetail(vehicleId, checklistId, isAdmin) {
 
 function styleGenericRows(cls) {
   document.querySelectorAll('.' + cls).forEach((tr, i) => {
-    tr.style.borderBottom = '1px solid var(--border)';
+    
     tr.style.background = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)';
   });
 }

@@ -27,7 +27,7 @@ export async function renderHome() {
         <h3 style="margin:0;font-size:15px;font-weight:600;color:var(--text)">Ankündigungen</h3>
         ${isAdmin ? `<button class="btn btn--primary btn--sm" id="btn-new-announcement">+ Neu</button>` : ''}
       </div>
-      <div id="announcements-list"><p style="color:var(--text-muted);font-size:13px">Lade...</p></div>
+      <div id="announcements-list"><p class="text-muted text-sm">Lade...</p></div>
     </div>
 
     ${modules.verein ? `
@@ -36,7 +36,7 @@ export async function renderHome() {
         <h3 style="margin:0;font-size:15px;font-weight:600;color:var(--text)">${icon('clipboard-list', 14)} Schwarzes Brett</h3>
         <a href="#/verein" style="font-size:12px;color:var(--text-muted);text-decoration:none">Verwalten →</a>
       </div>
-      <div id="schwarzesbrett-list"><p style="color:var(--text-muted);font-size:13px">Lade...</p></div>
+      <div id="schwarzesbrett-list"><p class="text-muted text-sm">Lade...</p></div>
     </div>` : ''}
 
     <div class="widget-grid" id="widget-grid">
@@ -46,7 +46,7 @@ export async function renderHome() {
           <a href="#/vehicles">Alle anzeigen →</a>
         </div>
         <div class="widget-card__body" id="vehicle-widget-content">
-          <p style="color:var(--text-muted);font-size:13px">Lade...</p>
+          <p class="text-muted text-sm">Lade...</p>
         </div>
       </div>
 
@@ -56,7 +56,7 @@ export async function renderHome() {
           <a href="#/incidents">Alle anzeigen →</a>
         </div>
         <div class="widget-card__body" id="incident-widget-content">
-          <p style="color:var(--text-muted);font-size:13px">Lade...</p>
+          <p class="text-muted text-sm">Lade...</p>
         </div>
       </div>
 
@@ -66,7 +66,7 @@ export async function renderHome() {
           <a href="#/personal">Alle anzeigen →</a>
         </div>
         <div class="widget-card__body" id="personal-widget-content">
-          <p style="color:var(--text-muted);font-size:13px">Lade...</p>
+          <p class="text-muted text-sm">Lade...</p>
         </div>
       </div>
 
@@ -76,7 +76,7 @@ export async function renderHome() {
           <a href="#/termine">Alle anzeigen →</a>
         </div>
         <div class="widget-card__body" id="termine-widget-content">
-          <p style="color:var(--text-muted);font-size:13px">Lade...</p>
+          <p class="text-muted text-sm">Lade...</p>
         </div>
       </div>
     </div>
@@ -151,7 +151,7 @@ async function loadAnnouncements(user, isAdmin) {
     const items = await api.getAnnouncements();
 
     if (!items.length) {
-      list.innerHTML = `<p style="color:var(--text-muted);font-size:13px">Keine Ankündigungen vorhanden.</p>`;
+      list.innerHTML = `<p class="text-muted text-sm">Keine Ankündigungen vorhanden.</p>`;
       return;
     }
 
@@ -159,11 +159,11 @@ async function loadAnnouncements(user, isAdmin) {
       <div class="card announcement-card" data-id="${a.id}" style="margin-bottom:12px">
         <div class="card__header" style="display:flex;justify-content:space-between;align-items:center">
           <span>
-            ${a.pinned ? `<span style="color:#c0392b;margin-right:6px" title="Angeheftet">${icon('pin', 13)}</span>` : ''}
+            ${a.pinned ? `<span style="color:var(--rot);margin-right:6px" title="Angeheftet">${icon('pin', 13)}</span>` : ''}
             <strong>${esc(a.title)}</strong>
           </span>
           <span style="display:flex;align-items:center;gap:12px">
-            <span style="font-size:11px;color:var(--text-muted)">
+            <span class="text-muted text-xs">
               ${esc(a.created_by_name)} · ${formatDate(a.created_at)}
             </span>
             ${isAdmin ? `
@@ -207,7 +207,7 @@ async function loadAnnouncements(user, isAdmin) {
       });
     }
   } catch (e) {
-    list.innerHTML = `<p style="color:#ff8a80;font-size:13px">Fehler: ${e.message}</p>`;
+    list.innerHTML = `<p class="error-msg">Fehler: ${e.message}</p>`;
   }
 }
 
@@ -285,12 +285,12 @@ async function loadVehicleWidget() {
         <div class="stat-tile__label">${label}</div>
       </div>`;
 
-    const overdueColor = s.inspections_overdue > 0 ? '#e63022' : '#3fb950';
-    const soonColor    = s.inspections_soon    > 0 ? '#f0a500' : '#3fb950';
+    const overdueColor = s.inspections_overdue > 0 ? 'var(--rot)' : 'var(--gruen)';
+    const soonColor    = s.inspections_soon    > 0 ? 'var(--gelb)' : 'var(--gruen)';
 
     content.innerHTML = `
       <div class="stat-tiles">
-        ${tile(s.active,              'Einsatzbereit',      '#3fb950')}
+        ${tile(s.active,              'Einsatzbereit',      'var(--gruen)')}
         ${tile(s.inspections_overdue, 'Fristen überfällig', overdueColor)}
         ${tile(s.inspections_soon,    'Fristen bald fällig',soonColor)}
       </div>`;
@@ -319,12 +319,12 @@ async function loadPersonalWidget() {
         <div class="stat-tile__label">${label}</div>
       </div>`;
 
-    const warn30Color = s.qualifications_expiring_30 > 0 ? '#e63022' : '#3fb950';
-    const g263Color   = s.g263_expiring_90           > 0 ? '#f0a500' : '#3fb950';
+    const warn30Color = s.qualifications_expiring_30 > 0 ? 'var(--rot)' : 'var(--gruen)';
+    const g263Color   = s.g263_expiring_90           > 0 ? 'var(--gelb)' : 'var(--gruen)';
 
     content.innerHTML = `
       <div class="stat-tiles">
-        ${tile(s.active_members,             'Aktive Mitglieder',          '#e6edf3')}
+        ${tile(s.active_members,             'Aktive Mitglieder',          'var(--text)')}
         ${tile(s.qualifications_expiring_30, 'Quali. ablaufend (30 Tage)', warn30Color)}
         ${tile(s.g263_expiring_90,           'G26.3 ablaufend (90 Tage)',  g263Color)}
       </div>`;
@@ -353,12 +353,12 @@ async function loadIncidentWidget() {
         <div class="stat-tile__label">${label}</div>
       </div>`;
 
-    const entwurfColor = s.entwurf > 0 ? '#f0a500' : '#3fb950';
+    const entwurfColor = s.entwurf > 0 ? 'var(--gelb)' : 'var(--gruen)';
 
     content.innerHTML = `
       <div class="stat-tiles">
-        ${tile(s.total,   `Einsätze ${s.year}`, '#e6edf3')}
-        ${tile(s.brand,   'Brand',               '#e63022')}
+        ${tile(s.total,   `Einsätze ${s.year}`, 'var(--text)')}
+        ${tile(s.brand,   'Brand',               'var(--rot)')}
         ${tile(s.entwurf, 'Entwürfe offen',      entwurfColor)}
       </div>`;
   } catch (_) {
@@ -451,18 +451,18 @@ async function loadSchwarztesBrett(isAdmin) {
   try {
     const posts = await api.getVereinPosts();
     if (!posts?.length) {
-      list.innerHTML = `<p style="color:var(--text-muted);font-size:13px">Keine Beiträge vorhanden.</p>`;
+      list.innerHTML = `<p class="text-muted text-sm">Keine Beiträge vorhanden.</p>`;
       return;
     }
     list.innerHTML = posts.map(p => `
       <div class="card announcement-card" style="margin-bottom:12px">
         <div class="card__header" style="display:flex;justify-content:space-between;align-items:center">
           <span>
-            ${p.pinned ? `<span style="color:#d29922;margin-right:6px">${icon('pin', 13)}</span>` : ''}
+            ${p.pinned ? `<span style="color:var(--gelb-dunkel);margin-right:6px">${icon('pin', 13)}</span>` : ''}
             <strong>${esc(p.title)}</strong>
             ${p.visibility === 'vorstand' && isAdmin ? `<span class="badge badge--orange" style="margin-left:8px">Nur Vorstand</span>` : ''}
           </span>
-          <span style="font-size:11px;color:var(--text-muted)">
+          <span class="text-muted text-xs">
             ${p.expires_at ? `Bis ${p.expires_at} · ` : ''}${esc(p.created_by_name)}
           </span>
         </div>
@@ -473,6 +473,6 @@ async function loadSchwarztesBrett(isAdmin) {
     `).join('');
     renderIcons(list);
   } catch (e) {
-    list.innerHTML = `<p style="color:#ff8a80;font-size:13px">Fehler: ${esc(e.message)}</p>`;
+    list.innerHTML = `<p class="error-msg">Fehler: ${esc(e.message)}</p>`;
   }
 }

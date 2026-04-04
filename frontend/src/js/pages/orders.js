@@ -126,7 +126,7 @@ export async function renderOrders() {
   const rejectModal = document.createElement('div');
   rejectModal.innerHTML = `
     <div id="reject-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:400;align-items:center;justify-content:center">
-      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:24px;width:100%;max-width:420px">
+      <div class="inline-panel" style="max-width:420px">
         <h3 style="margin:0 0 12px;font-size:16px">Ablehnen</h3>
         <div class="form-group">
           <label>Ablehnungsgrund</label>
@@ -214,7 +214,7 @@ export async function renderOrders() {
               </tbody>
             </table>`;
         } else {
-          positionsHtml = `<span style="color:var(--text-muted)">${esc(o.article_name) || '—'}</span>`;
+          positionsHtml = `<span class="text-muted">${esc(o.article_name) || '—'}</span>`;
         }
 
         return `
@@ -437,10 +437,10 @@ export async function renderOrders() {
       ` : ''}
 
       ${order.rejection_reason ? `
-        <div style="margin-bottom:12px;padding:10px 14px;background:#2d1212;border:1px solid #e6302244;border-radius:8px;font-size:0.9em">
-          <strong style="color:#ff8a80">Ablehnungsgrund:</strong><br>
-          <span style="color:#ffcdd2">${esc(order.rejection_reason)}</span>
-          ${order.approved_by_name ? `<br><span style="color:var(--text-muted);font-size:11px">Abgelehnt von: ${esc(order.approved_by_name)}</span>` : ''}
+        <div class="alert-danger" style="font-size:0.9em">
+          <strong class="text-error">Ablehnungsgrund:</strong><br>
+          <span style="color:var(--error)">${esc(order.rejection_reason)}</span>
+          ${order.approved_by_name ? `<br><span class="text-muted text-xs">Abgelehnt von: ${esc(order.approved_by_name)}</span>` : ''}
         </div>
       ` : ''}
 
@@ -485,7 +485,7 @@ export async function renderOrders() {
         <tr>
           <td style="padding:6px 8px 6px 0">
             <strong>${esc(p.gegenstand)}</strong>
-            ${p.menge || p.einheit ? `<br><small style="color:var(--text-muted)">${esc(p.menge || '')} ${esc(p.einheit || '')}</small>` : ''}
+            ${p.menge || p.einheit ? `<br><small class="text-muted">${esc(p.menge || '')} ${esc(p.einheit || '')}</small>` : ''}
           </td>
           <td style="padding:6px 8px">
             <select class="delivery-status-select" data-index="${i}" style="width:130px">

@@ -23,7 +23,7 @@ export async function loadVehiclesTab(incidentId, readonly = false) {
       readonly ? Promise.resolve([]) : api.getVehicles().catch(() => []),
     ]);
   } catch (e) {
-    wrap.innerHTML = `<p style="color:#ff8a80;font-size:13px">Fehler: ${esc(e.message)}</p>`;
+    wrap.innerHTML = `<p class="error-msg">Fehler: ${esc(e.message)}</p>`;
     return;
   }
 
@@ -48,7 +48,7 @@ function _renderVehiclesTab(wrap, incidentId, rows, vehicleOptions, readonly) {
           ${rows.map(r => `
             <tr data-vid="${r.id}">
               <td style="font-weight:500">${esc(r.vehicle_name)}</td>
-              <td style="color:var(--text-muted)">${esc(r.callsign || '—')}</td>
+              <td class="text-muted">${esc(r.callsign || '—')}</td>
               <td>${fmt(r.alarm_time)}</td>
               <td>${fmt(r.departure_time)}</td>
               <td>${fmt(r.arrival_time)}</td>
@@ -238,7 +238,7 @@ export async function loadPersonnelTab(incidentId, readonly = false) {
       readonly ? Promise.resolve([]) : api.getPersonalMembers().catch(() => []),
     ]);
   } catch (e) {
-    wrap.innerHTML = `<p style="color:#ff8a80;font-size:13px">Fehler: ${esc(e.message)}</p>`;
+    wrap.innerHTML = `<p class="error-msg">Fehler: ${esc(e.message)}</p>`;
     return;
   }
 
@@ -259,7 +259,7 @@ function _renderPersonnelTab(wrap, incidentId, rows, memberOptions, readonly) {
           ${rows.map(r => `
             <tr>
               <td style="font-weight:500">${esc(r.display_name)}</td>
-              <td style="color:var(--text-muted)">${esc(r.role_name || '—')}</td>
+              <td class="text-muted">${esc(r.role_name || '—')}</td>
               <td>${esc(r.function || '—')}</td>
               ${!readonly ? `
                 <td>
@@ -285,7 +285,7 @@ function _renderPersonnelTab(wrap, incidentId, rows, memberOptions, readonly) {
             </select>` : ''}
         </div>
         <div class="form-group">
-          <label style="font-size:12px">Name <span style="color:#e63022">*</span></label>
+          <label style="font-size:12px">Name <span class="required">*</span></label>
           <input type="text" id="p-name" placeholder="Vor- und Nachname" />
         </div>
         <div class="form-group">
@@ -369,7 +369,7 @@ export async function loadAttachmentsTab(incidentId, readonly = false) {
     const attachments = await api.getIncidentAttachments(incidentId);
     _renderAttachmentsTab(wrap, incidentId, attachments, readonly);
   } catch (e) {
-    wrap.innerHTML = `<p style="color:#ff8a80;font-size:13px">Fehler: ${esc(e.message)}</p>`;
+    wrap.innerHTML = `<p class="error-msg">Fehler: ${esc(e.message)}</p>`;
   }
 }
 
@@ -394,7 +394,7 @@ function _renderAttachmentsTab(wrap, incidentId, attachments, readonly) {
           <div style="flex:1;min-width:0">
             <div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"
                  title="${esc(a.filename)}">${esc(a.filename)}</div>
-            <div style="font-size:11px;color:var(--text-muted)">${fmtSize(a.file_size)} · ${fmtDate(a.created_at)}</div>
+            <div class="text-muted text-xs">${fmtSize(a.file_size)} · ${fmtDate(a.created_at)}</div>
           </div>
           <button class="btn btn--outline btn--sm" data-action="download"
                   data-id="${a.id}" data-name="${esc(a.filename)}">↓ Download</button>
@@ -447,7 +447,7 @@ function _renderAttachmentsTab(wrap, incidentId, attachments, readonly) {
     dropZone.addEventListener('click', () => fileInput.click());
     dropZone.addEventListener('dragover', e => {
       e.preventDefault();
-      dropZone.style.borderColor = '#e63022';
+      dropZone.style.borderColor = 'var(--rot)';
     });
     dropZone.addEventListener('dragleave', () => {
       dropZone.style.borderColor = 'var(--border)';
