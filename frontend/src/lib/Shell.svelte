@@ -3,6 +3,7 @@
   import { currentPageStore } from './stores/route.js';
   import { canAccess } from './permissions.js';
   import { navigate } from '../js/router.js';
+  import { writable } from 'svelte/store';
 
   // Modul-Akzentfarben (abgestimmt auf design-preview.html)
   const MODULE_ACCENTS = {
@@ -27,7 +28,7 @@
     verein:         'verein',
   };
 
-  let openDropdown = null;
+  const openDropdown = writable(null);
 
   $: accent = MODULE_ACCENTS[PAGE_MODULE[$currentPageStore]] || '#e63022';
   $: user    = $userStore;
@@ -35,17 +36,17 @@
   $: ffName  = $ffNameStore;
 
   function go(page) {
-    openDropdown = null;
+    openDropdown.set(null);
     navigate(`#/${page}`);
   }
 
   function toggleDropdown(name) {
-    openDropdown = openDropdown === name ? null : name;
+    openDropdown.update(v => v === name ? null : name);
   }
 
   function handleWindowClick(e) {
     if (!e.target.closest('.nav-dropdown')) {
-      openDropdown = null;
+      openDropdown.set(null);
     }
   }
 
@@ -106,7 +107,7 @@
         >
           Lager <span class="nav-caret">▾</span>
         </button>
-        {#if openDropdown === 'lager'}
+        {#if $openDropdown === 'lager'}
         <div class="nav-dropdown__menu" style="--accent: {MODULE_ACCENTS.lager}">
           <button class="nav-dropdown__item" class:active={isActive('orders')} on:click={() => go('orders')}>
             Bestellübersicht
@@ -134,7 +135,7 @@
         >
           Personal <span class="nav-caret">▾</span>
         </button>
-        {#if openDropdown === 'personal'}
+        {#if $openDropdown === 'personal'}
         <div class="nav-dropdown__menu" style="--accent: {MODULE_ACCENTS.personal}">
           <button class="nav-dropdown__item" class:active={isActive('personal')} on:click={() => go('personal')}>
             Mitglieder
@@ -157,7 +158,7 @@
         >
           Fahrzeuge <span class="nav-caret">▾</span>
         </button>
-        {#if openDropdown === 'fahrzeuge'}
+        {#if $openDropdown === 'fahrzeuge'}
         <div class="nav-dropdown__menu" style="--accent: {MODULE_ACCENTS.fahrzeuge}">
           <button class="nav-dropdown__item" class:active={isActive('vehicles')} on:click={() => go('vehicles')}>
             Fahrzeugübersicht
@@ -177,7 +178,7 @@
         >
           Einsätze <span class="nav-caret">▾</span>
         </button>
-        {#if openDropdown === 'einsatzberichte'}
+        {#if $openDropdown === 'einsatzberichte'}
         <div class="nav-dropdown__menu" style="--accent: {MODULE_ACCENTS.einsatzberichte}">
           <button class="nav-dropdown__item" class:active={isActive('incidents')} on:click={() => go('incidents')}>
             Einsatzberichte
@@ -202,7 +203,7 @@
         >
           Verein <span class="nav-caret">▾</span>
         </button>
-        {#if openDropdown === 'verein'}
+        {#if $openDropdown === 'verein'}
         <div class="nav-dropdown__menu" style="--accent: {MODULE_ACCENTS.verein}">
           <button class="nav-dropdown__item" class:active={isActive('verein')} on:click={() => go('verein')}>
             Vereinsverwaltung
