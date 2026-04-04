@@ -107,9 +107,9 @@ export async function renderArticles() {
 
       let bestandHtml;
       if (soll === 0 && ist === 0) {
-        bestandHtml = `<span style="color:#94a3b8">—</span>`;
+        bestandHtml = `<span style="color:#4c5462">—</span>`;
       } else {
-        const color = low ? '#ff8a80' : ok ? '#3fb950' : '#1e293b';
+        const color = low ? '#ff8a80' : ok ? '#3fb950' : '#e6edf3';
         const stockIcon = low ? `${icon('alert-triangle', 13)} ` : ok ? `${icon('check-circle', 13)} ` : '';
         bestandHtml = `<span style="color:${color};font-weight:600">${stockIcon}${ist} / ${soll}</span>`;
       }

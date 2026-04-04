@@ -33,7 +33,7 @@ export async function renderSettings() {
         <div class="btn-group" style="margin-bottom:24px">
           <button class="btn btn--primary" id="btn-save-profile">Anzeigename speichern</button>
         </div>
-        <hr style="border:none;border-top:1px solid #e2e8f0;margin-bottom:20px" />
+        <hr style="border:none;border-top:1px solid #21273d;margin-bottom:20px" />
         <div class="form-grid">
           <div class="form-group">
             <label>Aktuelles Passwort</label>
@@ -57,7 +57,7 @@ export async function renderSettings() {
     <div class="card">
       <div class="card__header">2-Faktor-Authentifizierung</div>
       <div class="card__body">
-        <p style="font-size:13px;color:#64748b;margin-bottom:16px">
+        <p style="font-size:13px;color:#7d8590;margin-bottom:16px">
           ${totp_enabled
             ? '✅ 2FA ist aktiviert. Dein Account ist mit einem Authenticator gesichert.'
             : '⚠️ 2FA ist <strong>nicht aktiv</strong>. Du kannst es optional aktivieren.'}
@@ -67,7 +67,7 @@ export async function renderSettings() {
             <button class="btn btn--secondary" id="btn-setup-totp">2FA einrichten</button>
           </div>
           <div id="totp-qr-area" style="display:none;margin-top:16px">
-            <p style="font-size:13px;color:#64748b;margin-bottom:12px">
+            <p style="font-size:13px;color:#7d8590;margin-bottom:12px">
               Scanne den QR-Code mit deiner Authenticator-App (2FAS, Google Authenticator, Authy, ...):
             </p>
             <div style="margin-bottom:16px;display:flex;justify-content:flex-start">
@@ -75,10 +75,10 @@ export async function renderSettings() {
                 <canvas id="totp-qr-canvas"></canvas>
               </div>
             </div>
-            <p style="font-size:12px;color:#64748b;margin-bottom:6px">
+            <p style="font-size:12px;color:#7d8590;margin-bottom:6px">
               Oder manuell eingeben:
             </p>
-            <div id="totp-uri" style="word-break:break-all;font-size:11px;background:#f4f5f7;color:#64748b;border:1px solid #e2e8f0;padding:10px;border-radius:4px;margin-bottom:16px"></div>
+            <div id="totp-uri" style="word-break:break-all;font-size:11px;background:#0d1117;color:#7d8590;border:1px solid #21273d;padding:10px;border-radius:4px;margin-bottom:16px"></div>
             <div class="form-group" style="max-width:200px">
               <label>Code bestätigen</label>
               <input type="text" id="totp-code" maxlength="6" inputmode="numeric"

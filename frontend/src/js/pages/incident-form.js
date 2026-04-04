@@ -18,7 +18,7 @@ export const STATUS_LABELS = {
 export const STATUS_COLORS = {
   entwurf:     '#f0a500',
   freigegeben: '#3fb950',
-  archiviert:  '#64748b',
+  archiviert:  '#7d8590',
 };
 
 export const RESOURCES = [
@@ -80,11 +80,11 @@ export function buildTabsHTML(tabContainerStyle = '', opts = {}) {
   ];
   const visibleTabs = allTabs.filter(t => t.show !== false);
   return `
-    <div class="incident-tabs" style="display:flex;gap:2px;background:#f4f5f7;border-bottom:1px solid #e2e8f0;overflow-x:auto;${tabContainerStyle}">
+    <div class="incident-tabs" style="display:flex;gap:2px;background:#0d1117;border-bottom:1px solid #21273d;overflow-x:auto;${tabContainerStyle}">
       ${visibleTabs.map(t => `
         <button class="incident-tab" data-tab="${t.idx}"
           style="padding:10px 16px;background:none;border:none;border-bottom:2px solid transparent;
-                 color:#64748b;cursor:pointer;font-size:13px;white-space:nowrap;font-weight:400">
+                 color:#7d8590;cursor:pointer;font-size:13px;white-space:nowrap;font-weight:400">
           ${t.label}
         </button>`).join('')}
     </div>
@@ -172,9 +172,9 @@ function buildPanelsHTML() {
           ['ir-flag-violence',     'Gewalt gegen Einsatzkräfte'],
         ].map(([id, label]) => `
           <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:12px;
-                        background:#ffffff;border:1px solid #e2e8f0;border-radius:8px">
+                        background:#161b27;border:1px solid #21273d;border-radius:8px">
             <input type="checkbox" id="${id}" style="width:16px;height:16px;cursor:pointer" />
-            <span style="font-size:13px;color:#1e293b">${label}</span>
+            <span style="font-size:13px;color:#e6edf3">${label}</span>
           </label>`).join('')}
       </div>
       <div class="form-group" style="margin-top:16px;max-width:260px">
@@ -185,14 +185,14 @@ function buildPanelsHTML() {
 
     <!-- Tab 2: Kräfte & Schäden -->
     <div class="incident-tab-panel" data-panel="2" style="display:none;padding:20px 0">
-      <h4 style="margin:0 0 12px;font-size:13px;color:#64748b;text-transform:uppercase;letter-spacing:.05em">Kräftestärke (eigene)</h4>
+      <h4 style="margin:0 0 12px;font-size:13px;color:#7d8590;text-transform:uppercase;letter-spacing:.05em">Kräftestärke (eigene)</h4>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px">
         <div class="form-group"><label>Führung</label><input type="number" id="ir-str-leadership" min="0" value="0" /></div>
         <div class="form-group"><label>Unterführung</label><input type="number" id="ir-str-sub" min="0" value="0" /></div>
         <div class="form-group"><label>Mannschaft</label><input type="number" id="ir-str-crew" min="0" value="0" /></div>
       </div>
 
-      <h4 style="margin:0 0 12px;font-size:13px;color:#64748b;text-transform:uppercase;letter-spacing:.05em">Personenschäden</h4>
+      <h4 style="margin:0 0 12px;font-size:13px;color:#7d8590;text-transform:uppercase;letter-spacing:.05em">Personenschäden</h4>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px">
         ${[
           ['ir-p-rescued',   'Gerettet'],
@@ -207,7 +207,7 @@ function buildPanelsHTML() {
           <input type="number" id="${id}" min="0" value="0" /></div>`).join('')}
       </div>
 
-      <h4 style="margin:0 0 12px;font-size:13px;color:#64748b;text-transform:uppercase;letter-spacing:.05em">Tierschäden</h4>
+      <h4 style="margin:0 0 12px;font-size:13px;color:#7d8590;text-transform:uppercase;letter-spacing:.05em">Tierschäden</h4>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px">
         ${[
           ['ir-a-rescued',   'Gerettet'],
@@ -219,7 +219,7 @@ function buildPanelsHTML() {
           <input type="number" id="${id}" min="0" value="0" /></div>`).join('')}
       </div>
 
-      <h4 style="margin:0 0 12px;font-size:13px;color:#64748b;text-transform:uppercase;letter-spacing:.05em">Sachschäden</h4>
+      <h4 style="margin:0 0 12px;font-size:13px;color:#7d8590;text-transform:uppercase;letter-spacing:.05em">Sachschäden</h4>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div class="form-group">
           <label>Fahrzeugschäden</label>
@@ -295,21 +295,21 @@ function buildPanelsHTML() {
     <!-- Tab 6: Fahrzeuge (Phase B) -->
     <div class="incident-tab-panel" data-panel="6" style="display:none;padding:20px 0">
       <div id="incident-vehicles-wrap">
-        <p style="color:#64748b;font-size:13px">Lade...</p>
+        <p style="color:#7d8590;font-size:13px">Lade...</p>
       </div>
     </div>
 
     <!-- Tab 7: Personal (Phase B) -->
     <div class="incident-tab-panel" data-panel="7" style="display:none;padding:20px 0">
       <div id="incident-personnel-wrap">
-        <p style="color:#64748b;font-size:13px">Lade...</p>
+        <p style="color:#7d8590;font-size:13px">Lade...</p>
       </div>
     </div>
 
     <!-- Tab 8: Anhänge (Phase C) -->
     <div class="incident-tab-panel" data-panel="8" style="display:none;padding:20px 0">
       <div id="incident-attachments-wrap">
-        <p style="color:#64748b;font-size:13px">Lade...</p>
+        <p style="color:#7d8590;font-size:13px">Lade...</p>
       </div>
     </div>
   `;
@@ -327,7 +327,7 @@ export function setupTabs(scope = document) {
 export function switchTab(idx, scope = document) {
   scope.querySelectorAll('.incident-tab').forEach(btn => {
     const active = +btn.dataset.tab === idx;
-    btn.style.color             = active ? '#1e293b' : '#64748b';
+    btn.style.color             = active ? '#e6edf3' : '#7d8590';
     btn.style.borderBottomColor = active ? '#e63022' : 'transparent';
     btn.style.fontWeight        = active ? '600' : '400';
   });
@@ -392,7 +392,7 @@ export function buildResourcesGrid(containerId, resources, readonly = false) {
     return `
       <div class="form-group">
         <label style="font-size:12px">${esc(r.label)}
-          <span style="color:#64748b">(${r.unit})</span></label>
+          <span style="color:#7d8590">(${r.unit})</span></label>
         <input type="${r.unit === 'hh:mm' ? 'text' : 'number'}"
           id="res-${r.key}" data-resource="${r.key}"
           min="0" value="${esc(String(val))}" placeholder="0"
