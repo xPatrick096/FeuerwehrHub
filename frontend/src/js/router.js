@@ -35,7 +35,7 @@ export function initRouter() {
         }
       }
 
-      handler();
+      handler().catch(err => console.error('[router] Fehler auf', hash, err));
     }
   }
 

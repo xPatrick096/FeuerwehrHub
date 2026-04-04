@@ -56,6 +56,16 @@
 
   $: isActive = (page) => $currentPageStore === page;
   $: isModuleActive = (mod) => PAGE_MODULE[$currentPageStore] === mod;
+
+  // Zeigt Nav-Item wenn User die Permission hat.
+  // Fallback: wenn noch kein Modul konfiguriert wurde (alle false), werden alle
+  // freigeschalteten Module angezeigt — damit das System direkt nach der
+  // Einrichtung funktioniert ohne erst ins Admin-Panel gehen zu müssen.
+  $: anyModuleEnabled = Object.values(modules).some(v => v);
+  function showModule(minPerm, moduleKey) {
+    if (!canAccess(user, minPerm)) return false;
+    return !anyModuleEnabled || !!modules[moduleKey];
+  }
 </script>
 
 <svelte:window on:click={handleWindowClick} />
@@ -84,7 +94,7 @@
       >Mein Bereich</button>
 
       <!-- Lager -->
-      {#if canAccess(user, 'lager.read') && modules['lager']}
+      {#if showModule('lager.read', 'lager')}
       <div class="nav-dropdown" class:active={isModuleActive('lager')}>
         <button
           class="topnav__link topnav__link--has-dropdown"
@@ -112,7 +122,7 @@
       {/if}
 
       <!-- Personal -->
-      {#if canAccess(user, 'personal') && modules['personal']}
+      {#if showModule('personal', 'personal')}
       <div class="nav-dropdown" class:active={isModuleActive('personal')}>
         <button
           class="topnav__link topnav__link--has-dropdown"
@@ -135,7 +145,7 @@
       {/if}
 
       <!-- Fahrzeuge -->
-      {#if canAccess(user, 'fahrzeuge') && modules['fahrzeuge']}
+      {#if showModule('fahrzeuge', 'fahrzeuge')}
       <div class="nav-dropdown" class:active={isModuleActive('fahrzeuge')}>
         <button
           class="topnav__link topnav__link--has-dropdown"
@@ -155,7 +165,7 @@
       {/if}
 
       <!-- Einsätze -->
-      {#if canAccess(user, 'einsatzberichte.read') && modules['einsatzberichte']}
+      {#if showModule('einsatzberichte.read', 'einsatzberichte')}
       <div class="nav-dropdown" class:active={isModuleActive('einsatzberichte')}>
         <button
           class="topnav__link topnav__link--has-dropdown"
@@ -180,7 +190,7 @@
       {/if}
 
       <!-- Verein -->
-      {#if canAccess(user, 'verein') && modules['verein']}
+      {#if showModule('verein', 'verein')}
       <div class="nav-dropdown" class:active={isModuleActive('verein')}>
         <button
           class="topnav__link topnav__link--has-dropdown"
