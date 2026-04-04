@@ -39,13 +39,14 @@
     navigate(`#/${page}`);
   }
 
-  function toggleDropdown(name, e) {
-    e.stopPropagation();
+  function toggleDropdown(name) {
     openDropdown = openDropdown === name ? null : name;
   }
 
-  function handleWindowClick() {
-    openDropdown = null;
+  function handleWindowClick(e) {
+    if (!e.target.closest('.nav-dropdown')) {
+      openDropdown = null;
+    }
   }
 
   function logout() {
@@ -101,7 +102,7 @@
         <button
           class="topnav__link topnav__link--has-dropdown"
           class:active={isModuleActive('lager')}
-          on:click={(e) => toggleDropdown('lager', e)}
+          on:click={() => toggleDropdown('lager')}
         >
           Lager <span class="nav-caret">▾</span>
         </button>
@@ -129,7 +130,7 @@
         <button
           class="topnav__link topnav__link--has-dropdown"
           class:active={isModuleActive('personal')}
-          on:click={(e) => toggleDropdown('personal', e)}
+          on:click={() => toggleDropdown('personal')}
         >
           Personal <span class="nav-caret">▾</span>
         </button>
@@ -152,7 +153,7 @@
         <button
           class="topnav__link topnav__link--has-dropdown"
           class:active={isModuleActive('fahrzeuge')}
-          on:click={(e) => toggleDropdown('fahrzeuge', e)}
+          on:click={() => toggleDropdown('fahrzeuge')}
         >
           Fahrzeuge <span class="nav-caret">▾</span>
         </button>
@@ -172,7 +173,7 @@
         <button
           class="topnav__link topnav__link--has-dropdown"
           class:active={isModuleActive('einsatzberichte')}
-          on:click={(e) => toggleDropdown('einsatzberichte', e)}
+          on:click={() => toggleDropdown('einsatzberichte')}
         >
           Einsätze <span class="nav-caret">▾</span>
         </button>
@@ -197,7 +198,7 @@
         <button
           class="topnav__link topnav__link--has-dropdown"
           class:active={isModuleActive('verein')}
-          on:click={(e) => toggleDropdown('verein', e)}
+          on:click={() => toggleDropdown('verein')}
         >
           Verein <span class="nav-caret">▾</span>
         </button>
