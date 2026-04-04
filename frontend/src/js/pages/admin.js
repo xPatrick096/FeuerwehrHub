@@ -157,6 +157,23 @@ export async function renderAdmin() {
 
     <div id="tab-config" class="tab-panel" style="display:none">
       <div class="card">
+        <div class="card__header">Design</div>
+        <div class="card__body">
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">
+            Wähle das Erscheinungsbild der Oberfläche. Die Einstellung wird lokal im Browser gespeichert.
+          </p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button id="theme-btn-light" class="btn btn--outline" style="gap:8px">
+              ☀️ Helles Design
+            </button>
+            <button id="theme-btn-dark" class="btn btn--outline" style="gap:8px">
+              🌙 Dunkles Design
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
         <div class="card__header">Feuerwehr-Stammdaten</div>
         <div class="card__body">
           <div class="form-grid">
@@ -406,6 +423,26 @@ export async function renderAdmin() {
       if (btn.dataset.tab === 'container-log') loadContainerLog();
       if (btn.dataset.tab === 'einsatzarten') loadEinsatzarten();
     });
+  });
+
+  // Design / Dark Mode
+  function updateThemeButtons(theme) {
+    document.getElementById('theme-btn-light').classList.toggle('btn--primary', theme !== 'dark');
+    document.getElementById('theme-btn-light').classList.toggle('btn--outline', theme === 'dark');
+    document.getElementById('theme-btn-dark').classList.toggle('btn--primary', theme === 'dark');
+    document.getElementById('theme-btn-dark').classList.toggle('btn--outline', theme !== 'dark');
+  }
+  updateThemeButtons(localStorage.getItem('ff_theme') || 'light');
+
+  document.getElementById('theme-btn-light').addEventListener('click', () => {
+    document.documentElement.removeAttribute('data-theme');
+    localStorage.removeItem('ff_theme');
+    updateThemeButtons('light');
+  });
+  document.getElementById('theme-btn-dark').addEventListener('click', () => {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    localStorage.setItem('ff_theme', 'dark');
+    updateThemeButtons('dark');
   });
 
   // Konfig speichern

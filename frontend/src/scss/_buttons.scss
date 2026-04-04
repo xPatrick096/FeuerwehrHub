@@ -39,7 +39,7 @@
   &--success {
     background: $gruen;
     color: #fff;
-    &:hover:not(:disabled) { background: darken($gruen, 8%); }
+    &:hover:not(:disabled) { background: $gruen-dunkel; }
   }
 
   &--warning {

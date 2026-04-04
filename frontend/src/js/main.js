@@ -1,4 +1,9 @@
 import { initRouter, registerRoute } from './router.js';
+
+// Theme sofort anwenden, bevor der erste Paint passiert
+if (localStorage.getItem('ff_theme') === 'dark') {
+  document.documentElement.setAttribute('data-theme', 'dark');
+}
 import { renderLogin } from './pages/login.js';
 import { renderSetup } from './pages/setup.js';
 import { renderHome } from './pages/home.js';

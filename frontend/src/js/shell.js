@@ -1,4 +1,5 @@
 import { navigate } from './router.js';
+import { getHeaderLogo } from './logo.js';
 
 let ffName = 'FeuerwehrHub';
 let currentUser = null;
@@ -25,6 +26,14 @@ const PAGE_MODULE = {
   termine:         'personal',
   vehicles:        'fahrzeuge',
   verein:          'verein',
+};
+
+const MODULE_COLORS = {
+  lager:           { c: 'var(--lager-c)',    hell: 'var(--lager-hell)' },
+  personal:        { c: 'var(--personal-c)', hell: 'var(--personal-hell)' },
+  fahrzeuge:       { c: 'var(--fahrzeug-c)', hell: 'var(--fahrzeug-hell)' },
+  einsatzberichte: { c: 'var(--einsatz-c)',  hell: 'var(--einsatz-hell)' },
+  verein:          { c: 'var(--verein-c)',   hell: 'var(--verein-hell)' },
 };
 
 export function setShellInfo(name, user, modules) {
@@ -58,112 +67,108 @@ function isModuleActive(mod) {
   return PAGE_MODULE[currentPage] === mod;
 }
 
-function buildDropdownMenu(items) {
-  return `<div class="nav-dropdown__menu">
-    ${items.map(item => `
-      <button class="nav-dropdown__item${isActive(item.page) ? ' active' : ''}" data-page="${item.page}">
-        ${item.label}
-      </button>`).join('')}
-  </div>`;
+function ddIcon(icon, module) {
+  const col = MODULE_COLORS[module] || { c: 'var(--rot)', hell: 'var(--rot-hell)' };
+  return `<span class="topnav__dd-item__icon" style="--item-accent-hell:${col.hell}">${icon}</span>`;
 }
 
-function buildTopnav() {
+function buildDropdown(moduleKey, label, items) {
+  const col = MODULE_COLORS[moduleKey] || { c: 'var(--rot)', hell: 'var(--rot-hell)' };
+  const isOpen = openDropdown === moduleKey;
+  const isActive = isModuleActive(moduleKey);
+
+  return `
+    <div class="topnav__dropdown-wrap" data-dropdown="${moduleKey}">
+      <button class="topnav__item topnav__item--dropdown${isActive ? ' active' : ''}${isOpen ? ' open' : ''}">
+        ${label}
+      </button>
+      <div class="topnav__dropdown${isOpen ? ' open' : ''}">
+        <div class="topnav__dropdown-label" style="color:${col.c}">${label}</div>
+        ${items.map(item => `
+          <button class="topnav__dd-item${isActive_(item.page) ? ' active' : ''}" data-page="${item.page}">
+            ${ddIcon(item.icon, moduleKey)}
+            ${item.label}
+          </button>`).join('')}
+      </div>
+    </div>`;
+}
+
+// Separate active check for dropdown items (exact match only)
+function isActive_(page) {
+  return currentPage === page;
+}
+
+function buildShell() {
   const accent = getAccent();
 
   const lagerItems = [
-    { page: 'orders', label: 'Bestellübersicht' },
+    { page: 'orders',     label: 'Bestellübersicht', icon: '📋' },
     ...(canAccess(currentUser, 'lager') || canAccess(currentUser, 'lager.approve') ? [
-      { page: 'new-order', label: 'Neue Bestellung' },
-      { page: 'articles', label: 'Artikelstamm' },
+      { page: 'new-order', label: 'Neue Bestellung',  icon: '➕' },
+      { page: 'articles',  label: 'Artikelstamm',     icon: '📦' },
     ] : []),
   ];
 
   const personalItems = [
-    { page: 'personal', label: 'Mitglieder' },
-    { page: 'termine', label: 'Termine' },
+    { page: 'personal', label: 'Mitglieder', icon: '👤' },
+    { page: 'termine',  label: 'Termine',    icon: '📅' },
   ];
 
   const fahrzeugeItems = [
-    { page: 'vehicles', label: 'Fahrzeugübersicht' },
+    { page: 'vehicles', label: 'Fahrzeugübersicht', icon: '🚒' },
   ];
 
   const einsaetzeItems = [
-    { page: 'incidents', label: 'Einsatzberichte' },
+    { page: 'incidents', label: 'Einsatzberichte', icon: '📄' },
     ...(canAccess(currentUser, 'einsatzberichte') ? [
-      { page: 'new-incident', label: 'Neuer Bericht' },
+      { page: 'new-incident', label: 'Neuer Bericht', icon: '➕' },
     ] : []),
   ];
 
   const vereinItems = [
-    { page: 'verein', label: 'Vereinsverwaltung' },
+    { page: 'verein', label: 'Vereinsverwaltung', icon: '🏛️' },
   ];
 
   return `
     <div class="app-shell" style="--accent: ${accent}">
-      <header class="topnav">
-        <button class="topnav__brand" data-page="">
-          <span class="topnav__flame">🔥</span>
-          <span class="topnav__name">${ffName}</span>
+
+      <header class="app-header">
+        <button class="app-header__brand" data-page="">
+          <div class="app-header__emblem">${getHeaderLogo()}</div>
+          <div class="app-header__title">
+            <span class="app-header__name">${ffName}</span>
+            <span class="app-header__sub">Feuerwehrverwaltung</span>
+          </div>
         </button>
 
-        <nav class="topnav__links">
-          <button class="topnav__link${isActive('') ? ' active' : ''}" data-page="">Startseite</button>
-          <button class="topnav__link${isActive('my-area') ? ' active' : ''}" data-page="my-area">Mein Bereich</button>
-
-          ${showModule('lager.read', 'lager') ? `
-          <div class="nav-dropdown${isModuleActive('lager') ? ' module-active' : ''}" data-dropdown="lager">
-            <button class="topnav__link topnav__link--has-dropdown${isModuleActive('lager') ? ' active' : ''}${openDropdown === 'lager' ? ' open' : ''}">
-              Lager <span class="nav-caret">▾</span>
-            </button>
-            ${openDropdown === 'lager' ? buildDropdownMenu(lagerItems) : ''}
-          </div>` : ''}
-
-          ${showModule('personal', 'personal') ? `
-          <div class="nav-dropdown${isModuleActive('personal') ? ' module-active' : ''}" data-dropdown="personal">
-            <button class="topnav__link topnav__link--has-dropdown${isModuleActive('personal') ? ' active' : ''}${openDropdown === 'personal' ? ' open' : ''}">
-              Personal <span class="nav-caret">▾</span>
-            </button>
-            ${openDropdown === 'personal' ? buildDropdownMenu(personalItems) : ''}
-          </div>` : ''}
-
-          ${showModule('fahrzeuge', 'fahrzeuge') ? `
-          <div class="nav-dropdown${isModuleActive('fahrzeuge') ? ' module-active' : ''}" data-dropdown="fahrzeuge">
-            <button class="topnav__link topnav__link--has-dropdown${isModuleActive('fahrzeuge') ? ' active' : ''}${openDropdown === 'fahrzeuge' ? ' open' : ''}">
-              Fahrzeuge <span class="nav-caret">▾</span>
-            </button>
-            ${openDropdown === 'fahrzeuge' ? buildDropdownMenu(fahrzeugeItems) : ''}
-          </div>` : ''}
-
-          ${showModule('einsatzberichte.read', 'einsatzberichte') ? `
-          <div class="nav-dropdown${isModuleActive('einsatzberichte') ? ' module-active' : ''}" data-dropdown="einsatzberichte">
-            <button class="topnav__link topnav__link--has-dropdown${isModuleActive('einsatzberichte') ? ' active' : ''}${openDropdown === 'einsatzberichte' ? ' open' : ''}">
-              Einsätze <span class="nav-caret">▾</span>
-            </button>
-            ${openDropdown === 'einsatzberichte' ? buildDropdownMenu(einsaetzeItems) : ''}
-          </div>` : ''}
-
-          ${showModule('verein', 'verein') ? `
-          <div class="nav-dropdown${isModuleActive('verein') ? ' module-active' : ''}" data-dropdown="verein">
-            <button class="topnav__link topnav__link--has-dropdown${isModuleActive('verein') ? ' active' : ''}${openDropdown === 'verein' ? ' open' : ''}">
-              Verein <span class="nav-caret">▾</span>
-            </button>
-            ${openDropdown === 'verein' ? buildDropdownMenu(vereinItems) : ''}
-          </div>` : ''}
-
-          <button class="topnav__link${isActive('settings') ? ' active' : ''}" data-page="settings">Einstellungen</button>
-
-          ${currentUser?.role === 'admin' || currentUser?.role === 'superuser' ? `
-          <button class="topnav__link topnav__link--admin${isActive('admin') ? ' active' : ''}" data-page="admin">Admin</button>` : ''}
-        </nav>
-
-        <div class="topnav__user">
-          <span class="topnav__username">
-            <span class="topnav__user-dot"></span>
+        <div class="app-header__right">
+          <span class="app-header__user">
+            <span class="app-header__user-dot"></span>
             ${currentUser?.username || ''}
           </span>
-          <button class="topnav__logout" id="btn-logout">Abmelden</button>
+          <button class="app-header__logout" id="btn-logout">Abmelden</button>
         </div>
       </header>
+
+      <nav class="topnav">
+        <button class="topnav__item${isActive('') ? ' active' : ''}" data-page="">Startseite</button>
+        <button class="topnav__item${isActive('my-area') ? ' active' : ''}" data-page="my-area">Mein Bereich</button>
+
+        <div class="topnav__sep"></div>
+
+        ${showModule('lager.read', 'lager')           ? buildDropdown('lager',           'Lager',    lagerItems)    : ''}
+        ${showModule('personal', 'personal')           ? buildDropdown('personal',        'Personal', personalItems) : ''}
+        ${showModule('fahrzeuge', 'fahrzeuge')         ? buildDropdown('fahrzeuge',       'Fahrzeuge',fahrzeugeItems): ''}
+        ${showModule('einsatzberichte.read', 'einsatzberichte') ? buildDropdown('einsatzberichte', 'Einsätze', einsaetzeItems) : ''}
+        ${showModule('verein', 'verein')               ? buildDropdown('verein',          'Verein',   vereinItems)   : ''}
+
+        <div class="topnav__spacer"></div>
+
+        <button class="topnav__item${isActive('settings') ? ' active' : ''}" data-page="settings">Einstellungen</button>
+
+        ${currentUser?.role === 'admin' || currentUser?.role === 'superuser' ? `
+        <button class="topnav__item topnav__item--admin${isActive('admin') ? ' active' : ''}" data-page="admin">Admin</button>` : ''}
+      </nav>
 
       <main class="page-main" id="main-content">
         <div id="page-content"></div>
@@ -176,25 +181,36 @@ function buildTopnav() {
 function rerender(activePage) {
   currentPage = activePage || '';
   const app = document.getElementById('app');
-  app.innerHTML = buildTopnav();
+  app.innerHTML = buildShell();
   bindEvents(app);
 }
 
 function bindEvents(app) {
-  // Brand + nav links
+  // Brand + direkte Nav-Links (nicht in Dropdown)
   app.querySelectorAll('[data-page]').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      if (btn.closest('.nav-dropdown__menu') || !btn.closest('.nav-dropdown')) {
-        openDropdown = null;
-        navigate(`#/${btn.dataset.page}`);
+    btn.addEventListener('click', () => {
+      if (!btn.closest('.topnav__dropdown') && !btn.closest('.topnav__dropdown-wrap') || btn.classList.contains('topnav__item')) {
+        if (!btn.classList.contains('topnav__item--dropdown')) {
+          openDropdown = null;
+          navigate(`#/${btn.dataset.page}`);
+        }
       }
     });
   });
 
-  // Dropdown toggles
-  app.querySelectorAll('.nav-dropdown').forEach(dd => {
-    const name = dd.dataset.dropdown;
-    const trigger = dd.querySelector('.topnav__link--has-dropdown');
+  // Brand-Button separat
+  const brand = app.querySelector('.app-header__brand');
+  if (brand) {
+    brand.addEventListener('click', () => {
+      openDropdown = null;
+      navigate('#/');
+    });
+  }
+
+  // Dropdown-Trigger
+  app.querySelectorAll('.topnav__dropdown-wrap').forEach(wrap => {
+    const name = wrap.dataset.dropdown;
+    const trigger = wrap.querySelector('.topnav__item--dropdown');
     if (trigger) {
       trigger.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -204,8 +220,8 @@ function bindEvents(app) {
     }
   });
 
-  // Dropdown item navigation
-  app.querySelectorAll('.nav-dropdown__item[data-page]').forEach(btn => {
+  // Dropdown-Items
+  app.querySelectorAll('.topnav__dd-item[data-page]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       openDropdown = null;
@@ -222,9 +238,9 @@ function bindEvents(app) {
     });
   }
 
-  // Close dropdown on outside click
+  // Dropdown schließen bei Klick außerhalb
   window.addEventListener('click', (e) => {
-    if (!e.target.closest('.nav-dropdown')) {
+    if (!e.target.closest('.topnav__dropdown-wrap')) {
       if (openDropdown !== null) {
         openDropdown = null;
         rerender(currentPage);

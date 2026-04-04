@@ -9,19 +9,20 @@
   height: 100%;
 }
 
-// ── Top Navigation ────────────────────────────────────────────────────────────
-.topnav {
+// ── App Header (Logo + User) ──────────────────────────────────────────────────
+.app-header {
   position: fixed;
   top: 0; left: 0; right: 0;
-  height: $topnav-height;
+  height: $app-header-height;
   background: $bg-card;
   border-bottom: 1px solid $border;
   display: flex;
   align-items: center;
-  gap: 0;
-  padding: 0 $space-md;
-  z-index: 100;
+  padding: 0 $space-lg;
+  gap: $space-sm;
+  z-index: 200;
   box-shadow: $schatten-sm;
+  flex-shrink: 0;
 
   &__brand {
     display: flex;
@@ -30,79 +31,61 @@
     background: none;
     border: none;
     cursor: pointer;
-    padding: 6px 12px 6px 0;
-    margin-right: $space-sm;
-    border-right: 1px solid $border;
-    white-space: nowrap;
+    padding: 0;
+    flex-shrink: 0;
   }
 
-  &__flame { font-size: 18px; line-height: 1; }
+  &__emblem {
+    width: 34px;
+    height: 34px;
+    background: $rot-hell;
+    border: 1px solid $rot-border;
+    border-radius: $radius-lg;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 17px;
+    line-height: 1;
+  }
+
+  &__title {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+  }
 
   &__name {
     font-size: $font-size-md;
-    font-weight: 600;
+    font-weight: 700;
     color: $text;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
   }
 
-  &__links {
+  &__sub {
+    font-size: $font-size-xs;
+    color: $text-muted;
+    margin-top: 1px;
+    line-height: 1;
+  }
+
+  &__right {
+    margin-left: auto;
     display: flex;
     align-items: center;
-    gap: 2px;
-    flex: 1;
-    overflow-x: auto;
-    scrollbar-width: none;
-    &::-webkit-scrollbar { display: none; }
-  }
-
-  &__link {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 6px 12px;
-    border-radius: $radius-md;
-    font-size: $font-size-sm;
-    font-weight: 500;
-    color: $text-muted;
-    white-space: nowrap;
-    transition: background $transition-fast, color $transition-fast;
-    position: relative;
-
-    &:hover {
-      background: $bg-card-hover;
-      color: $text;
-    }
-
-    &.active {
-      color: var(--accent, #{$rot});
-      background: color-mix(in srgb, var(--accent, #{$rot}) 8%, transparent);
-    }
-
-    &--admin { color: $lila; }
-
-    &--has-dropdown {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
+    gap: $space-sm;
   }
 
   &__user {
     display: flex;
     align-items: center;
-    gap: 10px;
-    flex-shrink: 0;
-    margin-left: $space-sm;
-    padding-left: 12px;
-    border-left: 1px solid $border;
-  }
-
-  &__username {
+    gap: 6px;
     font-size: $font-size-sm;
     color: $text-muted;
-    display: flex;
-    align-items: center;
-    gap: 6px;
     font-weight: 500;
+    padding: 0 $space-sm;
   }
 
   &__user-dot {
@@ -117,12 +100,14 @@
     background: none;
     border: 1px solid $border;
     cursor: pointer;
-    padding: 4px 10px;
-    border-radius: $radius-sm;
+    padding: 5px 12px;
+    border-radius: $radius-md;
     font-size: $font-size-sm;
+    font-weight: 600;
     color: $text-muted;
     transition: background $transition-fast, color $transition-fast, border-color $transition-fast;
     white-space: nowrap;
+    font-family: inherit;
 
     &:hover {
       background: $rot-hell;
@@ -132,50 +117,153 @@
   }
 }
 
-.nav-caret { font-size: 10px; opacity: 0.7; }
+// ── Top Navigation ────────────────────────────────────────────────────────────
+.topnav {
+  position: fixed;
+  top: $app-header-height;
+  left: 0; right: 0;
+  height: 44px;
+  background: $bg-card;
+  border-bottom: 2px solid var(--accent, #{$rot});
+  display: flex;
+  align-items: stretch;
+  padding: 0 $space-lg;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  transition: border-color $transition-md;
 
-// ── Dropdowns ─────────────────────────────────────────────────────────────────
-.nav-dropdown {
-  position: relative;
+  &__spacer { flex: 1; }
 
-  &__menu {
-    position: absolute;
-    top: calc(100% + 8px);
-    left: 0;
-    background: $bg-card;
-    border: 1px solid $border;
-    border-radius: $radius-lg;
-    box-shadow: $schatten-md;
-    min-width: 180px;
-    padding: 4px;
-    z-index: 200;
-    border-top: 3px solid var(--accent, #{$rot});
+  &__sep {
+    width: 1px;
+    background: $border;
+    margin: 8px 4px;
+    flex-shrink: 0;
   }
 
   &__item {
-    display: block;
-    width: 100%;
-    text-align: left;
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 8px 12px;
-    border-radius: $radius-sm;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 14px;
+    height: 44px;
+    white-space: nowrap;
+    color: $text-muted;
     font-size: $font-size-sm;
-    color: $text;
-    transition: background $transition-fast, color $transition-fast;
+    font-weight: 500;
+    border: none;
+    background: none;
+    font-family: inherit;
+    cursor: pointer;
+    position: relative;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: color $transition-fast;
 
-    &:hover {
-      background: $bg-card-hover;
-      color: $text;
-    }
+    &:hover { color: $text; }
 
     &.active {
-      background: color-mix(in srgb, var(--accent, #{$rot}) 10%, transparent);
       color: var(--accent, #{$rot});
-      font-weight: 500;
+      border-bottom-color: var(--accent, #{$rot});
+      font-weight: 600;
     }
+
+    // Dropdown-Pfeil via CSS
+    &--dropdown::after {
+      content: '';
+      display: inline-block;
+      margin-left: 3px;
+      width: 0; height: 0;
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 4px solid currentColor;
+      opacity: 0.5;
+      transition: transform $transition-fast;
+    }
+
+    &--dropdown:hover::after,
+    &--dropdown.active::after { opacity: 1; }
+    &--dropdown.open::after   { transform: rotate(180deg); }
+
+    &--admin { color: $lila; }
   }
+}
+
+// ── Dropdowns ─────────────────────────────────────────────────────────────────
+.topnav__dropdown-wrap {
+  position: relative;
+}
+
+.topnav__dropdown {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  background: $bg-card;
+  border: 1px solid $border;
+  border-radius: $radius-lg;
+  box-shadow: $schatten-lg;
+  min-width: 210px;
+  padding: 6px;
+  display: none;
+  z-index: 300;
+  animation: dd-in 0.12s ease;
+
+  &.open { display: block; }
+}
+
+@keyframes dd-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.topnav__dropdown-label {
+  padding: 6px 10px 4px;
+  font-size: $font-size-2xs;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: $text-subtle;
+}
+
+.topnav__dd-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  border-radius: $radius-md;
+  width: 100%;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: $font-size-sm;
+  font-weight: 500;
+  color: $text-muted;
+  cursor: pointer;
+  text-align: left;
+  transition: background $transition-fast, color $transition-fast;
+
+  &:hover {
+    background: $bg-card-hover;
+    color: $text;
+  }
+
+  &.active {
+    color: var(--accent, #{$rot});
+    background: color-mix(in srgb, var(--accent, #{$rot}) 10%, transparent);
+    font-weight: 600;
+  }
+}
+
+.topnav__dd-item__icon {
+  width: 26px;
+  height: 26px;
+  border-radius: $radius-md;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 13px;
+  background: var(--item-accent-hell, #{$rot-hell});
 }
 
 // ── Main Content ──────────────────────────────────────────────────────────────

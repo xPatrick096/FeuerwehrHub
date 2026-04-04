@@ -644,7 +644,7 @@ function openMitgliedModal(m = null) {
       email:          document.getElementById('mm-email').value.trim() || null,
       telefon:        document.getElementById('mm-telefon').value.trim() || null,
       geburtsdatum:   document.getElementById('mm-geburt').value || null,
-      eintrittsdatum: document.getElementById('mm-eintritt').value,
+      eintrittsdatum: document.getElementById('mm-eintritt').value || null,
       status:         document.getElementById('mm-status').value,
       bemerkung:           document.getElementById('mm-bemerkung').value.trim() || null,
       kleidung_oberteil:   document.getElementById('mm-oberteil').value || null,
@@ -656,8 +656,7 @@ function openMitgliedModal(m = null) {
       body.austritt_datum   = document.getElementById('mm-austritt')?.value || null;
       body.austritt_grund   = document.getElementById('mm-austrittsgrund')?.value.trim() || null;
     }
-    if (!body.vorname || !body.nachname)       { toast('Vor- und Nachname erforderlich', 'error'); return; }
-    if (!body.eintrittsdatum)                  { toast('Eintrittsdatum erforderlich', 'error'); return; }
+    if (!body.vorname || !body.nachname) { toast('Vor- und Nachname erforderlich', 'error'); return; }
     try {
       if (m) await api.updateMitglied(m.id, body);
       else   await api.createMitglied(body);

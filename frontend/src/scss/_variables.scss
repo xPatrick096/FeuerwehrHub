@@ -1,32 +1,118 @@
-// ── Light Theme ───────────────────────────────────────────────────────────────
-$bg:            #f4f5f7;
-$bg-card:       #ffffff;
-$bg-card-hover: #f8fafc;
-$border:        #e2e8f0;
-$text:          #1e293b;
-$text-muted:    #64748b;
-$text-subtle:   #94a3b8;
+// ── CSS Custom Properties — Light Theme (default) ────────────────────────────
+:root {
+  --bg:            #f4f5f7;
+  --bg-card:       #ffffff;
+  --bg-card-hover: #f8fafc;
+  --border:        #e2e8f0;
+  --text:          #1e293b;
+  --text-muted:    #64748b;
+  --text-subtle:   #94a3b8;
 
-// ── Akzentfarbe (Feuerwehr-Rot) ───────────────────────────────────────────────
-$rot:           #e63022;
-$rot-dunkel:    #b5261b;
-$rot-hell:      rgba(230, 48, 34, 0.10);
-$rot-border:    rgba(230, 48, 34, 0.25);
-$rot-glow:      rgba(230, 48, 34, 0.25);
-$rot-focus:     rgba(230, 48, 34, 0.10);
-$rot-subtle:    rgba(230, 48, 34, 0.04);
+  --schatten-sm:   0 1px 3px rgba(0,0,0,0.08);
+  --schatten-md:   0 4px 12px rgba(0,0,0,0.10);
+  --schatten-lg:   0 8px 24px rgba(0,0,0,0.12);
 
-// ── Statusfarben ──────────────────────────────────────────────────────────────
-$gruen:         #16a34a;
-$gruen-hell:    rgba(22, 163, 74, 0.12);
-$orange:        #d97706;
-$orange-hell:   rgba(217, 119, 6, 0.12);
-$blau:          #2563eb;
-$blau-hell:     rgba(37, 99, 235, 0.12);
-$lila:          #7c3aed;
-$lila-hell:     rgba(124, 58, 237, 0.12);
+  // Feuerwehr-Rot
+  --rot:           #e63022;
+  --rot-dunkel:    #b5261b;
+  --rot-hell:      rgba(230, 48, 34, 0.10);
+  --rot-border:    rgba(230, 48, 34, 0.25);
+  --rot-glow:      rgba(230, 48, 34, 0.25);
+  --rot-focus:     rgba(230, 48, 34, 0.10);
+  --rot-subtle:    rgba(230, 48, 34, 0.04);
 
-// ── Typografie ────────────────────────────────────────────────────────────────
+  // Statusfarben
+  --gruen:         #16a34a;
+  --gruen-dunkel:  #15803d;
+  --gruen-hell:    rgba(22, 163, 74, 0.12);
+  --orange:        #d97706;
+  --orange-hell:   rgba(217, 119, 6, 0.12);
+  --blau:          #2563eb;
+  --blau-hell:     rgba(37, 99, 235, 0.12);
+  --lila:          #7c3aed;
+  --lila-hell:     rgba(124, 58, 237, 0.12);
+
+  // Modul-Akzente (für Dropdown-Icons)
+  --lager-c:       #d97706;
+  --lager-hell:    rgba(217, 119, 6, 0.12);
+  --personal-c:    #16a34a;
+  --personal-hell: rgba(22, 163, 74, 0.12);
+  --fahrzeug-c:    #2563eb;
+  --fahrzeug-hell: rgba(37, 99, 235, 0.12);
+  --einsatz-c:     #e63022;
+  --einsatz-hell:  rgba(230, 48, 34, 0.10);
+  --verein-c:      #7c3aed;
+  --verein-hell:   rgba(124, 58, 237, 0.12);
+}
+
+// ── CSS Custom Properties — Dark Theme ───────────────────────────────────────
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg:            #0f172a;
+  --bg-card:       #1e293b;
+  --bg-card-hover: #263248;
+  --border:        #334155;
+  --text:          #e2e8f0;
+  --text-muted:    #94a3b8;
+  --text-subtle:   #64748b;
+
+  --schatten-sm:   0 1px 3px rgba(0,0,0,0.30);
+  --schatten-md:   0 4px 12px rgba(0,0,0,0.40);
+  --schatten-lg:   0 8px 24px rgba(0,0,0,0.50);
+
+  --rot-hell:      rgba(230, 48, 34, 0.15);
+  --rot-border:    rgba(230, 48, 34, 0.35);
+  --rot-subtle:    rgba(230, 48, 34, 0.08);
+
+  --gruen-hell:    rgba(22, 163, 74, 0.15);
+  --orange-hell:   rgba(217, 119, 6, 0.15);
+  --blau-hell:     rgba(37, 99, 235, 0.15);
+  --lila-hell:     rgba(124, 58, 237, 0.15);
+
+  --lager-hell:    rgba(217, 119, 6, 0.15);
+  --personal-hell: rgba(22, 163, 74, 0.15);
+  --fahrzeug-hell: rgba(37, 99, 235, 0.15);
+  --einsatz-hell:  rgba(230, 48, 34, 0.15);
+  --verein-hell:   rgba(124, 58, 237, 0.15);
+}
+
+// ── SCSS-Variablen (zeigen auf CSS Custom Properties) ─────────────────────────
+// Hintergründe & Ränder
+$bg:            var(--bg);
+$bg-card:       var(--bg-card);
+$bg-card-hover: var(--bg-card-hover);
+$border:        var(--border);
+$text:          var(--text);
+$text-muted:    var(--text-muted);
+$text-subtle:   var(--text-subtle);
+
+// Schatten
+$schatten-sm:   var(--schatten-sm);
+$schatten-md:   var(--schatten-md);
+$schatten-lg:   var(--schatten-lg);
+
+// Feuerwehr-Rot
+$rot:           var(--rot);
+$rot-dunkel:    var(--rot-dunkel);
+$rot-hell:      var(--rot-hell);
+$rot-border:    var(--rot-border);
+$rot-glow:      var(--rot-glow);
+$rot-focus:     var(--rot-focus);
+$rot-subtle:    var(--rot-subtle);
+
+// Statusfarben
+$gruen:         var(--gruen);
+$gruen-dunkel:  var(--gruen-dunkel);
+$gruen-hell:    var(--gruen-hell);
+$orange:        var(--orange);
+$orange-hell:   var(--orange-hell);
+$blau:          var(--blau);
+$blau-hell:     var(--blau-hell);
+$lila:          var(--lila);
+$lila-hell:     var(--lila-hell);
+
+// ── Statische Variablen (nicht thembar) ───────────────────────────────────────
 $font-family:   'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 $font-size-2xs: 10px;
 $font-size-xs:  11px;
@@ -36,7 +122,6 @@ $font-size-lg:  16px;
 $font-size-xl:  20px;
 $font-size-2xl: 28px;
 
-// ── Abstände ──────────────────────────────────────────────────────────────────
 $space-xs:  4px;
 $space-sm:  8px;
 $space-md:  16px;
@@ -44,24 +129,17 @@ $space-lg:  24px;
 $space-xl:  32px;
 $space-2xl: 48px;
 
-// ── Schatten ──────────────────────────────────────────────────────────────────
-$schatten-sm:  0 1px 3px rgba(0,0,0,0.08);
-$schatten-md:  0 4px 12px rgba(0,0,0,0.10);
-$schatten-lg:  0 8px 24px rgba(0,0,0,0.12);
-
-// ── Border-Radius ─────────────────────────────────────────────────────────────
 $radius-sm:   4px;
 $radius-md:   8px;
 $radius-lg:   12px;
 $radius-xl:   16px;
 $radius-pill: 999px;
 
-// ── Layout ────────────────────────────────────────────────────────────────────
-$topnav-height:     52px;
-$header-height:     52px;    // Alias für Kompatibilität
-$sidebar-width:     220px;   // nicht mehr aktiv, für Referenz behalten
+$topnav-height:     102px;   // app-header (58px) + topnav (44px)
+$app-header-height: 58px;
+$header-height:     102px;   // Alias
+$sidebar-width:     220px;
 $content-max-width: 1200px;
 
-// ── Transitions ───────────────────────────────────────────────────────────────
 $transition-fast: 0.15s ease;
 $transition-md:   0.22s ease;
