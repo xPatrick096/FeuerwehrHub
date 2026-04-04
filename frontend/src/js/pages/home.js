@@ -24,19 +24,19 @@ export async function renderHome() {
 
     <div id="announcements-section">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <h3 style="margin:0;font-size:15px;font-weight:600;color:#e6edf3">Ankündigungen</h3>
+        <h3 style="margin:0;font-size:15px;font-weight:600;color:var(--text)">Ankündigungen</h3>
         ${isAdmin ? `<button class="btn btn--primary btn--sm" id="btn-new-announcement">+ Neu</button>` : ''}
       </div>
-      <div id="announcements-list"><p style="color:#7d8590;font-size:13px">Lade...</p></div>
+      <div id="announcements-list"><p style="color:var(--text-muted);font-size:13px">Lade...</p></div>
     </div>
 
     ${modules.verein ? `
     <div id="schwarzesbrett-section" style="margin-top:2rem">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <h3 style="margin:0;font-size:15px;font-weight:600;color:#e6edf3">${icon('clipboard-list', 14)} Schwarzes Brett</h3>
-        <a href="#/verein" style="font-size:12px;color:#7d8590;text-decoration:none">Verwalten →</a>
+        <h3 style="margin:0;font-size:15px;font-weight:600;color:var(--text)">${icon('clipboard-list', 14)} Schwarzes Brett</h3>
+        <a href="#/verein" style="font-size:12px;color:var(--text-muted);text-decoration:none">Verwalten →</a>
       </div>
-      <div id="schwarzesbrett-list"><p style="color:#7d8590;font-size:13px">Lade...</p></div>
+      <div id="schwarzesbrett-list"><p style="color:var(--text-muted);font-size:13px">Lade...</p></div>
     </div>` : ''}
 
     <div class="widget-grid" id="widget-grid">
@@ -46,7 +46,7 @@ export async function renderHome() {
           <a href="#/vehicles">Alle anzeigen →</a>
         </div>
         <div class="widget-card__body" id="vehicle-widget-content">
-          <p style="color:#7d8590;font-size:13px">Lade...</p>
+          <p style="color:var(--text-muted);font-size:13px">Lade...</p>
         </div>
       </div>
 
@@ -56,7 +56,7 @@ export async function renderHome() {
           <a href="#/incidents">Alle anzeigen →</a>
         </div>
         <div class="widget-card__body" id="incident-widget-content">
-          <p style="color:#7d8590;font-size:13px">Lade...</p>
+          <p style="color:var(--text-muted);font-size:13px">Lade...</p>
         </div>
       </div>
 
@@ -66,7 +66,7 @@ export async function renderHome() {
           <a href="#/personal">Alle anzeigen →</a>
         </div>
         <div class="widget-card__body" id="personal-widget-content">
-          <p style="color:#7d8590;font-size:13px">Lade...</p>
+          <p style="color:var(--text-muted);font-size:13px">Lade...</p>
         </div>
       </div>
 
@@ -76,7 +76,7 @@ export async function renderHome() {
           <a href="#/termine">Alle anzeigen →</a>
         </div>
         <div class="widget-card__body" id="termine-widget-content">
-          <p style="color:#7d8590;font-size:13px">Lade...</p>
+          <p style="color:var(--text-muted);font-size:13px">Lade...</p>
         </div>
       </div>
     </div>
@@ -98,7 +98,7 @@ export async function renderHome() {
           <div class="form-group">
             <label>Inhalt</label>
             <textarea id="ann-content" rows="5"
-              style="width:100%;resize:vertical;padding:8px;border:1px solid #21273d;border-radius:8px;font-size:14px;background:#0d1117;color:#e6edf3"
+              style="width:100%;resize:vertical;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--bg-card-hover);color:var(--text)"
               placeholder="Nachricht..."></textarea>
           </div>
           <div class="form-group">
@@ -151,7 +151,7 @@ async function loadAnnouncements(user, isAdmin) {
     const items = await api.getAnnouncements();
 
     if (!items.length) {
-      list.innerHTML = `<p style="color:#7d8590;font-size:13px">Keine Ankündigungen vorhanden.</p>`;
+      list.innerHTML = `<p style="color:var(--text-muted);font-size:13px">Keine Ankündigungen vorhanden.</p>`;
       return;
     }
 
@@ -163,7 +163,7 @@ async function loadAnnouncements(user, isAdmin) {
             <strong>${esc(a.title)}</strong>
           </span>
           <span style="display:flex;align-items:center;gap:12px">
-            <span style="font-size:11px;color:#7d8590">
+            <span style="font-size:11px;color:var(--text-muted)">
               ${esc(a.created_by_name)} · ${formatDate(a.created_at)}
             </span>
             ${isAdmin ? `
@@ -177,7 +177,7 @@ async function loadAnnouncements(user, isAdmin) {
             ` : ''}
           </span>
         </div>
-        <div class="card__body" style="white-space:pre-wrap;font-size:14px;color:#e6edf3">
+        <div class="card__body" style="white-space:pre-wrap;font-size:14px;color:var(--text)">
           ${esc(a.content)}
         </div>
       </div>
@@ -398,28 +398,28 @@ async function loadTermineWidget(modules = {}) {
       .slice(0, 5);
 
     if (!upcoming.length) {
-      content.innerHTML = `<p style="color:#7d8590;font-size:13px;margin:0">Keine bevorstehenden Termine.</p>`;
+      content.innerHTML = `<p style="color:var(--text-muted);font-size:13px;margin:0">Keine bevorstehenden Termine.</p>`;
       return;
     }
 
     content.innerHTML = upcoming.map(t => {
       const d = new Date(t.start_at);
       const colorDot = t._source === 'verein'
-        ? `<span style="display:inline-block;padding:1px 5px;border-radius:999px;font-size:9px;font-weight:600;background:#21273d;color:#7d8590;margin-right:5px;flex-shrink:0">Verein</span>`
+        ? `<span style="display:inline-block;padding:1px 5px;border-radius:999px;font-size:9px;font-weight:600;background:var(--bg-card-hover);color:var(--text-muted);margin-right:5px;flex-shrink:0">Verein</span>`
         : t.typ_color
           ? `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${t.typ_color};margin-right:5px;flex-shrink:0"></span>`
           : '';
       return `
-        <div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid #21273d">
-          <div style="min-width:40px;text-align:center;background:#0d1117;border-radius:5px;padding:4px 6px;flex-shrink:0">
+        <div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)">
+          <div style="min-width:40px;text-align:center;background:var(--bg-card-hover);border-radius:5px;padding:4px 6px;flex-shrink:0">
             <div style="font-size:14px;font-weight:700;line-height:1">${String(d.getDate()).padStart(2,'0')}</div>
-            <div style="font-size:9px;color:#7d8590;text-transform:uppercase">${d.toLocaleDateString('de-DE',{month:'short'})}</div>
+            <div style="font-size:9px;color:var(--text-muted);text-transform:uppercase">${d.toLocaleDateString('de-DE',{month:'short'})}</div>
           </div>
           <div style="flex:1;min-width:0">
             <div style="display:flex;align-items:center;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
               ${colorDot}${esc(t.title)}
             </div>
-            <div style="color:#7d8590;font-size:11px;margin-top:1px">
+            <div style="color:var(--text-muted);font-size:11px;margin-top:1px">
               ${d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})} Uhr
               ${t.location ? ` · ${esc(t.location)}` : ''}
             </div>
@@ -451,7 +451,7 @@ async function loadSchwarztesBrett(isAdmin) {
   try {
     const posts = await api.getVereinPosts();
     if (!posts?.length) {
-      list.innerHTML = `<p style="color:#7d8590;font-size:13px">Keine Beiträge vorhanden.</p>`;
+      list.innerHTML = `<p style="color:var(--text-muted);font-size:13px">Keine Beiträge vorhanden.</p>`;
       return;
     }
     list.innerHTML = posts.map(p => `
@@ -462,11 +462,11 @@ async function loadSchwarztesBrett(isAdmin) {
             <strong>${esc(p.title)}</strong>
             ${p.visibility === 'vorstand' && isAdmin ? `<span class="badge badge--orange" style="margin-left:8px">Nur Vorstand</span>` : ''}
           </span>
-          <span style="font-size:11px;color:#7d8590">
+          <span style="font-size:11px;color:var(--text-muted)">
             ${p.expires_at ? `Bis ${p.expires_at} · ` : ''}${esc(p.created_by_name)}
           </span>
         </div>
-        <div class="card__body" style="white-space:pre-wrap;font-size:14px;color:#e6edf3">
+        <div class="card__body" style="white-space:pre-wrap;font-size:14px;color:var(--text)">
           ${esc(p.content)}
         </div>
       </div>

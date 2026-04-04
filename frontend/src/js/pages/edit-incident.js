@@ -78,7 +78,7 @@ export async function renderEditIncident() {
     <!-- Änderungskommentar -->
     <div class="card" style="margin-top:16px">
       <div class="card__body">
-        <label style="display:block;margin-bottom:6px;font-size:13px;color:#7d8590">
+        <label style="display:block;margin-bottom:6px;font-size:13px;color:var(--text-muted)">
           Kommentar zur Änderung (optional)
         </label>
         <textarea id="edit-comment" rows="2"
@@ -92,7 +92,7 @@ export async function renderEditIncident() {
       <div class="card__body">
         <h4 style="margin:0 0 12px;font-size:14px">Änderungshistorie</h4>
         <div id="changes-list">
-          <p style="color:#7d8590;font-size:13px">Lade...</p>
+          <p style="color:var(--text-muted);font-size:13px">Lade...</p>
         </div>
       </div>
     </div>
@@ -144,24 +144,24 @@ async function _loadChanges() {
   try {
     const changes = await api.getIncidentChanges(_incidentId);
     if (!changes.length) {
-      list.innerHTML = `<p style="color:#7d8590;font-size:13px">Noch keine Änderungen protokolliert.</p>`;
+      list.innerHTML = `<p style="color:var(--text-muted);font-size:13px">Noch keine Änderungen protokolliert.</p>`;
       return;
     }
     list.innerHTML = changes.map(c => `
-      <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid #21273d;align-items:flex-start">
-        <div style="flex-shrink:0;width:32px;height:32px;border-radius:50%;background:#21273d;
-          display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#7d8590">
+      <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);align-items:flex-start">
+        <div style="flex-shrink:0;width:32px;height:32px;border-radius:50%;background:var(--bg-card-hover);
+          display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--text-muted)">
           ${esc((c.changed_by_name || '?').slice(0,1).toUpperCase())}
         </div>
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:600">${esc(c.changed_by_name || '—')}</div>
-          ${c.comment ? `<div style="font-size:13px;color:#e6edf3;margin-top:2px">${esc(c.comment)}</div>` : ''}
-          <div style="font-size:11px;color:#7d8590;margin-top:2px">${_fmtDate(c.created_at)}</div>
+          ${c.comment ? `<div style="font-size:13px;color:var(--text);margin-top:2px">${esc(c.comment)}</div>` : ''}
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${_fmtDate(c.created_at)}</div>
         </div>
       </div>
     `).join('');
   } catch (_) {
-    list.innerHTML = `<p style="color:#7d8590;font-size:13px">Änderungshistorie nicht verfügbar.</p>`;
+    list.innerHTML = `<p style="color:var(--text-muted);font-size:13px">Änderungshistorie nicht verfügbar.</p>`;
   }
 }
 

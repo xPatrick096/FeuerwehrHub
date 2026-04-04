@@ -26,12 +26,12 @@ export async function renderMyArea() {
       </div>
     </div>
 
-    <div class="tab-bar" style="display:flex;gap:4px;margin-bottom:24px;border-bottom:1px solid #21273d;padding-bottom:0">
-      <button class="tab-btn active" data-tab="profile"        style="padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:#7d8590;cursor:pointer;font-size:13px;font-weight:600;margin-bottom:-1px">${icon('user', 14)} Mein Profil</button>
-      <button class="tab-btn"        data-tab="qualifications" style="padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:#7d8590;cursor:pointer;font-size:13px;font-weight:600;margin-bottom:-1px">${icon('graduation-cap', 14)} Qualifikationen</button>
-      <button class="tab-btn"        data-tab="honors"         style="padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:#7d8590;cursor:pointer;font-size:13px;font-weight:600;margin-bottom:-1px">${icon('award', 14)} Ehrungen</button>
-      <button class="tab-btn"        data-tab="equipment"      style="padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:#7d8590;cursor:pointer;font-size:13px;font-weight:600;margin-bottom:-1px">${icon('wrench', 14)} Ausrüstung</button>
-      <button class="tab-btn"        data-tab="appointments"   style="padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:#7d8590;cursor:pointer;font-size:13px;font-weight:600;margin-bottom:-1px">${icon('calendar', 14)} Termine</button>
+    <div class="tab-bar" style="display:flex;gap:4px;margin-bottom:24px;border-bottom:1px solid var(--border);padding-bottom:0">
+      <button class="tab-btn active" data-tab="profile"        style="padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text-muted);cursor:pointer;font-size:13px;font-weight:600;margin-bottom:-1px">${icon('user', 14)} Mein Profil</button>
+      <button class="tab-btn"        data-tab="qualifications" style="padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text-muted);cursor:pointer;font-size:13px;font-weight:600;margin-bottom:-1px">${icon('graduation-cap', 14)} Qualifikationen</button>
+      <button class="tab-btn"        data-tab="honors"         style="padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text-muted);cursor:pointer;font-size:13px;font-weight:600;margin-bottom:-1px">${icon('award', 14)} Ehrungen</button>
+      <button class="tab-btn"        data-tab="equipment"      style="padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text-muted);cursor:pointer;font-size:13px;font-weight:600;margin-bottom:-1px">${icon('wrench', 14)} Ausrüstung</button>
+      <button class="tab-btn"        data-tab="appointments"   style="padding:8px 16px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text-muted);cursor:pointer;font-size:13px;font-weight:600;margin-bottom:-1px">${icon('calendar', 14)} Termine</button>
     </div>
 
     <div id="tab-profile"></div>
@@ -73,7 +73,7 @@ export async function renderMyArea() {
 
 async function loadProfileTab(user) {
   const wrap = document.getElementById('tab-profile');
-  wrap.innerHTML = '<p style="color:#7d8590;font-size:13px">Lade...</p>';
+  wrap.innerHTML = '<p style="color:var(--text-muted);font-size:13px">Lade...</p>';
 
   try {
     const profile = await api.getMyProfile();
@@ -100,7 +100,7 @@ async function loadProfileTab(user) {
               <input type="text" value="${esc(user?.display_name || '')}" disabled style="opacity:0.5" />
             </div>
           </div>
-          <p style="font-size:12px;color:#7d8590;margin-top:8px">Benutzername und Anzeigename können unter <a href="#/settings" style="color:#e63022">Einstellungen</a> geändert werden.</p>
+          <p style="font-size:12px;color:var(--text-muted);margin-top:8px">Benutzername und Anzeigename können unter <a href="#/settings" style="color:#e63022">Einstellungen</a> geändert werden.</p>
         </div>
       </div>
 
@@ -130,7 +130,7 @@ async function loadProfileTab(user) {
       <div class="card" style="max-width:560px;margin-top:16px">
         <div class="card__header">Notfallkontakte</div>
         <div class="card__body">
-          <p style="font-size:13px;color:#7d8590;margin-bottom:16px">
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">
             Werden im Einsatzfall benötigt — werden nur von Führungskräften eingesehen.
           </p>
           <div id="emergency-contacts-list"></div>
@@ -174,18 +174,18 @@ async function renderEmergencyContacts() {
     const contacts = await api.getMyEmergencyContacts();
 
     if (!contacts.length) {
-      listEl.innerHTML = '<p style="color:#7d8590;font-size:13px;margin-bottom:8px">Noch keine Notfallkontakte hinterlegt.</p>';
+      listEl.innerHTML = '<p style="color:var(--text-muted);font-size:13px;margin-bottom:8px">Noch keine Notfallkontakte hinterlegt.</p>';
       return;
     }
 
     listEl.innerHTML = contacts.map(c => `
       <div class="ec-row" data-id="${c.id}" style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-bottom:8px;align-items:center">
         <input type="text" class="ec-name" value="${esc(c.name)}" placeholder="Name" maxlength="100"
-          style="background:#0d1117;border:1px solid #21273d;color:#e6edf3;padding:7px 10px;border-radius:6px;font-size:13px" />
+          style="background:var(--bg-card-hover);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:6px;font-size:13px" />
         <input type="tel" class="ec-phone" value="${esc(c.phone)}" placeholder="Telefon" maxlength="30"
-          style="background:#0d1117;border:1px solid #21273d;color:#e6edf3;padding:7px 10px;border-radius:6px;font-size:13px" />
+          style="background:var(--bg-card-hover);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:6px;font-size:13px" />
         <input type="text" class="ec-rel" value="${esc(c.relationship || '')}" placeholder="Beziehung (optional)" maxlength="100"
-          style="background:#0d1117;border:1px solid #21273d;color:#e6edf3;padding:7px 10px;border-radius:6px;font-size:13px" />
+          style="background:var(--bg-card-hover);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:6px;font-size:13px" />
         <div class="btn-group" style="flex-shrink:0">
           <button class="btn btn--primary btn--sm ec-save" data-id="${c.id}">Speichern</button>
           <button class="btn btn--danger btn--sm ec-delete" data-id="${c.id}">Löschen</button>
@@ -211,11 +211,11 @@ function addEmergencyContactRow(existingId) {
   row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-bottom:8px;align-items:center';
   row.innerHTML = `
     <input type="text" class="ec-name" value="" placeholder="Name" maxlength="100"
-      style="background:#0d1117;border:1px solid #21273d;color:#e6edf3;padding:7px 10px;border-radius:6px;font-size:13px" />
+      style="background:var(--bg-card-hover);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:6px;font-size:13px" />
     <input type="tel" class="ec-phone" value="" placeholder="Telefon" maxlength="30"
-      style="background:#0d1117;border:1px solid #21273d;color:#e6edf3;padding:7px 10px;border-radius:6px;font-size:13px" />
+      style="background:var(--bg-card-hover);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:6px;font-size:13px" />
     <input type="text" class="ec-rel" value="" placeholder="Beziehung (optional)" maxlength="100"
-      style="background:#0d1117;border:1px solid #21273d;color:#e6edf3;padding:7px 10px;border-radius:6px;font-size:13px" />
+      style="background:var(--bg-card-hover);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:6px;font-size:13px" />
     <div class="btn-group" style="flex-shrink:0">
       <button class="btn btn--primary btn--sm ec-save" data-id="${tmpId}">Speichern</button>
       <button class="btn btn--danger btn--sm ec-delete" data-id="${tmpId}">Löschen</button>
@@ -247,7 +247,7 @@ function addEmergencyContactRow(existingId) {
   row.querySelector('.ec-delete').addEventListener('click', () => {
     row.remove();
     if (!listEl.querySelector('.ec-row')) {
-      listEl.innerHTML = '<p style="color:#7d8590;font-size:13px;margin-bottom:8px">Noch keine Notfallkontakte hinterlegt.</p>';
+      listEl.innerHTML = '<p style="color:var(--text-muted);font-size:13px;margin-bottom:8px">Noch keine Notfallkontakte hinterlegt.</p>';
     }
   });
 }
@@ -287,7 +287,7 @@ function bindEmergencyContactActions() {
 
 async function loadQualificationsTab() {
   const wrap = document.getElementById('tab-qualifications');
-  wrap.innerHTML = '<p style="color:#7d8590;font-size:13px">Lade...</p>';
+  wrap.innerHTML = '<p style="color:var(--text-muted);font-size:13px">Lade...</p>';
 
   try {
     const [qualifications, settings] = await Promise.all([
@@ -302,7 +302,7 @@ async function loadQualificationsTab() {
       wrap.innerHTML = `
         <div class="card">
           <div class="card__body">
-            <p style="color:#7d8590;font-size:13px">Noch keine Qualifikationen hinterlegt. Der Wehrleiter kann diese im Personal-Modul eintragen.</p>
+            <p style="color:var(--text-muted);font-size:13px">Noch keine Qualifikationen hinterlegt. Der Wehrleiter kann diese im Personal-Modul eintragen.</p>
           </div>
         </div>`;
       return;
@@ -312,14 +312,14 @@ async function loadQualificationsTab() {
       const { statusDot, label, daysLeft } = expiryStatus(q.expires_at, warnDays, today);
       const expiryText = q.expires_at
         ? `${statusDot} ${formatDate(q.expires_at)}${daysLeft !== null ? ` (${daysLeft < 0 ? 'abgelaufen' : `noch ${daysLeft} Tage`})` : ''}`
-        : '<span style="color:#7d8590">–</span>';
+        : '<span style="color:var(--text-muted)">–</span>';
 
       return `
         <tr>
           <td><strong>${esc(q.name)}</strong></td>
-          <td>${q.acquired_at ? formatDate(q.acquired_at) : '<span style="color:#7d8590">–</span>'}</td>
+          <td>${q.acquired_at ? formatDate(q.acquired_at) : '<span style="color:var(--text-muted)">–</span>'}</td>
           <td>${expiryText}</td>
-          <td>${q.notes ? esc(q.notes) : '<span style="color:#7d8590">–</span>'}</td>
+          <td>${q.notes ? esc(q.notes) : '<span style="color:var(--text-muted)">–</span>'}</td>
         </tr>`;
     }).join('');
 
@@ -329,11 +329,11 @@ async function loadQualificationsTab() {
         <div class="card__body" style="padding:0">
           <table style="width:100%;border-collapse:collapse;font-size:13px">
             <thead>
-              <tr style="background:#0d1117;text-align:left">
-                <th style="padding:10px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d">Qualifikation</th>
-                <th style="padding:10px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d">Erworben</th>
-                <th style="padding:10px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d">Gültig bis</th>
-                <th style="padding:10px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d">Hinweis</th>
+              <tr style="background:var(--bg-card-hover);text-align:left">
+                <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border)">Qualifikation</th>
+                <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border)">Erworben</th>
+                <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border)">Gültig bis</th>
+                <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border)">Hinweis</th>
               </tr>
             </thead>
             <tbody>
@@ -342,7 +342,7 @@ async function loadQualificationsTab() {
           </table>
         </div>
       </div>
-      <p style="font-size:12px;color:#7d8590;margin-top:12px">
+      <p style="font-size:12px;color:var(--text-muted);margin-top:12px">
         <span class="status-dot" style="background:#3fb950;width:8px;height:8px;border-radius:50%;display:inline-block"></span> Gültig &nbsp;|&nbsp;
         <span class="status-dot" style="background:#f0a500;width:8px;height:8px;border-radius:50%;display:inline-block"></span> Läuft in ${warnDays} Tagen ab &nbsp;|&nbsp;
         <span class="status-dot" style="background:#e63022;width:8px;height:8px;border-radius:50%;display:inline-block"></span> Abgelaufen oder kritisch
@@ -351,7 +351,7 @@ async function loadQualificationsTab() {
 
     // Tabellenzeilen stylen
     wrap.querySelectorAll('tbody tr').forEach((tr, i) => {
-      tr.style.borderBottom = '1px solid #21273d';
+      tr.style.borderBottom = '1px solid var(--border)';
       tr.style.background = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)';
     });
     renderIcons(wrap);
@@ -365,7 +365,7 @@ async function loadQualificationsTab() {
 
 async function loadHonorsTab() {
   const wrap = document.getElementById('tab-honors');
-  wrap.innerHTML = '<p style="color:#7d8590;font-size:13px">Lade...</p>';
+  wrap.innerHTML = '<p style="color:var(--text-muted);font-size:13px">Lade...</p>';
 
   try {
     const honors = await api.getMyHonors();
@@ -374,7 +374,7 @@ async function loadHonorsTab() {
       wrap.innerHTML = `
         <div class="card">
           <div class="card__body">
-            <p style="color:#7d8590;font-size:13px">Noch keine Ehrungen hinterlegt. Ehrungen werden vom Wehrleiter im Personal-Modul eingetragen.</p>
+            <p style="color:var(--text-muted);font-size:13px">Noch keine Ehrungen hinterlegt. Ehrungen werden vom Wehrleiter im Personal-Modul eingetragen.</p>
           </div>
         </div>`;
       renderIcons(wrap);
@@ -387,11 +387,11 @@ async function loadHonorsTab() {
         ? `<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;background:#14532d;color:#4ade80">Aktiv</span>`
         : `<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;background:#1f2937;color:#9ca3af">Zurückgezogen</span>`;
       return `
-        <tr style="border-bottom:1px solid #21273d">
+        <tr style="border-bottom:1px solid var(--border)">
           <td style="padding:10px 16px"><strong>${esc(h.name)}</strong></td>
-          <td style="padding:10px 16px;color:#7d8590">${h.awarded_at ? formatDate(h.awarded_at) : '–'}</td>
+          <td style="padding:10px 16px;color:var(--text-muted)">${h.awarded_at ? formatDate(h.awarded_at) : '–'}</td>
           <td style="padding:10px 16px">${statusBadge}</td>
-          <td style="padding:10px 16px;color:#7d8590">${h.notes ? esc(h.notes) : '–'}</td>
+          <td style="padding:10px 16px;color:var(--text-muted)">${h.notes ? esc(h.notes) : '–'}</td>
         </tr>`;
     }).join('');
 
@@ -401,11 +401,11 @@ async function loadHonorsTab() {
         <div class="card__body" style="padding:0">
           <table style="width:100%;border-collapse:collapse;font-size:13px">
             <thead>
-              <tr style="background:#0d1117;text-align:left">
-                <th style="padding:10px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d">Ehrung</th>
-                <th style="padding:10px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d">Verliehen am</th>
-                <th style="padding:10px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d">Status</th>
-                <th style="padding:10px 16px;color:#7d8590;font-weight:600;border-bottom:1px solid #21273d">Notizen</th>
+              <tr style="background:var(--bg-card-hover);text-align:left">
+                <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border)">Ehrung</th>
+                <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border)">Verliehen am</th>
+                <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border)">Status</th>
+                <th style="padding:10px 16px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border)">Notizen</th>
               </tr>
             </thead>
             <tbody>${rows}</tbody>
@@ -425,7 +425,7 @@ async function loadHonorsTab() {
 
 async function loadEquipmentTab() {
   const wrap = document.getElementById('tab-equipment');
-  wrap.innerHTML = '<p style="color:#7d8590;font-size:13px">Lade...</p>';
+  wrap.innerHTML = '<p style="color:var(--text-muted);font-size:13px">Lade...</p>';
 
   try {
     const equipment = await api.getMyEquipment();
@@ -434,19 +434,19 @@ async function loadEquipmentTab() {
       wrap.innerHTML = `
         <div class="card">
           <div class="card__body">
-            <p style="color:#7d8590;font-size:13px">Noch keine Ausrüstung / Ausweise hinterlegt. Diese werden vom Gerätewart oder Wehrleiter eingetragen.</p>
+            <p style="color:var(--text-muted);font-size:13px">Noch keine Ausrüstung / Ausweise hinterlegt. Diese werden vom Gerätewart oder Wehrleiter eingetragen.</p>
           </div>
         </div>`;
       return;
     }
 
     const cards = equipment.map(e => `
-      <div style="background:#161b27;border:1px solid #21273d;border-radius:8px;padding:16px">
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:16px">
         <div style="font-size:15px;font-weight:700;margin-bottom:8px">${EQUIPMENT_LABELS[e.type] || esc(e.type)}</div>
-        ${e.identifier ? `<div style="font-size:13px;color:#e6edf3;margin-bottom:4px">Nr./Bezeichnung: <strong>${esc(e.identifier)}</strong></div>` : ''}
-        ${e.issued_at  ? `<div style="font-size:12px;color:#7d8590">Ausgestellt: ${formatDate(e.issued_at)}</div>` : ''}
-        ${e.expires_at ? `<div style="font-size:12px;color:#7d8590">Gültig bis: ${formatDate(e.expires_at)}</div>` : ''}
-        ${e.notes      ? `<div style="font-size:12px;color:#7d8590;margin-top:6px">${esc(e.notes)}</div>` : ''}
+        ${e.identifier ? `<div style="font-size:13px;color:var(--text);margin-bottom:4px">Nr./Bezeichnung: <strong>${esc(e.identifier)}</strong></div>` : ''}
+        ${e.issued_at  ? `<div style="font-size:12px;color:var(--text-muted)">Ausgestellt: ${formatDate(e.issued_at)}</div>` : ''}
+        ${e.expires_at ? `<div style="font-size:12px;color:var(--text-muted)">Gültig bis: ${formatDate(e.expires_at)}</div>` : ''}
+        ${e.notes      ? `<div style="font-size:12px;color:var(--text-muted);margin-top:6px">${esc(e.notes)}</div>` : ''}
       </div>
     `).join('');
 
@@ -454,7 +454,7 @@ async function loadEquipmentTab() {
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">
         ${cards}
       </div>
-      <p style="font-size:12px;color:#7d8590;margin-top:16px">Ausrüstung und Ausweise werden vom Gerätewart oder Wehrleiter gepflegt.</p>
+      <p style="font-size:12px;color:var(--text-muted);margin-top:16px">Ausrüstung und Ausweise werden vom Gerätewart oder Wehrleiter gepflegt.</p>
     `;
 
   } catch (e) {
@@ -466,7 +466,7 @@ async function loadEquipmentTab() {
 
 async function loadAppointmentsTab() {
   const wrap = document.getElementById('tab-appointments');
-  wrap.innerHTML = '<p style="color:#7d8590;font-size:13px">Lade...</p>';
+  wrap.innerHTML = '<p style="color:var(--text-muted);font-size:13px">Lade...</p>';
 
   try {
     const termine = await api.getMyTermine();
@@ -477,7 +477,7 @@ async function loadAppointmentsTab() {
         <div class="card">
           <div class="card__body" style="text-align:center;padding:40px 20px">
             <div style="margin-bottom:12px">${icon('calendar', 32)}</div>
-            <p style="color:#7d8590;font-size:14px">Keine Termine vorhanden.</p>
+            <p style="color:var(--text-muted);font-size:14px">Keine Termine vorhanden.</p>
           </div>
         </div>`;
       renderIcons(wrap);
@@ -492,20 +492,20 @@ async function loadAppointmentsTab() {
         ? `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${t.typ_color};margin-right:4px"></span>`
         : '';
       return `
-        <div style="border:1px solid #21273d;border-radius:8px;padding:14px 16px;margin-bottom:10px">
+        <div style="border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:10px">
           <div style="display:flex;align-items:flex-start;gap:12px">
-            <div style="min-width:52px;text-align:center;background:#0d1117;border-radius:6px;padding:6px 8px">
+            <div style="min-width:52px;text-align:center;background:var(--bg-card-hover);border-radius:6px;padding:6px 8px">
               <div style="font-size:18px;font-weight:700;line-height:1">${new Date(t.start_at).getDate().toString().padStart(2,'0')}</div>
-              <div style="font-size:10px;color:#7d8590;text-transform:uppercase">${new Date(t.start_at).toLocaleDateString('de-DE', {month:'short'})}</div>
+              <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase">${new Date(t.start_at).toLocaleDateString('de-DE', {month:'short'})}</div>
             </div>
             <div style="flex:1">
               <div style="font-weight:600;font-size:14px">${esc(t.title)}</div>
-              <div style="color:#7d8590;font-size:12px;margin-top:3px">
+              <div style="color:var(--text-muted);font-size:12px;margin-top:3px">
                 ${colorDot}${t.typ_name ? esc(t.typ_name) + ' · ' : ''}
                 ${new Date(t.start_at).toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'})} Uhr
                 ${t.end_at ? ` – ${new Date(t.end_at).toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'})} Uhr` : ''}
               </div>
-              ${t.location ? `<div style="color:#7d8590;font-size:12px;margin-top:2px">${icon('map-pin',11)} ${esc(t.location)}</div>` : ''}
+              ${t.location ? `<div style="color:var(--text-muted);font-size:12px;margin-top:2px">${icon('map-pin',11)} ${esc(t.location)}</div>` : ''}
               ${t.description ? `<div style="color:#9ca3af;font-size:12px;margin-top:4px">${esc(t.description)}</div>` : ''}
             </div>
           </div>
@@ -520,7 +520,7 @@ async function loadAppointmentsTab() {
         </div>` : ''}
       ${past.length ? `
         <div class="card">
-          <div class="card__header" style="color:#7d8590">Vergangene Termine (${past.length})</div>
+          <div class="card__header" style="color:var(--text-muted)">Vergangene Termine (${past.length})</div>
           <div class="card__body" style="opacity:0.6">${renderCards(past)}</div>
         </div>` : ''}
     `;

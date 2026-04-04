@@ -57,9 +57,9 @@ export async function renderAdmin() {
         </div>
         <div class="modal__body">
           <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
-            <div id="update-spinner" style="width:18px;height:18px;border:2px solid #21273d;border-top-color:#3fb950;border-radius:50%;animation:spin 0.8s linear infinite;flex-shrink:0"></div>
-            <span id="update-status-text" style="font-weight:600;color:#e6edf3">Initialisiere...</span>
-            <span id="update-timer" style="margin-left:auto;font-size:12px;color:#7d8590;font-variant-numeric:tabular-nums"></span>
+            <div id="update-spinner" style="width:18px;height:18px;border:2px solid var(--border);border-top-color:#3fb950;border-radius:50%;animation:spin 0.8s linear infinite;flex-shrink:0"></div>
+            <span id="update-status-text" style="font-weight:600;color:var(--text)">Initialisiere...</span>
+            <span id="update-timer" style="margin-left:auto;font-size:12px;color:var(--text-muted);font-variant-numeric:tabular-nums"></span>
           </div>
           <pre id="update-log" style="background:#0d1117;border:1px solid #21273d;border-radius:8px;padding:12px;font-size:12px;line-height:1.6;color:#7d8590;max-height:320px;overflow-y:auto;white-space:pre-wrap;word-break:break-word;font-family:monospace">Warte auf ersten Log-Eintrag...</pre>
           <div id="update-countdown" style="display:none;margin-top:16px;padding:12px;background:#1a2a1a;border:1px solid #3fb950;border-radius:8px;color:#3fb950;font-size:13px;text-align:center"></div>
@@ -117,11 +117,11 @@ export async function renderAdmin() {
           <button class="btn btn--primary btn--sm" id="btn-new-einsatzart">+ Neue Einsatzart</button>
         </div>
         <div class="card__body" style="padding:0">
-          <div id="einsatzarten-add-form" style="display:none;padding:16px;background:#161b27;border-bottom:1px solid #21273d">
+          <div id="einsatzarten-add-form" style="display:none;padding:16px;background:var(--bg-card);border-bottom:1px solid var(--border)">
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end">
               <div class="form-group" style="margin:0">
                 <label style="font-size:12px">Schlüssel <span style="color:#e63022">*</span>
-                  <span style="color:#7d8590;font-weight:400">(unveränderlich)</span></label>
+                  <span style="color:var(--text-muted);font-weight:400">(unveränderlich)</span></label>
                 <input type="text" id="ea-key" placeholder="z.B. TH2_BOOT" style="text-transform:uppercase" />
               </div>
               <div class="form-group" style="margin:0">
@@ -145,11 +145,11 @@ export async function renderAdmin() {
             </div>
           </div>
           <div id="einsatzarten-list">
-            <p style="color:#7d8590;font-size:13px;padding:16px">Lade...</p>
+            <p style="color:var(--text-muted);font-size:13px;padding:16px">Lade...</p>
           </div>
         </div>
       </div>
-      <p style="font-size:12px;color:#7d8590;margin-top:8px;padding:0 4px">
+      <p style="font-size:12px;color:var(--text-muted);margin-top:8px;padding:0 4px">
         Der Schlüssel (Key) ist nach dem Anlegen nicht mehr änderbar, da er in gespeicherten Einsatzberichten als Snapshot hinterlegt wird.
         Die Bezeichnung kann jederzeit angepasst werden.
       </p>
@@ -199,7 +199,7 @@ export async function renderAdmin() {
       <div class="card" style="margin-top:0">
         <div class="card__header">Wappen / Logo</div>
         <div class="card__body">
-          <p style="font-size:13px;color:#7d8590;margin-bottom:16px">
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">
             Lade das Wappen oder Logo deiner Feuerwehr hoch. Es erscheint auf der Anmeldeseite und in der Navigation.
             Empfohlen: PNG mit transparentem Hintergrund, max. 500 KB.
           </p>
@@ -218,7 +218,7 @@ export async function renderAdmin() {
       <div class="card" style="margin-top:0">
         <div class="card__header">Unterschrift</div>
         <div class="card__body">
-          <p style="font-size:13px;color:#7d8590;margin-bottom:16px">
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">
             Lade eine Unterschrift hoch. Sie wird automatisch in generierte PDFs eingesetzt
             (generisches PDF, kein Template). Empfohlen: PNG mit transparentem Hintergrund, max. 500 KB.
           </p>
@@ -237,7 +237,7 @@ export async function renderAdmin() {
       <div class="card" style="margin-top:0">
         <div class="card__header">Beschaffungsauftrag PDF-Vorlage</div>
         <div class="card__body">
-          <p style="font-size:13px;color:#7d8590;margin-bottom:16px">
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">
             Lade das offizielle Formular deiner Feuerwehr / Stadt hoch.
             Dieses PDF wird als Vorlage für alle Beschaffungsaufträge verwendet und mit den Bestelldaten befüllt.
           </p>
@@ -350,7 +350,7 @@ export async function renderAdmin() {
           <button class="modal__close" id="btn-close-edit-user">✕</button>
         </div>
         <div class="modal__body">
-          <p id="edit-user-info" style="font-size:13px;color:#7d8590;margin-bottom:12px"></p>
+          <p id="edit-user-info" style="font-size:13px;color:var(--text-muted);margin-bottom:12px"></p>
           <div class="form-group">
             <label>Benutzername</label>
             <input type="text" id="edit-user-username" maxlength="64" autocomplete="off" />
@@ -377,7 +377,7 @@ export async function renderAdmin() {
           <button class="modal__close" id="btn-close-functions">✕</button>
         </div>
         <div class="modal__body">
-          <p style="font-size:13px;color:#7d8590;margin-bottom:16px">
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">
             Zusatzfunktionen erweitern die Modulberechtigungen des Benutzers additiv.
           </p>
           <div id="functions-checks" style="display:flex;flex-direction:column;gap:10px"></div>
@@ -506,10 +506,10 @@ export async function renderAdmin() {
     const saved = localStorage.getItem('ff_custom_logo');
     if (saved) {
       el.innerHTML = `
-        <img src="${saved}" style="width:56px;height:56px;object-fit:contain;border:1px solid #21273d;border-radius:12px;padding:4px;background:#161b27;">
+        <img src="${saved}" style="width:56px;height:56px;object-fit:contain;border:1px solid var(--border);border-radius:12px;padding:4px;background:var(--bg-card);">
         <span style="font-size:12px;color:#3fb950;font-weight:600;">✓ Eigenes Wappen aktiv</span>`;
     } else {
-      el.innerHTML = `<span style="font-size:12px;color:#7d8590">${icon('flame', 14)} Standard-Logo (Flamme) aktiv</span>`;
+      el.innerHTML = `<span style="font-size:12px;color:var(--text-muted)">${icon('flame', 14)} Standard-Logo (Flamme) aktiv</span>`;
     }
     renderIcons(el);
   };
@@ -543,10 +543,10 @@ export async function renderAdmin() {
     const saved = localStorage.getItem('ff_signature');
     if (saved) {
       el.innerHTML = `
-        <img src="${saved}" style="height:44px;max-width:220px;object-fit:contain;border:1px solid #21273d;border-radius:8px;padding:4px;background:#fff;">
+        <img src="${saved}" style="height:44px;max-width:220px;object-fit:contain;border:1px solid var(--border);border-radius:8px;padding:4px;background:#fff;">
         <span style="font-size:12px;color:#3fb950;font-weight:600;">✓ Unterschrift gespeichert</span>`;
     } else {
-      el.innerHTML = `<span style="font-size:12px;color:#7d8590">Keine Unterschrift hinterlegt</span>`;
+      el.innerHTML = `<span style="font-size:12px;color:var(--text-muted)">Keine Unterschrift hinterlegt</span>`;
     }
   };
   updateSigPreview();
@@ -751,7 +751,7 @@ async function openFunctionsModal(userId, username) {
   const modal    = document.getElementById('modal-functions');
   const checksEl = document.getElementById('functions-checks');
   document.getElementById('modal-functions-username').textContent = username;
-  checksEl.innerHTML = '<p style="color:#7d8590;font-size:13px">Lade...</p>';
+  checksEl.innerHTML = '<p style="color:var(--text-muted);font-size:13px">Lade...</p>';
   modal.style.display = 'flex';
 
   const [allRoles, userFunctions] = await Promise.all([
@@ -763,15 +763,15 @@ async function openFunctionsModal(userId, username) {
   const assignedIds = userFunctions.map(f => f.role_id);
 
   if (!funktionen.length) {
-    checksEl.innerHTML = '<p style="color:#7d8590;font-size:13px">Keine Zusatzfunktionen angelegt.</p>';
+    checksEl.innerHTML = '<p style="color:var(--text-muted);font-size:13px">Keine Zusatzfunktionen angelegt.</p>';
   } else {
     checksEl.innerHTML = funktionen.map(f => `
-      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:8px;border:1px solid #21273d;border-radius:8px">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:8px;border:1px solid var(--border);border-radius:8px">
         <input type="checkbox" class="fn-check" data-role-id="${f.id}"
           ${assignedIds.includes(f.id) ? 'checked' : ''} />
         <span>
           <strong style="font-size:13px">${esc(f.name)}</strong>
-          ${f.permissions.length ? `<span style="font-size:11px;color:#7d8590;margin-left:6px">→ ${f.permissions.join(', ')}</span>` : ''}
+          ${f.permissions.length ? `<span style="font-size:11px;color:var(--text-muted);margin-left:6px">→ ${f.permissions.join(', ')}</span>` : ''}
         </span>
       </label>
     `).join('');
@@ -1196,7 +1196,7 @@ const CAT_COLORS_EA = { brand: '#e63022', thl: '#f0a500', gefahrgut: '#8957e5', 
 async function loadEinsatzarten() {
   const list = document.getElementById('einsatzarten-list');
   if (!list) return;
-  list.innerHTML = `<p style="color:#7d8590;font-size:13px;padding:16px">Lade...</p>`;
+  list.innerHTML = `<p style="color:var(--text-muted);font-size:13px;padding:16px">Lade...</p>`;
 
   let types;
   try {
@@ -1215,23 +1215,23 @@ async function loadEinsatzarten() {
     if (!items.length) return '';
     const color = CAT_COLORS_EA[cat] || '#7d8590';
     return `
-      <div style="border-bottom:1px solid #21273d">
-        <div style="padding:10px 16px;background:#0d1117;font-size:11px;font-weight:700;
+      <div style="border-bottom:1px solid var(--border)">
+        <div style="padding:10px 16px;background:var(--bg-card-hover);font-size:11px;font-weight:700;
           color:${color};text-transform:uppercase;letter-spacing:.08em">
           ${CAT_LABELS_EA[cat]}
         </div>
         ${items.map(t => `
           <div class="ea-row" data-id="${t.id}" style="display:flex;align-items:center;gap:12px;
-            padding:10px 16px;border-top:1px solid #21273d;
+            padding:10px 16px;border-top:1px solid var(--border);
             opacity:${t.active ? 1 : 0.5}">
             <div style="flex:0 0 140px;font-family:monospace;font-size:12px;
-              color:#7d8590;background:#161b27;padding:3px 8px;border-radius:4px">
+              color:var(--text-muted);background:var(--bg-card);padding:3px 8px;border-radius:4px">
               ${esc(t.key)}
             </div>
             <div style="flex:1;font-size:13px;font-weight:500" id="ea-label-${t.id}">
               ${esc(t.label)}
             </div>
-            <div style="font-size:11px;color:#7d8590;flex:0 0 80px;text-align:center">
+            <div style="font-size:11px;color:var(--text-muted);flex:0 0 80px;text-align:center">
               ${t.used_count > 0 ? `${t.used_count} Bericht${t.used_count !== 1 ? 'e' : ''}` : '—'}
             </div>
             <div style="display:flex;gap:6px;flex-shrink:0">
