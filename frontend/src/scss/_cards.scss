@@ -28,6 +28,6 @@
 
   &--rot {
     border-top: 2px solid $rot;
-    .card__header { background: $rot-hell; color: $text; border-bottom-color: rgba(230,48,34,0.2); }
+    .card__header { background: $rot-hell; color: $text; border-bottom-color: $rot-border; }
   }
 }

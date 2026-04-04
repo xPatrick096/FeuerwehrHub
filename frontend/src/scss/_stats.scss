@@ -34,7 +34,7 @@
     font-weight: 600;
   }
 
-  &--offen         .stat-card__number { color: #dc2626; }
+  &--offen         .stat-card__number { color: $rot; }
   &--teillieferung .stat-card__number { color: $orange; }
   &--vollstaendig  .stat-card__number { color: $gruen; }
   &--gesamt        .stat-card__number { color: $text; }

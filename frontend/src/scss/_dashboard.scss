@@ -136,11 +136,11 @@
   &__body { padding: 14px 16px; }
 
   // Modul-Akzentfarben (stimmen mit Shell.svelte MODULE_ACCENTS überein)
-  &--fahrzeuge       .widget-card__header { border-left-color: #2563eb; }
-  &--einsatzberichte .widget-card__header { border-left-color: #e63022; }
-  &--personal        .widget-card__header { border-left-color: #16a34a; }
-  &--lager           .widget-card__header { border-left-color: #d97706; }
-  &--termine         .widget-card__header { border-left-color: #7c3aed; }
+  &--fahrzeuge       .widget-card__header { border-left-color: var(--fahrzeug-c); }
+  &--einsatzberichte .widget-card__header { border-left-color: var(--einsatz-c); }
+  &--personal        .widget-card__header { border-left-color: var(--personal-c); }
+  &--lager           .widget-card__header { border-left-color: var(--lager-c); }
+  &--termine         .widget-card__header { border-left-color: var(--verein-c); }
 }
 
 .stat-tiles {

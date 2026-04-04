@@ -45,7 +45,7 @@
   .top-beschluss {
     margin-top: $space-xs;
     padding: $space-xs $space-sm;
-    background: rgba(var(--accent-rgb, 37,99,235), 0.08);
+    background: color-mix(in srgb, var(--accent, var(--blau)) 8%, transparent);
     border-left: 3px solid var(--accent, #2563eb);
     border-radius: 0 $radius-sm $radius-sm 0;
     font-size: $font-size-sm;
